@@ -1,0 +1,37 @@
+services:
+  frankenphp:
+    container_name: pariaman
+    image: dunglas/frankenphp
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/Caddyfile
+      - ./:/app
+    networks:
+      - laravel_network
+
+  mysql:  # Pastikan service mysql didefinisikan
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Agif1705@gmail.com
+      MYSQL_DATABASE: pariaman
+      MYSQL_USER: pariaman
+      MYSQL_PASSWORD: Agif1705@gmail.com
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - laravel_network
+
+  redis:  # Pastikan service redis didefinisikan
+    image: redis:alpine
+    networks:
+      - laravel_network
+
+volumes:
+  mysql_data:
+
+networks:
+  laravel_network:
+    driver: bridge
