@@ -32,23 +32,18 @@ return [
     'connections' => [
 
         'mysql_second' => [
-            'driver' => 'mysql',
-            'url' => env('DATABASE_SECOND_URL'),
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
             'host' => env('DB_SECOND_HOST', '127.0.0.1'),
-            'port' => env('DB_SECOND_PORT', '3306'),
-            'database' => env('DB_SECOND_DATABASE', 'forge'),
-            'username' => env('DB_SECOND_USERNAME', 'forge'),
-            'password' => env('DB_SECOND_PASSWORD', ''),
-            'unix_socket' => env('DB_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'port' => env('DB_SECOND_PORT', '5480'),
+            'database' => env('DB_SECOND_DATABASE', 'postgres'),
+            'username' => env('DB_SECOND_USERNAME', 'postgres'),
+            'password' => env('DB_SECOND_PASSWORD', 'Agif1705-Gmail.com'),
+            'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
         ],
 
         'mysql' => [

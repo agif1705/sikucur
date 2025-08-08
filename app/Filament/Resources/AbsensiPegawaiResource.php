@@ -120,26 +120,53 @@ class AbsensiPegawaiResource extends Resource
     public static function sinkronFingerPrint(User $user)
     {
         $month = Carbon::now()->month;
-        $today = Carbon::now()->format('Y-m-d');
+
         $sn_fingerprint = $user->with('nagari')->first()->nagari->sn_fingerprint;
-        $absensi_masuk = WdmsModel::with('user')->where('terminal_sn', $sn_fingerprint)
+
+        $absensi_masuk = WdmsModel::with('user')
+            ->where('terminal_sn', $sn_fingerprint)
             ->whereMonth('punch_time', $month)
             ->whereTime('punch_time', '<=', '12:00')
             ->select('emp_id', 'punch_time', 'emp_code')
             ->get()
-            ->map(function ($item) {
-                $item->time_in = \Carbon\Carbon::parse($item->punch_time)->format('H:i');
-                $item->date_in = \Carbon\Carbon::parse($item->punch_time)->format('Y-m-d');
+            ->sortBy('punch_time') // urutkan dari paling pagi
+            ->groupBy(function ($item) {
+                // Kelompokkan per user dan tanggal
+                return $item->emp_id . '-' . Carbon::parse($item->punch_time)->format('Y-m-d');
+            })
+            ->map(function ($grouped) {
+                // Ambil hanya absensi pertama
+                $item = $grouped->first();
+                $item->time_in = Carbon::parse($item->punch_time)->format('H:i');
+                $item->date_in = Carbon::parse($item->punch_time)->format('Y-m-d');
                 $item->user_id = $item->user->id;
                 $item->nagari_id = $item->user->nagari->id;
                 $item->sn_mesin = $item->user->nagari->sn_fingerprint;
-                if ($item->time_in > '08:00') {
-                    $item->is_late = true;
-                } else {
-                    $item->is_late = false;
-                }
+                $item->is_late = $item->time_in > '08:00';
                 return $item;
-            });
+            })
+            ->values();
+        // $month = Carbon::now()->month;
+        // $today = Carbon::now()->format('Y-m-d');
+        // $sn_fingerprint = $user->with('nagari')->first()->nagari->sn_fingerprint;
+        // $absensi_masuk = WdmsModel::with('user')->where('terminal_sn', $sn_fingerprint)
+        //     ->whereMonth('punch_time', $month)
+        //     ->whereTime('punch_time', '<=', '12:00')
+        //     ->select('emp_id', 'punch_time', 'emp_code')
+        //     ->get()
+        //     ->map(function ($item) {
+        //         $item->time_in = \Carbon\Carbon::parse($item->punch_time)->format('H:i');
+        //         $item->date_in = \Carbon\Carbon::parse($item->punch_time)->format('Y-m-d');
+        //         $item->user_id = $item->user->id;
+        //         $item->nagari_id = $item->user->nagari->id;
+        //         $item->sn_mesin = $item->user->nagari->sn_fingerprint;
+        //         if ($item->time_in > '08:00') {
+        //             $item->is_late = true;
+        //         } else {
+        //             $item->is_late = false;
+        //         }
+        //         return $item;
+        //     });
         foreach ($absensi_masuk as $key => $value) {
             $check = AbsensiPegawai::where('user_id', $value->user->id)
                 ->whereDate('date_in', $value->date_in)
@@ -165,6 +192,7 @@ class AbsensiPegawaiResource extends Resource
             ->duration(500)
             ->persistent()
             ->send();
+        $today = Carbon::now()->format('Y-m-d');
         $absensi_pulang = WdmsModel::with('user')->where('terminal_sn', $sn_fingerprint)
             ->whereMonth('punch_time', $month)
             ->whereTime('punch_time', '>=', '12:00')

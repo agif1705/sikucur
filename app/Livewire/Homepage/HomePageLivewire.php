@@ -3,8 +3,9 @@
 namespace App\Livewire\Homepage;
 
 use App\Models\Coments;
-use Livewire\Attributes\title;
 use Livewire\Component;
+use Livewire\Attributes\title;
+use Livewire\Attributes\Layout;
 
 // #[layout('components.layouts.home')]
 #[title('Sikucur - Home')]
@@ -12,12 +13,14 @@ use Livewire\Component;
 class HomePageLivewire extends Component
 {
     public $kritik;
+    #[Layout('components.layouts.home')]
+    public function render()
+    {
+        return view('livewire.homepage.home-page-livewire');
+    }
     public function mount()
     {
         $this->kritik = Coments::where('status', 1)->orderBy('created_at', 'desc')->get();
     }
-    public function render()
-    {
-        return view('livewire.homepage.home-page-livewire')->layout('components.layouts.home');
-    }
+    
 }

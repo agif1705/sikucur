@@ -40,4 +40,29 @@ class WdmsModel extends Model
             return $check;
         }
     }
+    public static function getAbsensiMasuk($sn_fp, $tanggal)
+    {
+        return self::with('user')
+            ->where('terminal_sn', $sn_fp)
+            ->whereDate('punch_time', $tanggal)
+            ->whereTime('punch_time', '<=', '12:00')
+            ->select('emp_id', 'punch_time', 'emp_code')
+            ->get()
+            ->sortBy('punch_time')
+            ->groupBy(function ($item) {
+                return $item->emp_id . '-' . Carbon::parse($item->punch_time)->format('Y-m-d');
+            })
+            ->map(function ($grouped) {
+                $item = $grouped->first();
+                $item->time_only = Carbon::parse($item->punch_time)->format('H:i');
+                $item->date_in = Carbon::parse($item->punch_time)->format('Y-m-d');
+                $item->user_id = $item->user->id;
+                $item->nagari_id = $item->user->nagari->id;
+                $item->sn_mesin = $item->user->nagari->sn_fingerprint;
+                $item->is_late = $item->time_only > '08:00';
+                return $item;
+            })
+            ->values()
+            ->unique('emp_id');
+    }
 }

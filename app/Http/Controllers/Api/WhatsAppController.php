@@ -11,6 +11,13 @@ use App\Models\User;
 
 class WhatsAppController extends Controller
 {
+    public function izinPegawai()
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Izin pegawai berhasil diproses.',
+        ]);
+    }
     public function kehadiran(Request $request)
     {
         $now = Carbon::now()->format('Y-m-d');

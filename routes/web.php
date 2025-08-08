@@ -9,6 +9,7 @@ use App\Http\Controllers\AbsensiPdfController;
 use App\Http\Controllers\FingerPrintController;
 use App\Http\Controllers\FonnteController;
 use App\Livewire\Homepage\KegiatanPageLivewire;
+use App\Livewire\TvInformasi\TvNagariLivewire;
 
 // Route::get('/', function () {
 //     return view('welcome');
@@ -20,5 +21,3 @@ Route::get('kritik', KritikPageLivewire::class)->name('kritik');
 Route::get('agenda', AgendaPageLivewire::class)->name('agenda');
 Route::get('/tv/{sn}', InformasiTvLivewire::class)->name('tvinformasi');
 Route::get('/pdf/absensi/{bulan}/{tahun}', [AbsensiPdfController::class, 'index'])->name('absensipdf');
-Route::get('/send', [FonnteController::class, 'send'])->name('send.test');
-Route::get('/wusapi', [FonnteController::class, 'wusapi'])->name('wusapi.test');
