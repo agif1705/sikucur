@@ -24,6 +24,10 @@ class Nagari extends Model
     {
         return $this->hasMany(User::class);
     }
+    public function whatsAppCommand()
+    {
+        return $this->hasMany(WhatsAppCommand::class);
+    }
     public function workDays()
     {
         return $this->hasMany(WorkDay::class);

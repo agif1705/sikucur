@@ -16,7 +16,8 @@ return new class extends Migration
             $table->foreignId('footer_whats_app_id')->constrained('footer_whats_apps')->cascadeOnDelete();
             $table->foreignId('nagari_id')->constrained('nagaris')->cascadeOnDelete();
             $table->string('command');
-            $table->string('response');
+            $table->text('description');
+            $table->string('handler_class');
             $table->boolean('is_active');
             $table->timestamps();
         });

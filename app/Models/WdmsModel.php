@@ -62,7 +62,7 @@ class WdmsModel extends Model
                 $item->is_late = $item->time_only > '08:00';
                 return $item;
             })
-            ->values()
+            ->values()->reject(fn($item) => $item->user_id == 1)
             ->unique('emp_id');
     }
 }

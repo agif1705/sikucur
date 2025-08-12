@@ -28,11 +28,11 @@ class bersihkan extends Command
         $this->call('route:clear');
         $this->call('route:cache');
         $this->call('cache:clear');
-        $this->call('config:clear');
         $this->call('config:cache');
+        $this->call('config:clear');
         $this->call('queue:restart');
         $this->call('view:clear');
-        $this->call('view:cache'); 
+        $this->call('view:cache');
         $this->call('optimize'); // Hanya untuk Laravel < 11 (karena di Laravel 11+ dihapus)
         $this->call('filament:optimize'); // Hanya untuk Laravel < 11 (karena di Laravel 11+ dihapus)
         $this->call('filament:optimize-clear'); // Hanya untuk Laravel < 11 (karena di Laravel 11+ dihapus)

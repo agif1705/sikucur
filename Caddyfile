@@ -20,10 +20,9 @@ baduo.cloud {
         }
     }
 }
+
 realtime.baduo.cloud {
-    reverse_proxy 127.0.0.1:8000 
-    
-    
+    reverse_proxy 127.0.0.1:8000    
 }
 
 

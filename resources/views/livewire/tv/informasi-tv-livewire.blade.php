@@ -75,10 +75,6 @@
       });
     </script>
   @endpush
-
-
-
-
   {{-- bootsrap --}}
   <nav class="navbar navbar-expand-lg navbar-light bg-warning  ">
     <div class="container-fluid ">
@@ -99,7 +95,7 @@
       <div class="collapse navbar-collapse p-2" id="navbarNavAltMarkup">
         <div class="navbar-nav ms-auto">
           <h6
-            class="text-white rounded-5 text-sm text-center p-2 fs-3 animate__animated animate__jackInTheBox animate__slower  animate__infinite	infinite">
+            class="text-white rounded-5 text-sm text-center p-1 fs-3 animate__animated animate__jackInTheBox animate__slower  animate__infinite	infinite">
             Tv Informasi
             <br>
             <span class="fw-bold text-danger"> Nagari Sikucur </span>
@@ -117,19 +113,14 @@
   <main class="flex-grow-1 d-flex align-items-center justify-content-center">
     <div class="container-fluid text-center w-100 h-100"> <!-- Tambahkan h-100 di sini -->
       <div class="row align-items-start h-100"> <!-- Tambahkan h-100 di sini -->
-        <div class="col-2 mt-3 rounded bg-info h-100 d-flex flex-column position-relative">
-          <span
-            class="position-absolute mt-1  mb-2 p-2 top-25 start-50 w-50  translate-middle badge rounded-pill text-bg-success">
-            <p class="fs-5 fw-bold mb-0 text-start text-center">E-Absensi
-            </p>
-            <p class="fs-5 fw-bold mt-1 mb-0 text-start text-dark text-center">{{ $tvNow }}</p>
-          </span>
-
-          <div class="clas overflow-auto mt-4" id="absensi-container" style="flex: 1; max-height: 85vh;">
-
-            <ul class="list-group mt-6 ">
+        <div class="col-2 mt-0 rounded bg-info h-100 d-flex flex-column">
+          <h6 class="fs-5 fw-bold mb-1 text-start text-center  badge rounded-pill ">E-Absensi {{ $tvNow }}
+          </h6>
+          <div class="" id="absensi-container" wire:ignore.self>
+            <ul class="list-group mt-1  rounded w-100 " style="flex: 1; max-height: 65vh;">
               @foreach ($users as $item)
-                <li class="list-group-item d-flex justify-content-between align-items-center mb-1 border-1">
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center mb-1 border-1 rounded rounded-4">
                   <div class="d-flex align-items-center">
 
                     <img class="avatar @if ($users->count() > 8) avatar-lg @else avatar-xl @endif "
@@ -151,18 +142,20 @@
                   </div>
                 </li>
               @endforeach
-
             </ul>
+          </div>
+          <div class="bg-dark mb-1 mt-3 flex-grow-1 d-flex align-items-center justify-content-center"
+            style="height: 100%;">
+            <h1 class="text-center text-white shadow">Coming soon CCTV Area Public</h1>
           </div>
         </div>
         <!-- video youtube -->
-        <div class="col-8" style="height: 90vh;"> <!-- Sesuaikan height sesuai kebutuhan -->
+        <div class="col-8" style="height: 85vh;"> <!-- Sesuaikan height sesuai kebutuhan -->
           <div class="card h-100">
             <!-- Header -->
             <div class="card-header bg-success">
               <marquee class="text-white fs-1 fw-bold">{{ $tv->name }}</marquee>
             </div>
-
             <!-- Video Body -->
             <div class="card-body p-0 bg-dark flex-grow-1">
               <div class="ratio ratio-16x9 h-100">
@@ -171,25 +164,22 @@
                                         allowfullscreen>
                                     </iframe> --}}
                 {{-- <iframe width="560" height="315"
-                      src="https://www.youtube.com/embed/Lb4AwReHYxQ?playlist=RpTfJV4ux1c,V5s36YgfWv8,Sz61lW5trNQ,6vIqikH2QvY,-nbJgfkgSg8,
+                  src="https://www.youtube.com/embed/Lb4AwReHYxQ?playlist=RpTfJV4ux1c,V5s36YgfWv8,Sz61lW5trNQ,6vIqikH2QvY,-nbJgfkgSg8,
                                         s6vac3hP6yM,k9bCgz5xTms,j-vOeGOCKio,coz56CHNjjE,jXNSJnxkXeE
                                         &loop=1"
-                      frameborder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowfullscreen>
-                    </iframe> --}}
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen>
+                </iframe> --}}
               </div>
             </div>
             <!-- Footer -->
-            <div class="card-footer bg-warning">
-              <div class="col-sm-12 bg-warning justify-center h-100">
-                <marquee class="text-white fs-4 fw-bold">{{ $tv->running_text }}
-                </marquee>
-                <img src="{{ asset('storage/ppid.png') }}" class="img-thumbnail p-1"
-                  style="height: 4em; width: 6em; position: absolute; right: 0; bottom: 0;" alt="PPID Logo">
-
-              </div>
-
+            <div class="card-footer bg-warning position-relative">
+              <marquee class="text-white fs-4 fw-bold" style="padding-right: 7em;">
+                {{ $tv->running_text }}
+              </marquee>
+              <img src="{{ asset('storage/ppid.png') }}" class="img-thumbnail"
+                style="height: 4em; width: 6em; position: absolute; right: 0.5em; bottom: 0.2em;" alt="PPID Logo">
             </div>
           </div>
         </div>
@@ -264,31 +254,3 @@
     });
   </script>
 @endpush
-@if ($users->count() > 10)
-  @push('scripts')
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('absensi-container');
-
-        let scrollDirection = 1; // 1: down, -1: up
-        const scrollSpeed = 1; // pixel per frame
-        const delay = 20; // milliseconds between each scroll step
-
-        function autoScroll() {
-          if (container.scrollHeight <= container.clientHeight) return; // Tidak scroll kalau isinya pendek
-
-          container.scrollTop += scrollSpeed * scrollDirection;
-
-          // Balik arah jika sampai atas atau bawah
-          if (container.scrollTop + container.clientHeight >= container.scrollHeight) {
-            scrollDirection = -1; // naik
-          } else if (container.scrollTop <= 0) {
-            scrollDirection = 1; // turun
-          }
-        }
-
-        setInterval(autoScroll, delay);
-      });
-    </script>
-  @endpush
-@endif

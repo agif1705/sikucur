@@ -76,7 +76,10 @@ class User extends Authenticatable
     }
     public function wdms()
     {
-
         return $this->hasMany(WdmsModel::class, 'emp_code', 'emp_id');
+    }
+    public function izin()
+    {
+        return $this->hasMany(IzinPegawai::class);
     }
 }

@@ -30,8 +30,6 @@ class InformasiTvLivewire extends Component
     #[On('fingerprint-updated')]
     public function updateData($mesin, $data)
     {
-
-
         // memasukan data absensi pegawai
         if ($data['emp_id']) {
             $emp_id = $data['emp_id'];
@@ -79,7 +77,6 @@ class InformasiTvLivewire extends Component
                 });
             }
         } else {
-            // Sudah ada record → update sesuai waktu yang masuk
 
             // Jika waktu lebih pagi dari time_in → set sebagai time_in
             if ($punchTime->hour < 12) {

@@ -14,7 +14,8 @@ class WhatsAppCommand extends Model
         'footer_whatsapp_id',
         'nagari_id',
         'command',
-        'response',
+        'description',
+        'handler_class',
         'is_active',
     ];
     /**
