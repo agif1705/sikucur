@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
     {
         User::create([
             'name' => 'agif',
+            'slug' => 'agif',
             'nagari_id' => 1,
             'emp_id' => 1,
             'Jabatan_id' => 1,
@@ -31,6 +32,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'name' => 'Asrul Khairi, A.Md',
+            'slug' => 'Asrul',
             'Jabatan_id' => 2,
             'image' => 'web_wali_nagari.jpg',
             'emp_id' => 2,
@@ -47,6 +49,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'Fadil Aulia Rahman, M.Kom',
+            'slug' => 'Fadil',
             'Jabatan_id' => 3,
             'image' => 'web_fadil.JPG',
             'emp_id' => 3,
@@ -63,6 +66,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'Beta Pandu Yulita, M.H',
+            'slug' => 'Andu',
             'Jabatan_id' => 4,
             'image' => 'web_andu.JPG',
             'emp_id' => 7,
@@ -80,6 +84,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'name' => 'Yulia Frima Siska',
+            'slug' => 'Siska',
             'Jabatan_id' => 5,
             'image' => 'web_siska.JPG',
             'emp_id' => 6,
@@ -96,6 +101,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'Febria Melita, S.Pd',
+            'slug' => 'Melita',
             'Jabatan_id' => 6,
             'image' => 'web_melita.JPG',
             'emp_id' => 5,
@@ -114,6 +120,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'name' => 'Khaira Maulida, S.H',
+            'slug' => 'Era',
             'username' => 'era',
             'image' => 'web_era.JPG',
             'emp_id' => 4,
@@ -130,6 +137,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'Khairil Anwar, S.Kom',
+            'slug' => 'Khairil',
             'username' => 'khairil',
             'image' => 'web_khairil.JPG',
             'emp_id' => 11,
@@ -147,6 +155,7 @@ class UserSeeder extends Seeder
 
         User::create([
             'name' => 'Irvandi',
+            'slug' => 'Irvandi',
             'Jabatan_id' => 10,
             'image' => 'web_ipan.JPG',
             'emp_id' => 10,
@@ -163,6 +172,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'Ahmad Yusnadi, S.Sos',
+            'slug' => 'Ahmad',
             'username' => 'ahmad',
             'image' => 'web_ahmad.JPG',
             'emp_id' => 8,
@@ -179,6 +189,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'Silvia Oktavina',
+            'slug' => 'Silvia',
             'username' => 'silvia',
             'image' => 'web_sisil.JPG',
             'emp_id' => 9,
@@ -195,6 +206,7 @@ class UserSeeder extends Seeder
         ]);
         User::create([
             'name' => 'yulianis',
+            'slug' => 'Yun',
             'username' => 'yulianis',
             'image' => 'web_niyun.JPG',
             'emp_id' => 12,

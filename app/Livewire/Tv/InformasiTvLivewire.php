@@ -24,21 +24,8 @@ class InformasiTvLivewire extends Component
     public $now;
     public $users;
     public $tv, $galeri;
-    public $sn_fp, $logo, $tvNow, $datas, $nagariId;
+    public $sn_fp, $logo, $tvNow, $datas, $playlistStr;
     public $videoId = "Lb4AwReHYxQ";
-    public $playlist = [
-        "RpTfJV4ux1c",
-        "V5s36YgfWv8",
-        "Sz61lW5trNQ",
-        "6vIqikH2QvY",
-        "-nbJgfkgSg8",
-        "s6vac3hP6yM",
-        "k9bCgz5xTms",
-        "j-vOeGOCKio",
-        "coz56CHNjjE",
-        "jXNSJnxkXeE",
-    ];
-
 
     #[On('fingerprint-updated')]
     public function updateData($mesin, $data)
@@ -56,7 +43,8 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
 
-        $is_late = $data['punch_time'] > '08:00' ?  'Terlambat' : 'Ontime';
+        $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
+        // dd($is_late);
         // $punchTime = Carbon::parse($data['punch_time']);
         // $date = $punchTime->toDateString();
         // $time = $punchTime->toTimeString();
@@ -121,15 +109,9 @@ class InformasiTvLivewire extends Component
     #[Layout('components.layouts.tv')]
     public function render()
     {
-        $list = ListYoutube::where('nagari_id', $this->nagariId)->get();
-        $playlist = [
-            'id_youtube' => $list->pluck('id_youtube')->toArray()
-        ];
-        $playlistStr = implode(',', $playlist['id_youtube']);
+
         // return view('livewire.tv.commingsoon');
-        return view('livewire.tv.informasi-tv-livewire', [
-            'playlistStr' => $playlistStr
-        ]);
+        return view('livewire.tv.informasi-tv-livewire');
     }
     public function mount($sn)
     {
@@ -137,7 +119,12 @@ class InformasiTvLivewire extends Component
         $this->now = Carbon::now()->format('Y-m-d');
         $this->tvNow = Carbon::now()->format('d M Y');
         $sn_fp = Nagari::with('TvInformasi', 'galeri')->where('name', $sn)->first();
-        $this->nagariId = $sn_fp->id;
+        $nagariId = $sn_fp->id;
+        $list = ListYoutube::where('nagari_id', $nagariId)->get();
+        $playlist = [
+            'id_youtube' => $list->pluck('id_youtube')->toArray()
+        ];
+        $this->playlistStr = implode(',', $playlist['id_youtube']);
         if (!$sn_fp) {
             abort(404, 'Nagari tidak ditemukan');
         }

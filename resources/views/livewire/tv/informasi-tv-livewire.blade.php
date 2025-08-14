@@ -116,14 +116,14 @@
         <div class="col-2 mt-0 rounded bg-info h-100 d-flex flex-column">
           <h6 class="fs-5 fw-bold mb-1 text-start text-center  badge rounded-pill ">E-Absensi {{ $tvNow }}
           </h6>
-          <div class="" id="absensi-container" wire:ignore.self>
-            <ul class="list-group mt-1  rounded w-100 " style="flex: 1; max-height: 65vh;">
+          <div id="absensi-container" wire:ignore.self>
+            <ul class="list-group mt-1 rounded w-100 ">
               @foreach ($users as $item)
                 <li
                   class="list-group-item d-flex justify-content-between align-items-center mb-1 border-1 rounded rounded-4">
                   <div class="d-flex align-items-center">
 
-                    <img class="avatar @if ($users->count() > 8) avatar-lg @else avatar-xl @endif "
+                    <img class="avatar @if ($users->count() > 11) avatar-lg @else avatar-xl @endif "
                       src="{{ asset('storage/' . $item->user->image) }}" />
                     <div class="ms-3">
                       <p class="fs-6 fw-bold mb-0 text-start">
@@ -160,7 +160,7 @@
             <div class="card-body p-0 bg-dark flex-grow-1">
               <div style="width:100%; height:100%;">
                 <iframe
-                  src="https://www.youtube.com/embed/{{ $videoId }}?playlist={{ $playlistStr }}&loop=1&autoplay=1&mute=0"
+                  src="https://www.youtube.com/embed/{{ $videoId }}?playlist={{ $playlistStr }}&loop=1&autoplay=1&mute=0&rel=0&modestbranding=1"
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowfullscreen style="width:100%; height:100%;">
@@ -221,30 +221,3 @@
     </div>
   </main>
 </div>
-
-@push('scripts')
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-  <script>
-    window.addEventListener('absenBerhasil', (event) => {
-      console.log('Event detail:', event.detail);
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-      new Swiper('.mySwiper', {
-        effect: 'coverflow',
-        coverflowEffect: {
-          rotate: 30,
-          stretch: 0,
-          depth: 100,
-          modifier: 1,
-          slideShadows: true
-        },
-        autoplay: {
-          delay: 5000,
-          disableOnInteraction: false,
-        },
-        loop: true,
-      });
-    });
-  </script>
-@endpush
