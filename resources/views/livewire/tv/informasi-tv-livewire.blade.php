@@ -11,6 +11,9 @@
           </div>
           <div class="modal-body text-center">
             <h4> Cek Status WhatsApp <span x-text="nama"></span> Kami Mengirimkan Pesan Kehadiran Hari Ini Terimakasih
+              <br>
+              <span class="fw-bold">Untuk link izin sudah bisa anda gunakan dengan mengetikan <strong>izin</strong> di
+                Whastapp AdminSikucur</span>
             </h4>
             <div class="d-flex align-items-center gap-2 justify-content-center">
               <h1 class="mb-0" x-text="jam"></h1>

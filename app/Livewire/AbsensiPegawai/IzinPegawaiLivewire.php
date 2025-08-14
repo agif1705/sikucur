@@ -13,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Concerns\InteractsWithForms;
 
@@ -21,7 +22,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
     use InteractsWithForms;
 
     public $link, $users, $nagariId, $IzinPegawai;
-    public $nagari;
+    public $nagari, $form_link;
     public $expiresAt;
     public $remainingSeconds;
     public $expired = false;
@@ -33,6 +34,8 @@ class IzinPegawaiLivewire extends Component implements HasForms
 
     public function mount($link, $nagari)
     {
+        $this->form_link = true;
+
         $this->form->fill();
         $this->IzinPegawai = IzinPegawai::with([
             'user:id,name,emp_id,nagari_id,no_hp',
@@ -97,10 +100,16 @@ class IzinPegawaiLivewire extends Component implements HasForms
             ]);
             $this->dispatch('absenBerhasil', nama: $this->users->name, jam: $absensiPegawai->time_in, status: $absensiPegawai->status_absensi);
         }
+        Notification::make()
+            ->title('Saved successfully')
+            ->icon('heroicon-o-document-text')
+            ->iconColor('success')
+            ->send();
         $this->IzinPegawai->update([
             'expired_at' => now()->subMinutes(30),
         ]);
-        session()->flash('success', 'Izin berhasil dikirim.');
+        $this->form_link = false;
+        // session()->flash('success', 'Izin berhasil dikirim.');
     }
     #[Layout('components.layouts.public')]
     public function render()

@@ -5,15 +5,19 @@
 
   {{-- Countdown Digital --}}
   <div class="text-center fs-6 text-4xl font-mono tracking-widest mb-6 wrapper">
-    <span class="text-1xl">Sisa Waktu pengisian form anda : </span>
-    <span class="text-danger text-1xl" id="countdown">00:00:00</span>
+    <span
+      class="text-1xl">{{ $form_link ? 'Sisa Waktu pengisian form anda :' : 'Form sudah diisi, Terimakasih Sudah Mengisi Form Izin Pegawai' }}
+    </span>
+    <span class="text-danger text-1xl" {{ $form_link ? '' : 'hidden' }} id="countdown">00:00:00</span>
   </div>
 
   {{-- Form --}}
-  <form wire:submit.prevent="submit" class="mt-6 w-full max-w-md shadow p-6 rounded-lg">
-    {{ $this->form }}
-    <x-filament::button type="submit" color="primary" class="mt-2">Kirim</x-filament::button>
-  </form>
+  @if ($form_link)
+    <form wire:submit.prevent="submit" class="mt-6 w-full max-w-md shadow p-6 rounded-lg">
+      {{ $this->form }}
+      <x-filament::button type="submit" color="primary" class="mt-2">Kirim</x-filament::button>
+    </form>
+  @endif
 </div>
 
 <script>
