@@ -10,6 +10,7 @@ use App\Models\TvInformasi;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Split;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Repeater;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\TvInformasiResource\Pages;
@@ -30,16 +31,12 @@ class TvInformasiResource extends Resource
                 Section::make('Data Informasi')
                     ->description('Data Tv Informasi ini untuk di layar TV yang akan di tampilkan')
                     ->schema([
-
                         Forms\Components\TextInput::make('name')
                             ->label('Judul Video Youtube')
-                            ->required(),
-                        Forms\Components\TextInput::make('video')
-                            ->label('Link Video Yutube')
-                            ->required(),
+                            ->required()->columnSpan(2),
                         Forms\Components\TextInput::make('bupati')
                             ->label('Nama bupati Nagari')
-                            ->required(),
+                            ->required()->columnSpan(1),
                         Forms\Components\FileUpload::make('bupati_image')
                             ->label('Foto bupati Nagari')
                             ->image()
@@ -83,9 +80,8 @@ class TvInformasiResource extends Resource
                         Forms\Components\RichEditor::make('running_text')
                             ->label('running_text')
                             ->required()->columns(1),
-                    ])
-                    ->columns(2),
-            ])->columns(1);
+                    ])->columns(2)
+            ]);
     }
 
     public static function table(Table $table): Table

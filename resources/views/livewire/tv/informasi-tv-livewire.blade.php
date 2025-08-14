@@ -69,7 +69,7 @@
               setTimeout(() => {
                 this.processQueue();
               }, 500);
-            }, 4000);
+            }, 10000);
           }
         }));
       });
@@ -158,19 +158,13 @@
             </div>
             <!-- Video Body -->
             <div class="card-body p-0 bg-dark flex-grow-1">
-              <div class="ratio ratio-16x9 h-100">
-                {{-- <iframe
-                                        src="https://www.youtube.com/embed/{{ $tv->video }}?playlist={{ $tv->video }}&loop=1"
-                                        allowfullscreen>
-                                    </iframe> --}}
-                {{-- <iframe width="560" height="315"
-                  src="https://www.youtube.com/embed/Lb4AwReHYxQ?playlist=RpTfJV4ux1c,V5s36YgfWv8,Sz61lW5trNQ,6vIqikH2QvY,-nbJgfkgSg8,
-                                        s6vac3hP6yM,k9bCgz5xTms,j-vOeGOCKio,coz56CHNjjE,jXNSJnxkXeE
-                                        &loop=1"
+              <div style="width:100%; height:100%;">
+                <iframe
+                  src="https://www.youtube.com/embed/{{ $videoId }}?playlist={{ $playlistStr }}&loop=1&autoplay=1&mute=0"
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowfullscreen>
-                </iframe> --}}
+                  allowfullscreen style="width:100%; height:100%;">
+                </iframe>
               </div>
             </div>
             <!-- Footer -->

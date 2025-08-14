@@ -11,7 +11,7 @@ class Jabatan extends Model
         'slug',
     ];
 
-    public function users()
+    public function user()
     {
         return $this->hasMany(User::class);
     }

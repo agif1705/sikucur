@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
+use App\Models\ListYoutube;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
 use function Laravel\Prompts\select;
@@ -23,13 +24,26 @@ class InformasiTvLivewire extends Component
     public $now;
     public $users;
     public $tv, $galeri;
-    public $sn_fp, $logo, $tvNow, $datas;
-
+    public $sn_fp, $logo, $tvNow, $datas, $nagariId;
+    public $videoId = "Lb4AwReHYxQ";
+    public $playlist = [
+        "RpTfJV4ux1c",
+        "V5s36YgfWv8",
+        "Sz61lW5trNQ",
+        "6vIqikH2QvY",
+        "-nbJgfkgSg8",
+        "s6vac3hP6yM",
+        "k9bCgz5xTms",
+        "j-vOeGOCKio",
+        "coz56CHNjjE",
+        "jXNSJnxkXeE",
+    ];
 
 
     #[On('fingerprint-updated')]
     public function updateData($mesin, $data)
     {
+
         // memasukan data absensi pegawai
         if ($data['emp_id']) {
             $emp_id = $data['emp_id'];
@@ -42,12 +56,12 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
 
-        $is_late = $data['punch_time'] > '08:00' ?  'Ontime' : 'Terlambat';
-        $punchTime = Carbon::parse($data['punch_time']);
-        $date = $punchTime->toDateString();
-        $time = $punchTime->toTimeString();
+        $is_late = $data['punch_time'] > '08:00' ?  'Terlambat' : 'Ontime';
+        // $punchTime = Carbon::parse($data['punch_time']);
+        // $date = $punchTime->toDateString();
+        // $time = $punchTime->toTimeString();
         $attendance = AbsensiPegawai::whereUserId($user->id)
-            ->whereDate('date_in', $date)
+            ->whereDate('date_in', Carbon::parse($data['punch_time'])->format('Y-m-d'))
             ->first();
         if (!$attendance) {
             // Tidak ada record sama sekali → Buat baru
@@ -61,16 +75,16 @@ class InformasiTvLivewire extends Component
                 'accept_by' => $user->name,
                 'nagari_id' => $user->nagari->id,
                 'user_id' => $user->id,
-                'date_in' => $date,
-                'time_in' => $time,
+                'date_in' => Carbon::parse($data['punch_time'])->format('Y-m-d'),
+                'time_in' => Carbon::parse($data['punch_time'])->format('H:i:s'),
             ]);
             $this->dispatch('absenBerhasil', nama: $user->name, jam: $attendance->time_in, status: $is_late);
 
             if ($user->aktif) {
-                $response = retry(3, function () use ($user, $is_late) {
+                $response = retry(3, function () use ($user, $is_late, $attendance) {
                     return WhatsAppHelper::sendMessage(
                         $user->no_hp,
-                        'Hai *' . $user->name . '* , Anda *' . $is_late . '* anda telah hadir menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+                        'Hai *' . $user->name . '* , Anda *' . $is_late . '* anda telah hadir pada jam *' . $attendance->time_in . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
                             '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name .
                             ' *Sebelum Jam: 12:00 Siang* terima kasih '
                     );
@@ -79,15 +93,15 @@ class InformasiTvLivewire extends Component
         } else {
 
             // Jika waktu lebih pagi dari time_in → set sebagai time_in
-            if ($punchTime->hour < 12) {
+            if (Carbon::parse($data['punch_time'])->hour < 12) {
                 // Anggap punch masuk
-                if (!$attendance->time_in || $time < $attendance->time_in) {
-                    $attendance->time_in = $time;
+                if (!$attendance->time_in || Carbon::parse($data['punch_time'])->format('H:i:s') < $attendance->time_in) {
+                    $attendance->time_in = Carbon::parse($data['punch_time'])->format('H:i:s');
                 }
-            } elseif ($punchTime->hour >= 13) {
+            } elseif (Carbon::parse($data['punch_time'])->hour >= 13) {
                 // Anggap punch pulang
-                if (!$attendance->time_out || $time > $attendance->time_out) {
-                    $attendance->time_out = $time;
+                if (!$attendance->time_out || Carbon::parse($data['punch_time'])->format('H:i:s') > $attendance->time_out) {
+                    $attendance->time_out = Carbon::parse($data['punch_time'])->format('H:i:s');
                 }
             }
 
@@ -107,8 +121,15 @@ class InformasiTvLivewire extends Component
     #[Layout('components.layouts.tv')]
     public function render()
     {
+        $list = ListYoutube::where('nagari_id', $this->nagariId)->get();
+        $playlist = [
+            'id_youtube' => $list->pluck('id_youtube')->toArray()
+        ];
+        $playlistStr = implode(',', $playlist['id_youtube']);
         // return view('livewire.tv.commingsoon');
-        return view('livewire.tv.informasi-tv-livewire');
+        return view('livewire.tv.informasi-tv-livewire', [
+            'playlistStr' => $playlistStr
+        ]);
     }
     public function mount($sn)
     {
@@ -116,6 +137,7 @@ class InformasiTvLivewire extends Component
         $this->now = Carbon::now()->format('Y-m-d');
         $this->tvNow = Carbon::now()->format('d M Y');
         $sn_fp = Nagari::with('TvInformasi', 'galeri')->where('name', $sn)->first();
+        $this->nagariId = $sn_fp->id;
         if (!$sn_fp) {
             abort(404, 'Nagari tidak ditemukan');
         }

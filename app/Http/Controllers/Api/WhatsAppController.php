@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Api;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Nagari;
+use App\Models\Jabatan;
 use App\Models\WdmsModel;
 use App\Models\IzinPegawai;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\AbsensiPegawai;
+use App\Helpers\WhatsAppHelper;
+use App\Models\WhatsAppCommand;
 use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\Controller;
-use App\Models\WhatsAppCommand;
 
 class WhatsAppController extends Controller
 {
@@ -68,110 +71,20 @@ class WhatsAppController extends Controller
             'data'    => $data
         ], $success ? 200 : 400);
     }
-    // public function izinPegawai(Request $request)
-    // {
-    //     // Validasi input
-    //     $data = $request->validate([
-    //         'sender'       => 'required|string|max:255',
-    //         'senderNumber' => 'required|string|max:255',
-    //         'chat'         => 'required|string|max:255',
-    //         'admin'        => 'required|string|max:255',
-    //     ]);
+    function scheduleHarian(Request $request)
+    {
+        $tanggalHariIni = Carbon::today();
+        $data = $request->validate([
+            'timestamp'       => 'required',
+            'token-n8n'        => 'required',
+        ]);
 
-    //     $chat = Str::lower($data['chat']);
+        if ($request->input('token-n8n') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
 
-    //     // Cari user
-    //     $user = User::with([
-    //         'nagari:id,name',
-    //         'nagari.whatsAppCommand' => fn($q) => $q->where('command', $chat)->first()
-    //     ])
-    //         ->select('id', 'name', 'username', 'no_hp', 'nagari_id')
-    //         ->where('no_hp', $data['senderNumber'])
-    //         ->firstOrFail();
-    //     dd($user);
-    //     if (!$user) {
-    //         return response()->json([
-    //             'pegawai'    => true,
-    //             'no_hp'      => $data['senderNumber'],
-    //             'sender'     => $data['sender'],
-    //             'name'       => null,
-    //             'nagari'     => null,
-    //             'link'       => "Anda Bukan pegawai yang terdaftar",
-    //             'used'       => false,
-    //             'url'        => "tidak ditemukan",
-    //             'expires_at' => "tidak ditemukan",
-    //             'replay'     => "Maaf, tidak ditemukan permintaan izin pegawai untuk nomor ini atau perintah anda salah. Silakan coba lagi atau hubungi admin.",
-    //             'status'     => 'success',
-    //             'info'       => $request->data
-    //         ], 200);
-    //     }
-
-    //     // Cek izin aktif
-    //     $checkizin = IzinPegawai::where('user_id', $user->id)
-    //         ->where('nagari', $user->nagari->name)
-    //         ->where('expired_at', '>', now())
-    //         ->where('used', false)
-    //         ->first();
-
-    //     if ($checkizin) {
-    //         $url = $this->generateIzinUrl($checkizin->link, $user->nagari->name, $checkizin->expired_at);
-    //         return response()->json($this->buildResponse(
-    //             $user,
-    //             $checkizin->link,
-    //             $url,
-    //             $checkizin->expired_at->timestamp,
-    //             "Link  Sudah ada. Izin Pegawai {$user->name} Nagari *{$user->nagari->name}* telah dibuat. Silakan klik link berikut untuk mengisi izin: {$url}",
-    //             $request->data
-    //         ), 200);
-    //     }
-
-    //     // Buat izin baru
-    //     $link       = $this->generateUniqueLink();
-    //     $nagari     = $user->nagari->name;
-    //     $expired_at = now()->addMinutes(30);
-
-    //     IzinPegawai::create([
-    //         'user_id'    => $user->id,
-    //         'used'       => false,
-    //         'link'       => $link,
-    //         'nagari'     => $nagari,
-    //         'expired_at' => $expired_at,
-    //     ]);
-
-    //     $url = $this->generateIzinUrl($link, $nagari, $expired_at);
-    //     $replay = "Link Izin Pegawai {$user->name} Nagari *{$nagari}* telah dibuat. Silakan klik link berikut untuk mengisi izin:\n{$url}\nLink ini hanya berlaku selama 30 menit. Mohon segera mengisi absensi ini untuk keperluan:\n  {$chat}\nJika ada pertanyaan, silakan hubungi admin: {$data['admin']}\nTerima kasih!";
-
-    //     return response()->json($this->buildResponse($user, $link, $url, $expired_at->timestamp, $replay, $request->data), 200);
-    // }
-
-    // // Helper untuk buat URL izin
-    // private function generateIzinUrl($link, $nagari, $expired_at)
-    // {
-    //     return URL::temporarySignedRoute('izin-pegawai.form', $expired_at, [
-    //         'link'       => $link,
-    //         'nagari'     => $nagari,
-    //         'expired_at' => $expired_at->timestamp,
-    //     ]);
-    // }
-
-    // // Helper untuk response JSON
-    // private function buildResponse($user, $link, $url, $expires_at, $replay, $info)
-    // {
-    //     return [
-    //         'pegawai'    => true,
-    //         'no_hp'      => $user->no_hp,
-    //         'sender'     => request('sender'),
-    //         'name'       => $user->name,
-    //         'nagari'     => $user->nagari->name ?? 'Tidak ada nagari',
-    //         'link'       => $link,
-    //         'used'       => false,
-    //         'url'        => $url,
-    //         'expires_at' => $expires_at,
-    //         'replay'     => $replay,
-    //         'status'     => 'success',
-    //         'info'       => $info
-    //     ];
-    // }
+            $data = Nagari::get();
+            return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
+        }
+    }
 
     function generateUniqueLink(int $length = 30): string
     {

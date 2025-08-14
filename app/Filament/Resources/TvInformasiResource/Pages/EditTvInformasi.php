@@ -20,15 +20,9 @@ class EditTvInformasi extends EditRecord
     }
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $url = $data['video'];
-        $containsYoutube = Str::contains($url, 'https://');
-        if ($containsYoutube) {
-            $you = preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $url, $matches);
-            $data['video'] = $matches[1] ?? null;
-        }
-
         $data['nagari_id'] = Auth::user()->nagari->id;
-        $data['user_id'] = Auth::user()->id;
-        return $data;
+        $data['user_id'] = Auth::id();
+
+        return $data;;
     }
 }

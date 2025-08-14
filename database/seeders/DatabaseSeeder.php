@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use App\Models\Coments;
 use App\Models\FooterWhatsApp;
+use App\Models\ListYoutube;
 use App\Models\WhatsAppCommand;
 use Illuminate\Database\Seeder;
 
@@ -35,6 +36,7 @@ class DatabaseSeeder extends Seeder
             TvGaleriSeeder::class,
             FooterWhatsAppSeeder::class,
             WhatsAppCommandSeeder::class,
+            ListYoutubeSeeder::class
         ]);
     }
 }
