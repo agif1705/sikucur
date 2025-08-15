@@ -42,7 +42,6 @@ class InformasiTvLivewire extends Component
             ->whereHas('nagari', function ($q) use ($mesin) {
                 $q->where('sn_fingerprint', $mesin);
             })->first();
-
         $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
         // dd($is_late);
         // $punchTime = Carbon::parse($data['punch_time']);
@@ -66,7 +65,6 @@ class InformasiTvLivewire extends Component
                 'date_in' => Carbon::parse($data['punch_time'])->format('Y-m-d'),
                 'time_in' => Carbon::parse($data['punch_time'])->format('H:i:s'),
             ]);
-            $this->dispatch('absenBerhasil', nama: $user->name, jam: $attendance->time_in, status: $is_late);
 
             if ($user->aktif) {
                 $response = retry(3, function () use ($user, $is_late, $attendance) {
@@ -77,6 +75,7 @@ class InformasiTvLivewire extends Component
                             ' *Sebelum Jam: 12:00 Siang* terima kasih '
                     );
                 });
+                dd($response);
             }
         } else {
 
@@ -96,6 +95,7 @@ class InformasiTvLivewire extends Component
             $attendance->updated_at = now();
             $attendance->save();
         }
+        $this->dispatch('absenBerhasil', nama: $user->name, jam: $attendance->time_in, status: $is_late);
 
         $this->users = WdmsModel::getAbsensiMasuk($mesin, $this->now);
     }
