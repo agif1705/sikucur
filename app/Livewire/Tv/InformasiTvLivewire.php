@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\On;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
+use App\Models\iclock_transaction;
 use App\Models\ListYoutube;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
@@ -118,7 +119,7 @@ class InformasiTvLivewire extends Component
         // $this->now = Carbon::create('2025-6-13')->format('Y-m-d');
         $this->now = Carbon::now()->format('Y-m-d');
         $this->tvNow = Carbon::now()->format('d M Y');
-        $sn_fp = Nagari::with('TvInformasi', 'galeri')->where('name', $sn)->first();
+        $sn_fp = Nagari::with('TvInformasi', 'galeri')->where('slug', $sn)->first();
         $nagariId = $sn_fp->id;
         $list = ListYoutube::where('nagari_id', $nagariId)->get();
         $playlist = [
@@ -134,6 +135,6 @@ class InformasiTvLivewire extends Component
         $this->galeri = $sn_fp->galeri->take(10);
         $month = Carbon::now()->month;
 
-        $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp, $this->now);
+        $this->users = iclock_transaction::getAbsensiMasuk($this->sn_fp, $this->now);
     }
 }

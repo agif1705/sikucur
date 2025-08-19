@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\User;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
-class WdmsModel extends Model
+class iclock_transaction extends Model
 {
+    protected $connection = 'pgsql'; // jika pakai connection berbeda
     protected $table = 'iclock_transaction';
     protected $fillable = [
         'punch_time',
