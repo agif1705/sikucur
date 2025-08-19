@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WdmsModel extends Model
 {
+    protected $connection = 'mysql_second';
     protected $table = 'iclock_transaction';
     protected $fillable = [
         'punch_time',

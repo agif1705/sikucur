@@ -135,6 +135,6 @@ class InformasiTvLivewire extends Component
         $this->galeri = $sn_fp->galeri->take(10);
         $month = Carbon::now()->month;
 
-        $this->users = iclock_transaction::getAbsensiMasuk($this->sn_fp, $this->now);
+        $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp, $this->now);
     }
 }
