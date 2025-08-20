@@ -44,59 +44,17 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
         $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
-        // dd($is_late);
-        // $punchTime = Carbon::parse($data['punch_time']);
-        // $date = $punchTime->toDateString();
-        // $time = $punchTime->toTimeString();
-        $attendance = AbsensiPegawai::whereUserId($user->id)
-            ->whereDate('date_in', Carbon::parse($data['punch_time'])->format('Y-m-d'))
-            ->first();
-        if (!$attendance) {
-            // Tidak ada record sama sekali → Buat baru
-            $attendance = AbsensiPegawai::create([
-                'absensi_by' => 'Fingerprint',
-                'emp_id' => $emp_id,
-                'absensi' => 'Hadir',
-                'status_absensi' => $is_late,
-                'sn_mesin' => $mesin,
-                'accept' => true,
-                'accept_by' => $user->name,
-                'nagari_id' => $user->nagari->id,
-                'user_id' => $user->id,
-                'date_in' => Carbon::parse($data['punch_time'])->format('Y-m-d'),
-                'time_in' => Carbon::parse($data['punch_time'])->format('H:i:s'),
-            ]);
-
-            if ($user->aktif) {
-                $response = retry(3, function () use ($user, $is_late, $attendance) {
-                    return WhatsAppHelper::sendMessage(
-                        $user->no_hp,
-                        'Hai *' . $user->name . '* , Anda *' . $is_late . '* anda telah hadir pada jam *' . $attendance->time_in . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
-                            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name .
-                            ' *Sebelum Jam: 12:00 Siang* terima kasih '
-                    );
-                });
-                dd($response);
-            }
-        } else {
-
-            // Jika waktu lebih pagi dari time_in → set sebagai time_in
-            if (Carbon::parse($data['punch_time'])->hour < 12) {
-                // Anggap punch masuk
-                if (!$attendance->time_in || Carbon::parse($data['punch_time'])->format('H:i:s') < $attendance->time_in) {
-                    $attendance->time_in = Carbon::parse($data['punch_time'])->format('H:i:s');
-                }
-            } elseif (Carbon::parse($data['punch_time'])->hour >= 13) {
-                // Anggap punch pulang
-                if (!$attendance->time_out || Carbon::parse($data['punch_time'])->format('H:i:s') > $attendance->time_out) {
-                    $attendance->time_out = Carbon::parse($data['punch_time'])->format('H:i:s');
-                }
-            }
-
-            $attendance->updated_at = now();
-            $attendance->save();
-        }
-        $this->dispatch('absenBerhasil', nama: $user->name, jam: $attendance->time_in, status: $is_late);
+        // if ($user->aktif) {
+        //     $response = retry(3, function () use ($user, $is_late, $data) {
+        //         return WhatsAppHelper::sendMessage(
+        //             6281282779593,
+        //             'Hai *' . $user->name . '* , Anda *' . $is_late . '* anda telah hadir pada jam *' . Carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+        //                 '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name .
+        //                 ' *Sebelum Jam: 12:00 Siang* terima kasih '
+        //         );
+        //     });
+        // }
+        $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
 
         $this->users = WdmsModel::getAbsensiMasuk($mesin, $this->now);
     }

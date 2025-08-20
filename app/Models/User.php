@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
+    protected $connection = 'pgsql'; // atau sesuai koneksi yg ada di config/database.php
+    protected $table = 'users';
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasRoles, HasFactory, Notifiable;
 
@@ -76,7 +78,7 @@ class User extends Authenticatable
     }
     public function wdms()
     {
-        return $this->hasMany(WdmsModel::class, 'emp_code', 'emp_id');
+        return $this->hasMany(WdmsModel::class, 'emp_id', 'emp_id');
     }
     public function izin()
     {
