@@ -4,7 +4,7 @@
 SSH_PORT=22
 
 # Port lokal yang mau di-forward
-LOCAL_PORT=1705
+LOCAL_PORT=8091
 
 # IP tujuan forwarding dan portnya
 DEST_IP="202.155.143.254"

@@ -23,19 +23,16 @@ sikucur.com {
 
 
 wea.sikucur.com {
-    reverse_proxy 172.19.0.4:3000
+    reverse_proxy waha:3000
 }
 auto.sikucur.com {
-    reverse_proxy 172.19.0.2:5678
-}
-wuz.sikucur.com {
-    reverse_proxy 172.19.0.5:8080
+    reverse_proxy n8n:5678
 }
 realtime.sikucur.com {
-    reverse_proxy 172.18.0.11:8000
+    reverse_proxy supabase-kong:8000
 }
 realtime2.sikucur.com {
-    reverse_proxy 172.20.0.7:8000
+    reverse_proxy supabase-kong2:8000
 }
 
 

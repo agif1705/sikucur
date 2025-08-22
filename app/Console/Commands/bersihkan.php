@@ -26,9 +26,9 @@ class bersihkan extends Command
     public function handle()
     {
         $this->call('route:clear');
-        $this->call('config:cache');
         $this->call('route:cache');
         $this->call('cache:clear');
+        $this->call('config:cache');
         $this->call('config:clear');
         $this->call('queue:restart');
         $this->call('view:clear');
