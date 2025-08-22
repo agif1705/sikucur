@@ -122,33 +122,34 @@
           <div id="absensi-container" wire:ignore.self>
             <ul class="list-group mt-1 rounded w-100 ">
               @forelse ($users as $item)
+
                 <li
                   class="list-group-item d-flex justify-content-between align-items-center mb-1 border-1 rounded rounded-4">
                   <div class="d-flex align-items-center">
                     <img class="avatar @if ($users->count() > 11) avatar-lg @else avatar-xl @endif "
-                      src="{{ asset('storage/' . $item->image ?? 'default-avatar.png') }}" />
+                      src="{{ asset('storage/' . $item['image'] ?? 'default-avatar.png') }}" />
                     <div class="ms-3">
                       <p class="fs-6 fw-bold mb-0 text-start">
-                        {{ Str::ucfirst($item->name) }}</p>
+                        {{ Str::ucfirst($item['name']) }}</p>
                       <p class="text-muted mb-0 fs-sm text-start">
-                        {{ Str::ucfirst($item->jabatan) }}</p>
-                      @if ($item->status == 'HADIR')
+                        {{ Str::ucfirst($item['jabatan']) }}</p>
+                      @if ($item['status'] == 'HADIR')
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           Masuk :
-                          {{ $item->time_only }}
-                          @if ($item->is_late)
+                          {{ $item['time_only'] }}
+                          @if ($item['is_late'])
                             <span class="fw-bold text-danger text-end fst-italic">Terlambat</span>
                           @else
                             <span class="fw-bold text-success text-end">OnTime</span>
                           @endif
                         </p>
-                      @elseif ($item->status == 'TIDAK-HADIR')
+                      @elseif ($item['status'] == 'TIDAK-HADIR')
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           <span class="fw-bold text-danger text-end fst-italic">Tidak Masuk</span>
                         </p>
                       @else
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
-                          <span class="fw-bold text-success text-end fst-italic">{{ $item->status }}</span>
+                          <span class="fw-bold text-success text-end fst-italic">{{ $item['status'] }}</span>
                         </p>
                       @endif
 

@@ -74,8 +74,8 @@ class InformasiTvLivewire extends Component
     }
     public function mount($sn)
     {
-        // $this->now = Carbon::create('2025-6-13')->format('Y-m-d');
-        $this->now = Carbon::now()->format('Y-m-d');
+        $this->now = Carbon::create('2025-8-21')->format('Y-m-d');
+        // $this->now = Carbon::now()->format('Y-m-d');
         $this->tvNow = Carbon::now()->format('d M Y');
         $sn_fp = Nagari::with('TvInformasi', 'galeri')->where('slug', $sn)->first();
         $nagariId = $sn_fp->id;
