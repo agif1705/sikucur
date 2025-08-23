@@ -36,7 +36,8 @@ class DatabaseSeeder extends Seeder
             TvGaleriSeeder::class,
             FooterWhatsAppSeeder::class,
             WhatsAppCommandSeeder::class,
-            ListYoutubeSeeder::class
+            ListYoutubeSeeder::class,
+            NagariWaliSeeder::class,
         ]);
     }
 }

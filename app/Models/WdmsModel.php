@@ -37,7 +37,7 @@ class WdmsModel extends Model
             return $check;
         }
     }
-    public static function getAbsensiMasuk($sn_fp, $tanggal)
+    public static function getAbsensiMasuk($sn_fp)
     {
         // $tanggal = Carbon::parse($tanggal)->subDay(1)->format('Y-m-d');
         // --- Ambil IZIN ---
@@ -50,6 +50,7 @@ class WdmsModel extends Model
                     'user_id'   => (int) $item->user->id,
                     'jabatan'   => $item->user->jabatan?->name ?? 'Tidak Ada',
                     'name'      => $item->user->name ?? 'Tanpa Nama',
+                    'slug'      => $item->user->slug ?? 'TanpaNama',
                     'nagari_id' => $item->user->nagari_id,
                     'time_only' => null,
                     'date_in'   => $item->date_in ? Carbon::parse($item->date_in)->format('Y-m-d') : null,
@@ -77,6 +78,7 @@ class WdmsModel extends Model
                     'user_id'   => (int) $item->user->id,
                     'jabatan'   => $item->user->jabatan?->name ?? 'Tidak Ada',
                     'name'      => $item->user->name ?? 'Tanpa Nama',
+                    'slug'      => $item->user->slug ?? 'TanpaNama',
                     'nagari_id' => $item->user->nagari_id,
                     'time_only' => Carbon::parse($item->punch_time)->format('H:i'),
                     'date_in'   => Carbon::parse($item->punch_time)->format('Y-m-d'),
@@ -108,6 +110,7 @@ class WdmsModel extends Model
                     'user_id'   => (int)$item->id,
                     'jabatan'   => $item->jabatan?->name ?? 'Tidak Ada',
                     'name'      => $item->name ?? 'Tanpa Nama',
+                    'slug'      => $item->slug ?? 'TanpaNama',
                     'nagari_id' => $item->nagari_id,
                     'time_only' => null,
                     'date_in'   => null,

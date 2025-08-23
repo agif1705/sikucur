@@ -15,6 +15,7 @@ use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
 use App\Models\iclock_transaction;
 use App\Models\ListYoutube;
+use App\Services\WahaService;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
 use function Laravel\Prompts\select;
@@ -44,25 +45,25 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
         $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
-        // if ($user->aktif) {
-        //     $response = retry(3, function () use ($user, $is_late, $data) {
-        //         return WhatsAppHelper::sendMessage(
-        //             6281282779593,
-        //             'Hai *' . $user->name . '* , Anda *' . $is_late . '* anda telah hadir pada jam *' . Carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
-        //                 '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name .
-        //                 ' *Sebelum Jam: 12:00 Siang* terima kasih '
-        //         );
-        //     });
-        // }
+        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . Carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name .
+            ' *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_';
+        if ($user->aktif) {
+            $response = retry(3, function () use ($user, $pesan) {
+                $wa = new WahaService();
+                $result = $wa->sendText($user->no_hp, $pesan);
+                return $result;
+            });
+        }
         $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
 
-        $this->users = WdmsModel::getAbsensiMasuk($mesin, $this->now);
+        $this->users = WdmsModel::getAbsensiMasuk($mesin);
     }
 
     #[On('fingerprint-deleted')]
     public function deleteData()
     {
-        $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp, now()->format('Y-m-d'));
+        $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp);
     }
 
     #[Layout('components.layouts.tv')]
@@ -74,8 +75,8 @@ class InformasiTvLivewire extends Component
     }
     public function mount($sn)
     {
-        $this->now = Carbon::create('2025-8-21')->format('Y-m-d');
-        // $this->now = Carbon::now()->format('Y-m-d');
+        // $this->now = Carbon::create('2025-8-21')->format('Y-m-d');
+        $this->now = Carbon::now()->format('Y-m-d');
         $this->tvNow = Carbon::now()->format('d M Y');
         $sn_fp = Nagari::with('TvInformasi', 'galeri')->where('slug', $sn)->first();
         $nagariId = $sn_fp->id;
@@ -93,6 +94,6 @@ class InformasiTvLivewire extends Component
         $this->galeri = $sn_fp->galeri->take(10);
         $month = Carbon::now()->month;
 
-        $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp, $this->now);
+        $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp);
     }
 }

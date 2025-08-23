@@ -14,8 +14,8 @@ Route::get('/user', function (Request $request) {
 // Route::get('/fonnte-webhook', [FonnteController::class, 'handleWebhook']);
 // ini kehadiran dari fonnte
 Route::post('/kehadiran', [WhatsAppController::class, 'kehadiran']);
-Route::post('/link-generate/izin-pegawai', [WhatsAppController::class, 'handleCommand'])->name('izin-pegawai-handleCommand');
-Route::post('/report/harian/pimpinan', [WhatsAppController::class, 'scheduleHarian'])->name('scheduleHarian');
+Route::post('/handle/command', [WhatsAppController::class, 'handleCommand'])->name('izin-pegawai-handleCommand');
+Route::post('/kehadiran/report/harian', [WhatsAppController::class, 'scheduleHarian'])->name('scheduleHarian');
 
 Route::post('/wuzapi/webhook', [WusapiController::class, 'webhook'])->name('wuzapi.webhook');
 

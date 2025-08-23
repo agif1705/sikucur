@@ -28,6 +28,10 @@ class Nagari extends Model
     {
         return $this->hasMany(WhatsAppCommand::class);
     }
+    public function wali()
+    {
+        return $this->belongsTo(User::class, 'wali_id')->select('id', 'name', 'no_hp');
+    }
     public function workDays()
     {
         return $this->hasMany(WorkDay::class);

@@ -2,8 +2,6 @@
 
 namespace App\Handlers;
 
-namespace App\Handlers;
-
 use App\Contracts\WhatsAppCommandHandler;
 use App\Models\IzinPegawai;
 use Illuminate\Support\Facades\URL;

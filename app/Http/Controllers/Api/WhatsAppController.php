@@ -10,11 +10,14 @@ use App\Models\WdmsModel;
 use App\Models\IzinPegawai;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Services\WahaService;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
 use App\Models\WhatsAppCommand;
 use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\Controller;
+use CCK\LaravelWahaSaloonSdk\Waha\Waha;
+use App\Handlers\SendingWhatsappHandlers;
 
 class WhatsAppController extends Controller
 {
@@ -23,20 +26,18 @@ class WhatsAppController extends Controller
     {
         $data = $request->validate([
             'sender'       => 'required|string|max:255',
-            'senderNumber' => 'required|string|max:255',
             'chat'         => 'required|string|max:255',
             'msgId'        => 'required|string|max:255',
-            'ChatId'        => 'required|string|max:255',
 
         ]);
         $chat = Str::lower($data['chat']);
-
+        $waId = Str::before($data['sender'], '@');
         // Cari user + command
         $user = User::with([
             'nagari:id,name',
             'nagari.whatsAppCommand' => fn($q) => $q->where('command', $chat)
         ])
-            ->where('no_hp', $data['senderNumber'])
+            ->where('no_hp', $waId)
             ->select('id', 'name', 'no_hp', 'nagari_id')
             ->first();
 
@@ -71,20 +72,7 @@ class WhatsAppController extends Controller
             'data'    => $data
         ], $success ? 200 : 400);
     }
-    function scheduleHarian(Request $request)
-    {
-        $tanggalHariIni = Carbon::today();
-        $data = $request->validate([
-            'timestamp'       => 'required',
-            'token-n8n'        => 'required',
-        ]);
 
-        if ($request->input('token-n8n') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
-
-            $data = Nagari::get();
-            return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
-        }
-    }
 
     function generateUniqueLink(int $length = 30): string
     {
@@ -96,6 +84,35 @@ class WhatsAppController extends Controller
         } while ($exists);
 
         return $code;
+    }
+    function scheduleHarian(Request $request)
+    {
+        $tanggalHariIni = Carbon::today();
+        $data = $request->validate([
+            'timestamp'       => 'required',
+            'token'        => 'required',
+        ]);
+
+        if ($request->input('token') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
+            $nagari = Nagari::with('users')->where('slug', 'sikucur')->first();
+            $absensi = WdmsModel::getAbsensiMasuk($nagari->sn_fingerprint);
+
+            $tanggal = now()->toDateString();
+            $baduo = " \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
+            $pesan = "📊 Laporan Absensi Hari Ini mak wali Asrul (Semangat Hari Ini: {$tanggal})\n\n";
+            foreach ($absensi as $i => $item) {
+                $statusIcon = $item['status'] === 'HADIR'
+                    ? ($item['is_late'] ? "⚠️ Terlambat" : "✅ HADIR")
+                    : "❌ TIDAK-HADIR";
+
+                $jam = $item['time_only'] ?? '-';
+
+                $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']}) - {$jam} {$statusIcon}\n";
+            }
+            $wa = new WahaService();
+            $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+            return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
+        }
     }
     public function kehadiran(Request $request)
     {

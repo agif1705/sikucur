@@ -41,6 +41,9 @@ class User extends Authenticatable
         'email_verified_at',
         'password_recovery',
     ];
+    protected $casts = [
+        'no_hp' => 'string',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -71,6 +74,10 @@ class User extends Authenticatable
     public function nagari()
     {
         return $this->belongsTo(Nagari::class);
+    }
+    public function wali()
+    {
+        return $this->belongsTo(Nagari::class, 'wali_id');
     }
     public function absensiPegawai(): HasMany
     {
