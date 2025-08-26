@@ -4,9 +4,9 @@ namespace App\Handlers;
 
 use App\Models\WhatsAppCommand;
 
-class InfoPegawaiHandler implements \App\Contracts\WhatsAppCommandHandler
+class InfoPerintahHandler implements \App\Contracts\WhatsAppCommandHandler
 {
-    /**
+    /**App\Handlers\InfoPerintahHandler
      * Create a new class instance.
      */
     public function handle($user, $chat, $data)

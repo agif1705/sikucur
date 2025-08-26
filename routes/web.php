@@ -16,7 +16,6 @@ use App\Livewire\TvInformasi\TvNagariLivewire;
 //     return view('welcome');
 // });
 Route::get('/', HomePageLivewire::class)->name('home');
-Route::get('/fingerprint', [FingerPrintController::class, 'index'])->name('fingerprint');
 Route::get('kegiatan', KegiatanPageLivewire::class)->name('kegiatan');
 Route::get('kritik', KritikPageLivewire::class)->name('kritik');
 Route::get('agenda', AgendaPageLivewire::class)->name('agenda');

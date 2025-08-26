@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Termwind\Components\Dd;
 use Filament\Actions\Action;
+use Filament\Infolists\Infolist;
 use Livewire\Attributes\Reactive;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Log;
@@ -22,8 +23,12 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\DatePicker;
+use App\Services\BulananAbsensiPegawaiService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Infolists\Components\RepeatableEntry;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
+use App\Models\AbsensiGabunganFakeModel;
 
 class AttendaceUser extends Page implements HasTable
 {
@@ -37,7 +42,7 @@ class AttendaceUser extends Page implements HasTable
 
     public $month;
     public $year;
-    public $bulan, $tahun;
+    public $bulan, $tahun, $getAbsensi;
 
 
     public function mount(): void
@@ -48,7 +53,7 @@ class AttendaceUser extends Page implements HasTable
     }
     public function getHeading(): string
     {
-        return 'Absensi Pegawai Nagari ' . auth()->user()->nagari->name;
+        return 'Absensi Pegawai Nagari ' . Auth::user()->nagari->name;
     }
 
     public function table(Table $table): Table
@@ -64,43 +69,40 @@ class AttendaceUser extends Page implements HasTable
             $dateString = $currentDate->format('Y-m-d');
             $dayColumns[] = TextColumn::make($currentDate->format('Y-m-d'))
                 ->label($day)
-                ->getStateUsing(function (User $record) use ($currentDate) {
-                    $attendance = $record->absensiPegawai()->whereDate('date_in', $currentDate)->first();
-                    if (!$attendance) {
-                        return 'A';
-                    }
-                    if ($attendance->nagari->workDays()->where('day', $currentDate->format('l'))->first()->is_working_day == false) {
+                ->getStateUsing(function ($record) use ($currentDate) {
+                    $attendance = $record->absensiGabunganPerTanggal($currentDate);
+
+                    if (!$attendance->is_working_day) {
                         return 'L';
                     }
-                    $absensi = match ($attendance->absensi) {
+
+                    if (!$attendance->absensi) {
+                        return 'A';
+                    }
+
+                    return match ($attendance->absensi) {
                         'Hadir' => 'H',
                         'Hadir Dinas Luar Daerah' => 'HDL',
                         'Hadir Dinas Dalam Daerah' => 'HDD',
                         'sakit' => 'S',
                         'cuti' => 'C',
                         'Izin' => 'I',
-                        default => 'A', // Fallback jika status tidak dikenali
+                        default => 'H',
                     };
-                    return $absensi;
                 })
-                ->color(fn(string $state): string => match ($state) {
-
-                    'L' => 'danger',
-                    'H' => 'success',
-                    'HDL' => 'success',
-                    'HDD' => 'success',
-                    'A' => 'danger',
-                    'S' => 'danger',
+                ->color(fn($state) => match ($state) {
+                    'H', 'HDL', 'HDD' => 'success',
+                    'A', 'S' => 'danger',
                     'I' => 'primary',
-                })->icon(fn(string $state): string => match ($state) {
-
-                    'L' => 'heroicon-o-calendar',
-                    'H' => 'heroicon-o-check-circle',
-                    'HDL' => 'heroicon-o-check-circle',
-                    'HDD' => 'heroicon-o-check-circle',
-                    'A' => 'heroicon-o-x-circle',
+                    'L' => 'secondary', // warna hari libur
+                    default => 'success',
+                })
+                ->icon(fn($state) => match ($state) {
+                    'H', 'HDL', 'HDD' => 'heroicon-o-check-circle',
+                    'A', 'S' => 'heroicon-o-x-circle',
                     'I' => 'heroicon-o-information-circle',
-                    'S' => 'heroicon-o-x-circle',
+                    'L' => 'heroicon-o-calendar', // icon hari libur
+                    default => 'heroicon-o-check-circle',
                 })
                 ->alignCenter();
         }
@@ -118,10 +120,21 @@ class AttendaceUser extends Page implements HasTable
                 Tables\Columns\TextColumn::make('total_kantor')
                     ->label('Kantor')
                     ->getStateUsing(function ($record) use ($startDate, $endDate) {
-                        return $record->absensiPegawai
-                            ->where('absensi', 'Hadir')
-                            ->whereBetween('created_at', [$startDate, $endDate])
-                            ->count();
+                        $count = 0;
+
+                        $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
+
+                        foreach ($period as $date) {
+                            // Ambil data gabungan per tanggal
+                            $attendance = $record->absensiGabunganPerTanggal($date);
+
+                            // Hitung jika hadir (baik dari absensi atau WDMS) dan bukan hari libur
+                            if ($attendance->absensi && $attendance->is_working_day) {
+                                $count++;
+                            }
+                        }
+
+                        return $count;
                     }),
                 Tables\Columns\TextColumn::make('total_hadir_dinas_luar')
                     ->label('Luar Daerah')
@@ -196,6 +209,7 @@ class AttendaceUser extends Page implements HasTable
                 // Bulk actions jika diperlukan
             ]);
     }
+
 
     protected function getHeaderActions(): array
     {

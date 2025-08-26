@@ -11,7 +11,7 @@ class WhatsAppCommand extends Model
     use HasUuids;
     protected $primaryKey = 'id';
     protected $fillable = [
-        'footer_whatsapp_id',
+        'footer_whats_app_id',
         'nagari_id',
         'command',
         'description',

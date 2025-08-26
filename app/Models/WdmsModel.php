@@ -41,8 +41,8 @@ class WdmsModel extends Model
     {
         // $tanggal = Carbon::parse($tanggal)->subDay(1)->format('Y-m-d');
         // --- Ambil IZIN ---
-        $izin = AbsensiPegawai::with('user.nagari', 'user.jabatan')
-            ->whereDate('date_in', now()->format('Y-m-d'))
+        $izin = RekapAbsensiPegawai::with('user.nagari', 'user.jabatan')
+            ->whereDate('date', now()->format('Y-m-d'))
             ->get()
             ->map(function ($item) {
                 if (!$item->user) return null; // skip jika user null
@@ -52,17 +52,17 @@ class WdmsModel extends Model
                     'name'      => $item->user->name ?? 'Tanpa Nama',
                     'slug'      => $item->user->slug ?? 'TanpaNama',
                     'nagari_id' => $item->user->nagari_id,
-                    'time_only' => null,
-                    'date_in'   => $item->date_in ? Carbon::parse($item->date_in)->format('Y-m-d') : null,
-                    'sn_mesin'  => null,
-                    'is_late'   => false,
-                    'status'    => $item->status ?? 'IZIN',
+                    'time_only' => Carbon::parse($item->time_in)->format('H:i') ?? null,
+                    'date_in'   => $item->date ? Carbon::parse($item->date)->format('Y-m-d') : null,
+                    'sn_mesin'  => $item->sn_mesin ?? null,
+                    'is_late'   => Carbon::parse($item->time_in)->format('H:i') > '08:00',
+                    'status'    => $item->status_absensi,
+                    'absensi_by' => $item->resource,
                     'image'     => $item->user->image ?? 'default-avatar.png',
                 ];
             })
             ->filter() // hapus null
             ->values();
-
         // --- Ambil HADIR ---
         $hadir = self::with(['user', 'user.nagari', 'user.jabatan'])
             ->where('terminal_sn', $sn_fp)
@@ -84,12 +84,15 @@ class WdmsModel extends Model
                     'date_in'   => Carbon::parse($item->punch_time)->format('Y-m-d'),
                     'sn_mesin'  => $item->terminal_sn,
                     'is_late'   => Carbon::parse($item->punch_time)->format('H:i') > '08:00',
-                    'status'    => 'HADIR',
+                    'absensi_by' => 'Fingerprint',
+                    'status'    => 'Hadir',
                     'image'     => $item->user->image ?? 'default-avatar.png',
                 ];
             })
             ->values()
             ->unique('user_id');
+        // dd($hadir);
+
         // dd($hadir);
         // --- Filter HADIR supaya user yang sudah IZIN tidak muncul ---
         $userIzinIds = $izin->pluck('user_id')->all();
@@ -97,7 +100,7 @@ class WdmsModel extends Model
 
         // --- Gabung IZIN + HADIR ---
         $rekap = collect($izin)->merge($hadirFiltered)->values();
-
+        // dd($rekap);
         // --- Ambil semua user aktif kecuali id 1 ---
         $users = User::with('nagari', 'jabatan')->where('id', '!=', 1)->get();
 
@@ -116,39 +119,15 @@ class WdmsModel extends Model
                     'date_in'   => null,
                     'sn_mesin'  => null,
                     'is_late'   => false,
-                    'status'    => 'TIDAK-HADIR',
+                    'absensi_by' => null,
+                    'status'    => null,
                     'image'     => $item->image ?? 'default-avatar.png',
                 ];
             });
 
         // --- Final merge ---
         $rekapFinal = $rekap->merge($tidakHadir)->values();
+        // dd($rekapFinal);
         return $rekapFinal;
-
-        // dd($rekap);
-        // return self::with([
-        //     'user',
-        //     'user.nagari'
-        // ])
-        //     ->where('terminal_sn', $sn_fp)
-        //     ->whereDate('punch_time', $tanggal)
-        //     ->whereTime('punch_time', '<=', '12:00')
-        //     ->get()
-        //     ->sortBy('punch_time')
-        //     ->groupBy(function ($item) {
-        //         return $item->emp_id . '-' . Carbon::parse($item->punch_time)->format('Y-m-d');
-        //     })
-        //     ->map(function ($grouped) {
-        //         $item = $grouped->first();
-        //         $item->time_only = Carbon::parse($item->punch_time)->format('H:i');
-        //         $item->date_in = Carbon::parse($item->punch_time)->format('Y-m-d');
-        //         $item->user_id = $item->id;
-        //         $item->nagari_id = $item->user;
-        //         $item->sn_mesin = $item->user;
-        //         $item->is_late = $item->time_only > '08:00';
-        //         return $item;
-        //     })
-        //     ->values()->reject(fn($item) => $item->user_id == 1)
-        //     ->unique('emp_id');
     }
 }

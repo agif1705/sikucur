@@ -1,12 +1,11 @@
 <?php
 
+use App\Models\TvInformasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FonnteController;
 use App\Http\Controllers\Api\WusapiController;
 use App\Http\Controllers\Api\WhatsAppController;
-use App\Http\Controllers\Api\FingerPrintController;
-use App\Models\TvInformasi;
+use App\Http\Controllers\Api\RekapPegawaiController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -16,8 +15,5 @@ Route::get('/user', function (Request $request) {
 Route::post('/kehadiran', [WhatsAppController::class, 'kehadiran']);
 Route::post('/handle/command', [WhatsAppController::class, 'handleCommand'])->name('izin-pegawai-handleCommand');
 Route::post('/kehadiran/report/harian', [WhatsAppController::class, 'scheduleHarian'])->name('scheduleHarian');
-
 Route::post('/wuzapi/webhook', [WusapiController::class, 'webhook'])->name('wuzapi.webhook');
-
-// Route::post('/wdms/webhook', [FingerPrintController::class, 'store'])->name('wdms.webhook');
-Route::post('/wdms/webhook', [FingerPrintController::class, 'store'])->name('wdms.webhook.tv');
+Route::post('/rekap/fingerprint', [RekapPegawaiController::class, 'webhook'])->name('rekap.webhook.fingerprint');

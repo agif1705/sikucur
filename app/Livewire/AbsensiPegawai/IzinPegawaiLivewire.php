@@ -8,6 +8,8 @@ use App\Models\User;
 use Livewire\Component;
 use App\Models\IzinPegawai;
 use App\Models\AbsensiPegawai;
+use App\Models\AbsensiWebPegawai;
+use App\Models\RekapAbsensiPegawai;
 use Livewire\Attributes\Layout;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
@@ -59,15 +61,18 @@ class IzinPegawaiLivewire extends Component implements HasForms
             ->schema([
                 Select::make('status')
                     ->options([
-                        'Hadir Dinas Luar Daerah' => 'Dinas Luar Daerah',
-                        'Hadir Dinas Dalam Daerah' => 'Dinas Dalam Daerah',
-                        'Sakit' => 'Sakit',
-                        'Izin' => 'Izin',
-                        'Cuti' => 'Cuti',
+                        'HDLD' => 'Dinas Luar Daerah',
+                        'HDDD' => 'Dinas Dalam Daerah',
+                        'S' => 'Sakit',
+                        'I' => 'Izin',
+                        'C' => 'Cuti',
                     ])->hintIcon('heroicon-m-question-mark-circle', tooltip: 'pilihlah sesuai absensi anda')
                     ->default('Hadir Dinas Luar Daerah'),
                 FileUpload::make('file_pendukung')
                     ->label('File Pendukung')
+                    ->disk('public')
+                    ->directory('absensi')
+                    ->multiple(false)
                     ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'ini adalah file pendukung laporan absensi')
                     ->required(),
                 Textarea::make('alasan')
@@ -79,37 +84,41 @@ class IzinPegawaiLivewire extends Component implements HasForms
 
     public function submit()
     {
-        if ($this->data['status'] == 'Hadir Dinas Dalam Daerah' || $this->data['status'] == 'Hadir Dinas Luar Daerah') {
-            $status_absensi = "HDL";
-        }
-        $absensiPegawai = AbsensiPegawai::whereUserId($this->users->id)
-            ->whereDate('date_in', now())->first();
+
+        $absensiPegawai = AbsensiWebPegawai::whereUserId($this->users->id)
+            ->whereDate('date', now())->first();
+
         if (!$absensiPegawai) {
-            $absensiPegawai = AbsensiPegawai::create([
-                'absensi_by' => 'Link Izin',
-                'emp_id' => $this->users->emp_id,
+            $absensiPegawai = AbsensiWebPegawai::create([
                 'absensi' => $this->data['status'],
-                'status_absensi' => $status_absensi,
-                'sn_mesin' => "link-izin",
-                'accept' => true,
-                'accept_by' => $this->data['alasan'],
+                'is_late' => false,
+                'file_pendukung' => $this->data['file_pendukung'],
                 'user_id' => $this->users->id,
                 'nagari_id' => $this->users->nagari_id,
                 'time_in' => now(),
-                'date_in' => now(),
+                'date' => now(),
+                'time_out' => now(),
             ]);
             $this->dispatch('absenBerhasil', nama: $this->users->name, jam: $absensiPegawai->time_in, status: $absensiPegawai->status_absensi);
+            $rekapAbsensiPegawai = RekapAbsensiPegawai::create([
+                'user_id' => $this->users->id,
+                'nagari_id' => $this->users->nagari_id,
+                'is_late' => false,
+                'sn_mesin' => $this->link,
+                'status_absensi' => $this->data['status'],
+                'resource' => 'web',
+                'id_resource' => 'web-' . $absensiPegawai->id,
+                'time_in' => $absensiPegawai->time_in,
+                'time_out' => $absensiPegawai->time_out,
+                'date' => $absensiPegawai->date,
+
+            ]);
         }
-        Notification::make()
-            ->title('Saved successfully')
-            ->icon('heroicon-o-document-text')
-            ->iconColor('success')
-            ->send();
+
         $this->IzinPegawai->update([
             'expired_at' => now()->subMinutes(30),
         ]);
         $this->form_link = false;
-        // session()->flash('success', 'Izin berhasil dikirim.');
     }
     #[Layout('components.layouts.public')]
     public function render()

@@ -25,6 +25,22 @@ document.addEventListener('livewire:init', () => {
       })
     }
   )
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'laravel_rekap_absensi_pegawais',
+    },
+    (e) => {
+      console.log('🔥 Realtime payload:', e)
+      const dataBaru = e.new
+      Livewire.dispatch('insertFromRekapAbsensi', {
+        mesin: dataBaru.sn_mesin,
+        data: dataBaru,
+      })
+    }
+  )
 
   channel.on(
     'postgres_changes',

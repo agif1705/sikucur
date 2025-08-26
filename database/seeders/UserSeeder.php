@@ -39,12 +39,12 @@ class UserSeeder extends Seeder
             'nagari_id' => 1,
             'username' => 'asrul',
             'email' => 'asrul@test.com',
-            'no_hp' => 6281282771111,
+            'no_hp' => 6283892062143,
             'no_ktp' => 2171111705931111,
             'no_bpjs' => 2171111705931111,
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -61,7 +61,7 @@ class UserSeeder extends Seeder
             'email' => 'fadil@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -78,7 +78,7 @@ class UserSeeder extends Seeder
             'no_hp' => 6282244068642,
             'no_ktp' => 217222227059322222,
             'no_bpjs' => 217222227059322222,
-            'aktif' => true
+            'aktif' => false
         ]);
 
 
@@ -96,7 +96,7 @@ class UserSeeder extends Seeder
             'email' => 'siska@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -113,7 +113,7 @@ class UserSeeder extends Seeder
             'email' => 'melita@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
 
@@ -132,7 +132,7 @@ class UserSeeder extends Seeder
             'email' => 'era@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -149,7 +149,7 @@ class UserSeeder extends Seeder
             'email' => 'khairil@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
 
@@ -167,7 +167,7 @@ class UserSeeder extends Seeder
             'no_ktp' => 2176666705936666,
             'no_bpjs' => 2176666705936666,
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -184,7 +184,7 @@ class UserSeeder extends Seeder
             'email' => 'ahmad@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -201,7 +201,7 @@ class UserSeeder extends Seeder
             'email' => 'silvia@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
         User::create([
@@ -218,7 +218,7 @@ class UserSeeder extends Seeder
             'email' => 'yulianis@test.com',
             'password' => '123456',
             'password_recovery' => '123456',
-            'aktif' => true
+            'aktif' => false
 
         ]);
     }

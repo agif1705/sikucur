@@ -30,7 +30,9 @@ class WhatsAppController extends Controller
             'msgId'        => 'required|string|max:255',
 
         ]);
-        $chat = Str::lower($data['chat']);
+        $chat2 = Str::lower($data['chat']);
+        $chat = Str::slug($chat2, '-');
+        // dd($chat);
         $waId = Str::before($data['sender'], '@');
         // Cari user + command
         $user = User::with([
@@ -51,9 +53,9 @@ class WhatsAppController extends Controller
         $command = $user->nagari->whatsAppCommand->first();
         if (!$command || !class_exists($command->handler_class)) {
             return $this->apiResponse(true, "Perintah *{$chat}* belum ada mungkin akan kita buat. terimakasih.", [
-                'pegawai' => true,
+                'pegawai' => false,
                 'data' => $data,
-
+                'bot' => true
             ]);
         }
 
@@ -96,12 +98,11 @@ class WhatsAppController extends Controller
         if ($request->input('token') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
             $nagari = Nagari::with('users')->where('slug', 'sikucur')->first();
             $absensi = WdmsModel::getAbsensiMasuk($nagari->sn_fingerprint);
-
             $tanggal = now()->toDateString();
             $baduo = " \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
             $pesan = "📊 Laporan Absensi Hari Ini mak wali Asrul (Semangat Hari Ini: {$tanggal})\n\n";
             foreach ($absensi as $i => $item) {
-                $statusIcon = $item['status'] === 'HADIR'
+                $statusIcon = $item['status']
                     ? ($item['is_late'] ? "⚠️ Terlambat" : "✅ HADIR")
                     : "❌ TIDAK-HADIR";
 

@@ -32,7 +32,6 @@ class InformasiTvLivewire extends Component
     #[On('fingerprint-updated')]
     public function updateData($mesin, $data)
     {
-
         // memasukan data absensi pegawai
         if ($data['emp_id']) {
             $emp_id = $data['emp_id'];
@@ -45,9 +44,22 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
         $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
-        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . Carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
-            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name .
-            ' *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_';
+
+        $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
+
+        $this->users = WdmsModel::getAbsensiMasuk($mesin);
+    }
+
+    #[On('insertFromRekapAbsensi')]
+    public function insertFromRekapAbsensi($mesin, $data)
+    {
+        $user = User::whereId($data['user_id'])
+            ->whereHas('nagari', function ($q) use ($mesin) {
+                $q->where('sn_fingerprint', $mesin);
+            })->first();
+        $is_late = $data['time_in'] > '08:00' ?  'Terlambat' : 'Ontime';
+        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . $data['time_in']  . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . ' *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_';
         if ($user->aktif) {
             $response = retry(3, function () use ($user, $pesan) {
                 $wa = new WahaService();
@@ -55,9 +67,8 @@ class InformasiTvLivewire extends Component
                 return $result;
             });
         }
-        $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
 
-        $this->users = WdmsModel::getAbsensiMasuk($mesin);
+        $this->dispatch('absenBerhasil', nama: $user->name, jam: $data['time_in'], status: $is_late);
     }
 
     #[On('fingerprint-deleted')]

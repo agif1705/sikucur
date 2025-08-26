@@ -133,17 +133,24 @@
                         {{ Str::ucfirst($item['name']) }}</p>
                       <p class="text-muted mb-0 fs-sm text-start">
                         {{ Str::ucfirst($item['jabatan']) }}</p>
-                      @if ($item['status'] == 'HADIR')
+                      @if ($item['status'])
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           Masuk :
                           {{ $item['time_only'] }}
                           @if ($item['is_late'])
                             <span class="fw-bold text-danger text-end fst-italic">Terlambat</span>
                           @else
-                            <span class="fw-bold text-success text-end">OnTime</span>
+                            <span class="fw-bold text-success text-end">
+                              @if ($item['status'])
+                                Tepat Waktu
+                                <br>{{ $item['absensi_by'] }}
+                              @else
+                                {{ $item['status'] }}
+                              @endif
+                            </span>
                           @endif
                         </p>
-                      @elseif ($item['status'] == 'TIDAK-HADIR')
+                      @elseif ($item['status'] === null)
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           <span class="fw-bold text-danger text-end fst-italic">Tidak Masuk</span>
                         </p>

@@ -6,7 +6,7 @@ use App\Contracts\WhatsAppCommandHandler;
 use App\Models\IzinPegawai;
 use Illuminate\Support\Facades\URL;
 
-class IzinPegawaiHandler implements WhatsAppCommandHandler
+class AbsensiPegawaiHandler implements WhatsAppCommandHandler
 {
     public function handle($user, $chat, $data)
     {
@@ -45,7 +45,7 @@ class IzinPegawaiHandler implements WhatsAppCommandHandler
             'nagari'     => $user->nagari->name,
             'expired_at' => $expired_at,
         ]);
-        $text = "Link izin berhasil dibuat,jika habis waktunya bisa ketikan lagi {$chat}.";
+        $text = "*Link izin berhasil dibuat* \n";
         $url = $this->generateIzinUrl($link, $user->nagari->name, $expired_at);
 
         return [
@@ -53,7 +53,7 @@ class IzinPegawaiHandler implements WhatsAppCommandHandler
             'message' => $this->messageWhatsApp($text, [
                 'name' => $user->name,
                 'nagari' => $user->nagari->name,
-                'link' => $checkizin->url,
+                'link' => $url,
                 'chat' => $chat,
                 'admin' => "AdminNagari",
             ]),
@@ -80,7 +80,7 @@ class IzinPegawaiHandler implements WhatsAppCommandHandler
     private function messageWhatsApp($text, $message)
     {
         $replay = $text . " " . "Halo Pegawai {$message['name']} Di Nagari *{$message['nagari']}* .\n Silakan klik link berikut untuk mengisi izin: \n" . "
-        {$message['link']}\n Link ini hanya berlaku selama 30 menit. Mohon segera mengisi absensi ini untuk keperluan:\n  {$message['chat']}\n \n Jika ada pertanyaan, silakan hubungi admin: {$message['admin']}\nTerima kasih! \nketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut.";
+        {$message['link']}\n Link ini hanya berlaku selama 30 menit. Mohon segera mengisi absensi ini untuk keperluan:\n  {$message['chat']}\n \n Jika ada pertanyaan, silakan hubungi admin: {$message['admin']}\nTerima kasih!, jika habis waktunya bisa ketikan lagi {$message['chat']}. \nketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut.";
         return $replay;
     }
 }

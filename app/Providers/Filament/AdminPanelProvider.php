@@ -55,7 +55,6 @@ class AdminPanelProvider extends PanelProvider
                 AttendaceUser::class,
             ])->sidebarCollapsibleOnDesktop()
             ->widgets([
-                AbsensiHariLibur::class,
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
             ])

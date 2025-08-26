@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\WdmsModel;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -67,6 +68,59 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function absensiGabunganPerTanggal($tanggal)
+    {
+        $isWorkingDay = true;
+
+        if ($this->nagari && $this->nagari->workDays) {
+            $dayName = Carbon::parse($tanggal)->format('l'); // Senin, Selasa, ...
+            $workDay = $this->nagari->workDays()->where('day', $dayName)->first();
+
+            // Cek null sebelum akses is_working_day
+            if ($workDay && $workDay->is_working_day == false) {
+                $isWorkingDay = false;
+            }
+        }
+
+        // Ambil AbsensiPegawai
+        $absensi = $this->absensiPegawai()
+            ->whereDate('date_in', $tanggal)
+            ->first();
+
+        if ($absensi) {
+            return (object)[
+                'tanggal' => $absensi->date_in,
+                'sn_mesin' => $absensi->sn_mesin,
+                'sumber' => 'absensi',
+                'absensi' => $absensi->absensi,
+                'is_working_day' => $isWorkingDay,
+            ];
+        }
+
+        // Ambil WDMS jika tidak ada absensi
+        $wdms = WdmsModel::where('emp_id', $this->emp_id)
+            ->whereDate('punch_time', $tanggal)
+            ->first();
+
+        if ($wdms) {
+            return (object)[
+                'tanggal' => $wdms->punch_time,
+                'sn_mesin' => $wdms->sn,
+                'sumber' => 'wdms',
+                'absensi' => 'Hadir',
+                'is_working_day' => $isWorkingDay,
+            ];
+        }
+
+        // Jika kosong
+        return (object)[
+            'tanggal' => $tanggal,
+            'sn_mesin' => null,
+            'sumber' => null,
+            'absensi' => null,
+            'is_working_day' => $isWorkingDay,
+        ];
+    }
     public function jabatan()
     {
         return $this->belongsTo(Jabatan::class);
@@ -90,5 +144,9 @@ class User extends Authenticatable
     public function izin()
     {
         return $this->hasMany(IzinPegawai::class);
+    }
+    public function RekapAbsensiPegawai(): HasMany
+    {
+        return $this->hasMany(RekapAbsensiPegawai::class);
     }
 }
