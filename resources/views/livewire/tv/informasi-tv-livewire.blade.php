@@ -126,7 +126,7 @@
                 <li
                   class="list-group-item d-flex justify-content-between align-items-center mb-1 border-1 rounded rounded-4">
                   <div class="d-flex align-items-center">
-                    <img class="avatar @if ($users->count() > 11) avatar-lg @else avatar-xl @endif "
+                    <img class="avatar @if ($users->count() > 1) avatar-lg @else avatar-xl @endif "
                       src="{{ asset('storage/' . $item['image'] ?? 'default-avatar.png') }}" />
                     <div class="ms-3">
                       <p class="fs-6 fw-bold mb-0 text-start">
