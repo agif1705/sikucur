@@ -56,7 +56,9 @@
 
 </head>
 
-<body class="d-flex flex-column">
+<body class="d-flex flex-column" data-supabase-prod-url="{{ env('SUPABASE_PROD_URL') }}"
+  data-supabase-prod-key="{{ env('SUPABASE_PROD_KEY') }}" data-supabase-dev-url="{{ env('SUPABASE_DEV_URL') }}"
+  data-supabase-dev-key="{{ env('SUPABASE_DEV_KEY') }}">
 
 
   {{ $slot }}

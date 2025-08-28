@@ -44,6 +44,12 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
         $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
+        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
+        if ($user->aktif == true) {
+            $wa = new WahaService();
+            $result = $wa->sendText($user->no_hp, $pesan);
+        }
 
         $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
 
@@ -58,17 +64,11 @@ class InformasiTvLivewire extends Component
                 $q->where('sn_fingerprint', $mesin);
             })->first();
         $is_late = $data['time_in'] > '08:00' ?  'Terlambat' : 'Ontime';
-        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . $data['time_in']  . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
-            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . ' *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_';
-        if ($user->aktif) {
-            $response = retry(3, function () use ($user, $pesan) {
-                $wa = new WahaService();
-                $result = $wa->sendText($user->no_hp, $pesan);
-                return $result;
-            });
-        }
+
+
 
         $this->dispatch('absenBerhasil', nama: $user->name, jam: $data['time_in'], status: $is_late);
+        $this->users = WdmsModel::getAbsensiMasuk($mesin);
     }
 
     #[On('fingerprint-deleted')]

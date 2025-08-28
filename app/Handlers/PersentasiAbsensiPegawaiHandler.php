@@ -18,7 +18,7 @@ class PersentasiAbsensiPegawaiHandler implements WhatsAppCommandHandler
         $hari_kerja = $this->getWorkingDaysThisMonth($bulan, $tahun);
         $rekap = new RekapAbsensiPegawai();
         $holidays = $rekap->Holiday($bulan, $tahun);
-        $total_hari_kerja = $hari_kerja - $holidays - 2;
+        $total_hari_kerja = $hari_kerja - $holidays - 1;
 
         // ambil semua pegawai dengan hitungan
         $pegawais = User::withCount([

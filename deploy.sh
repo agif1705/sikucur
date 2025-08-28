@@ -32,6 +32,8 @@ ln -s $STORAGE_DIR $NEW_RELEASE/storage
 # 6. Jalankan migration
 
 # 7. Clear & cache config/route/view
+npm run build
+composer install
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
@@ -47,6 +49,6 @@ sudo systemctl restart laravel-frankenphp.service
 
 # 10. Cleanup release lama (simpan 5 terbaru)
 cd $RELEASES_DIR
-ls -1dt */ | tail -n +6 | xargs rm -rf --
+ls -1dt */ | tail -n +3 | xargs rm -rf --
 
 echo "=== Deploy selesai! Release $NOW aktif ==="
