@@ -4,11 +4,11 @@
   <h2 class="text-lg font-bold mb-4">Form Izin Pegawai {{ $users->name }}</h2>
 
   {{-- Countdown Digital --}}
-  <div class="text-center fs-6 text-4xl font-mono tracking-widest mb-6 wrapper">
+  <div class="text-center fs-6 text-xl font-mono tracking-widest mb-6 wrapper">
     <span
-      class="text-1xl">{{ $form_link ? 'Sisa Waktu pengisian form anda :' : 'Form sudah diisi, Terimakasih Sudah Mengisi Form Izin Pegawai' }}
+      class="text-success text-md">{{ $form_link ? 'Sisa Waktu pengisian form anda :' : 'Form sudah diisi, Terimakasih Sudah Mengisi Form Izin Pegawai' }}
     </span>
-    <span class="text-danger text-1xl" {{ $form_link ? '' : 'hidden' }} id="countdown">00:00:00</span>
+    <span class="text-danger text-md" {{ $form_link ? '' : 'hidden' }} id="countdown">00:00:00</span>
   </div>
 
   {{-- Form --}}

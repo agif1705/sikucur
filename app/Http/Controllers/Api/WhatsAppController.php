@@ -16,6 +16,7 @@ use App\Helpers\WhatsAppHelper;
 use App\Models\WhatsAppCommand;
 use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Http;
 use CCK\LaravelWahaSaloonSdk\Waha\Waha;
 use App\Handlers\SendingWhatsappHandlers;
 
@@ -110,10 +111,42 @@ class WhatsAppController extends Controller
 
                 $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']}) - {$jam} {$statusIcon}\n";
             }
+            $state = self::getTerminalState();
             $wa = new WahaService();
-            $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
-            return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
+            if ($state = "1") {
+                // $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
+                return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
+            } else {
+
+                $result = $wa->sendText('6281282779593', "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['nagari' => $data, 'state' => $state]);
+            }
         }
+    }
+    public function getTerminalState()
+    {
+        // ambil token dulu
+        $authResponse = Http::timeout(10)->post('http://202.155.143.254:8081/jwt-api-token-auth/', [
+            'username' => 'agif',
+            'password' => '@Lvaro02',
+        ]);
+
+        $token = $authResponse->json('token');
+
+        // ambil data terminal
+        $terminalResponse = Http::withHeaders([
+            'Authorization' => 'JWT ' . $token,
+        ])->timeout(10)
+            ->get('http://202.155.143.254:8081/iclock/api/terminals/1/');
+
+        $data = $terminalResponse->json();
+        // ambil value "state"
+        $state = $data['state'] ?? null;
+
+        return response()->json([
+            'state' => $state,
+        ]);
     }
     public function kehadiran(Request $request)
     {

@@ -17,7 +17,7 @@ rsync -av --exclude 'vendor' --exclude '.git' --exclude 'storage' $APP_DIR/ $NEW
 
 cd $NEW_RELEASE
 
-# 3. Install dependencies
+# 3. Install dependencies (PHP)
 composer install --no-dev --optimize-autoloader
 
 # 4. Copy .env lama
@@ -29,26 +29,32 @@ fi
 rm -rf $NEW_RELEASE/storage
 ln -s $STORAGE_DIR $NEW_RELEASE/storage
 
-# 6. Jalankan migration
 
 # 7. Clear & cache config/route/view
-npm run build
-composer install
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
+php artisan cache:clear
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 8. Update symlink current
+# 8. Update symlink current (baru update setelah semua siap)
 ln -sfn $NEW_RELEASE $APP_DIR/current
 
-# 9. Restart FrankenPHP service
+# 9. Build frontend (Vite) setelah current aktif
+if [ -f package.json ]; then
+    echo "=== Build frontend assets ==="
+    npm install --omit=dev
+    npm run build
+fi
+
+# 10. Restart FrankenPHP service
 sudo systemctl restart laravel-frankenphp.service
 
-# 10. Cleanup release lama (simpan 5 terbaru)
+# 11. Cleanup release lama (simpan 5 terbaru)
 cd $RELEASES_DIR
-ls -1dt */ | tail -n +3 | xargs rm -rf --
+ls -1dt */ | tail -n +6 | xargs rm -rf || true
 
 echo "=== Deploy selesai! Release $NOW aktif ==="
