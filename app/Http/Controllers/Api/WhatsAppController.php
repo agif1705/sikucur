@@ -114,12 +114,12 @@ class WhatsAppController extends Controller
             $state = self::getTerminalState();
             $wa = new WahaService();
             if ($state = "1") {
-                // $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
-                $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
+                $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
                 return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
             } else {
 
-                $result = $wa->sendText('6281282779593', "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                // $result = $wa->sendText('6281282779593', "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
                 return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['nagari' => $data, 'state' => $state]);
             }
         }
