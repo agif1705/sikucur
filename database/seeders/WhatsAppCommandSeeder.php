@@ -27,9 +27,18 @@ class WhatsAppCommandSeeder extends Seeder
             'id' => Str::uuid(),
             'footer_whats_app_id' => 1,
             'nagari_id' => 1,
-            'command' => 'absensi-pegawai',
+            'command' => 'izin',
             'description' => 'Form absensi pegawai termasuk izin,sakit, hadir dinas luar daerah dan hadir dinas dalam daerah',
             'handler_class' => 'App\Handlers\AbsensiPegawaiHandler',
+            'is_active' => true,
+        ]);
+        WhatsAppCommand::create([
+            'id' => Str::uuid(),
+            'footer_whats_app_id' => 1,
+            'nagari_id' => 1,
+            'command' => 'persen-absensi-pegawai',
+            'description' => 'Form absensi pegawai termasuk izin,sakit, hadir dinas luar daerah dan hadir dinas dalam daerah',
+            'handler_class' => 'App\Handlers\PersentasiAbsensiPegawaiHandler',
             'is_active' => true,
         ]);
     }

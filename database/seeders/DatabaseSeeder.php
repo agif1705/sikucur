@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
             ShieldSeeder::class,
             RoleSeeder::class,
             ModelHasRoleSeeder::class,
-            ComentsSeeder::class,
+            // ComentsSeeder::class,
             PresensiSeeder::class,
             TvInformasiSeeder::class,
             TvGaleriSeeder::class,
