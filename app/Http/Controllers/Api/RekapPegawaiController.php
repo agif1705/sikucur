@@ -26,7 +26,7 @@ class RekapPegawaiController extends Controller
         $is_late = $time_in > '08:00:00';
 
         // Tentukan emp_id yang dipakai
-        $emp_id = $data['emp_id'] ?? $data['emp_code'];
+        $emp_id = $data['emp_id'] ?? intval($data['emp_code']);
 
         // Cari nagari dan user
         $nagari_id = Nagari::where('sn_fingerprint', $data['sn_mesin'])->first()?->id;

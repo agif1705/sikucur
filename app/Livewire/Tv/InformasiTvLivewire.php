@@ -9,15 +9,16 @@ use Livewire\Livewire;
 use Livewire\Component;
 use App\Models\WdmsModel;
 use App\Models\Attendance;
+use App\Models\ListYoutube;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
+use App\Services\WahaService;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
-use App\Models\iclock_transaction;
-use App\Models\ListYoutube;
-use App\Services\WahaService;
 use Livewire\Attributes\Layout;
+use App\Models\iclock_transaction;
 use Illuminate\Support\Facades\DB;
+use App\Models\RekapAbsensiPegawai;
 use function Laravel\Prompts\select;
 use Illuminate\Support\Facades\Http;
 
@@ -46,31 +47,55 @@ class InformasiTvLivewire extends Component
         $is_late = Carbon::parse($data['punch_time'])->format('H:i') > '08:00' ?  'Terlambat' : 'Ontime';
         $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
             '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : info -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-        dd($user->no_hp);
-        if ($user->aktif == true) {
-            $wa = new WahaService();
-            $result = $wa->sendText($user->no_hp, $pesan);
-        }
+            // if ($user->aktif == true) {
+            //     $wa = new WahaService();
+            //     $result = $wa->sendText($user->no_hp, $pesan);
+            // }
+        ;
 
+        // Cari nagari dan user
+        $nagari_id = Nagari::where('sn_fingerprint', $data['terminal_sn'])->first()?->id;
+        $user = User::whereEmpId($emp_id)->first();
+
+        if (!$user || !$nagari_id) {
+            return response()->json(['message' => 'User atau mesin tidak ditemukan'], 404);
+        }
+        // Cek absensi hari ini
+        $absensi = RekapAbsensiPegawai::where('sn_mesin', $data['terminal_sn'])
+            ->whereUserId($user->id)
+            ->whereDate('date', Carbon::parse($data['punch_time'])->format('Y-m-d'))
+            ->first();
+
+        if (!$absensi) {
+            // Absensi pertama (masuk)
+            $absensi = RekapAbsensiPegawai::create([
+                'user_id'        => $user->id,
+                'nagari_id'      => $nagari_id,
+                'is_late'        => Carbon::parse($data['punch_time'])->format('H:i') > '08:00',
+                'status_absensi' => 'Hadir',
+                'sn_mesin'       => $data['terminal_sn'],
+                'resource'       => 'Fingerprint',
+                'id_resource'    => 'fp-' . $data['id'],
+                'time_in'        => Carbon::parse($data['punch_time'])->format('H:i'),
+                'date'           => Carbon::parse($data['punch_time'])->format('Y-m-d'),
+            ]);
+        } else {
+            // Absensi kedua (pulang)
+            $absensi->update([
+                'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
+            ]);
+        }
         $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
 
         $this->users = WdmsModel::getAbsensiMasuk($mesin);
     }
-
-    #[On('insertFromRekapAbsensi')]
-    public function insertFromRekapAbsensi($mesin, $data)
+    #[On('rekap-absensi-updated')]
+    public function rekapAbsensiUpdated($data)
     {
-        $user = User::whereId($data['user_id'])
-            ->whereHas('nagari', function ($q) use ($mesin) {
-                $q->where('sn_fingerprint', $mesin);
-            })->first();
-        $is_late = $data['time_in'] > '08:00' ?  'Terlambat' : 'Ontime';
-
-
-
-        $this->dispatch('absenBerhasil', nama: $user->name, jam: $data['time_in'], status: $is_late);
-        $this->users = WdmsModel::getAbsensiMasuk($mesin);
+        $user = User::whereId($data['user_id'])->first();
+        $this->dispatch('absenBerhasil', nama: $user->name, jam: $data['time_in'], status: $data['is_late']);
     }
+
 
     #[On('fingerprint-deleted')]
     public function deleteData()

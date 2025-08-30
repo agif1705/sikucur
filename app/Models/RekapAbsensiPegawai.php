@@ -30,6 +30,7 @@ class RekapAbsensiPegawai extends Model
         return $this->belongsTo(User::class);
     }
 
+
     public function nagari()
     {
         return $this->belongsTo(Nagari::class);

@@ -6,7 +6,7 @@ use App\Contracts\WhatsAppCommandHandler;
 use App\Models\IzinPegawai;
 use Illuminate\Support\Facades\URL;
 
-class AbsensiPegawaiHandler implements WhatsAppCommandHandler
+class IzinPegawaiHandler implements WhatsAppCommandHandler
 {
     public function handle($user, $chat, $data)
     {

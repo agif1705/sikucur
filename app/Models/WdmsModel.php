@@ -54,6 +54,7 @@ class WdmsModel extends Model
                     'nagari_id' => $item->user->nagari_id,
                     'time_only' => Carbon::parse($item->time_in)->format('H:i') ?? null,
                     'date_in'   => $item->date ? Carbon::parse($item->date)->format('Y-m-d') : null,
+                    'kantor' => false,
                     'sn_mesin'  => $item->sn_mesin ?? null,
                     'is_late'   => Carbon::parse($item->time_in)->format('H:i') > '08:00',
                     'status'    => $item->status_absensi,

@@ -108,8 +108,8 @@ class IzinPegawaiLivewire extends Component implements HasForms
                 'status_absensi' => $this->data['status'],
                 'resource' => 'web',
                 'id_resource' => 'web-' . $absensiPegawai->id,
-                'time_in' => $absensiPegawai->time_in,
-                'time_out' => $absensiPegawai->time_out,
+                'time_in' => '07:59',
+                'time_out' =>  '16:01',
                 'date' => $absensiPegawai->date,
 
             ]);
