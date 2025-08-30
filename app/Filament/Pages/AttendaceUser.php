@@ -59,141 +59,130 @@ class AttendaceUser extends Page implements HasTable
     public function table(Table $table): Table
     {
         $startDate = Carbon::create($this->year, $this->month, 1);
-        $endDate = $startDate->copy()->endOfMonth();
+        $endDate   = $startDate->copy()->endOfMonth();
         $daysInMonth = $startDate->daysInMonth;
 
-        // Generate columns for each day in month
+        // Generate columns untuk setiap hari
         $dayColumns = [];
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $currentDate = Carbon::create($this->year, $this->month, $day);
-            $dateString = $currentDate->format('Y-m-d');
+            $dayName     = strtolower($currentDate->format('l')); // ✅ lowercase
+
             $dayColumns[] = TextColumn::make($currentDate->format('Y-m-d'))
                 ->label($day)
-                ->getStateUsing(function ($record) use ($currentDate) {
-                    $attendance = $record->absensiGabunganPerTanggal($currentDate);
+                ->getStateUsing(function ($record) use ($currentDate, $dayName) {
+                    // 1️⃣ cek absensi rekap
+                    $attendance = $record->rekapAbsensiPegawai
+                        ->where('date', $currentDate->toDateString())
+                        ->first();
 
-                    if (!$attendance->is_working_day) {
-                        return 'L';
+                    if ($attendance) {
+                        return match ($attendance->status_absensi) {
+                            'Hadir'                    => 'H',
+                            'HDLD'  => 'HDLD',
+                            'HDDD' => 'HDDD',
+                            'Sakit'                    => 'S',
+                            'Cuti'                     => 'C',
+                            'Izin'                     => 'I',
+                            default                    => 'A',
+                        };
                     }
 
-                    if (!$attendance->absensi) {
-                        return 'A';
+                    // 2️⃣ kalau gak ada data → cek tabel work_days nagari
+                    $workDay = $record->nagari
+                        ->workDays()
+                        ->where('day', $dayName) // lowercase cocok
+                        ->first();
+
+                    if ($workDay && !$workDay->is_working_day) {
+                        return 'L'; // Libur
                     }
 
-                    return match ($attendance->absensi) {
-                        'Hadir' => 'H',
-                        'Hadir Dinas Luar Daerah' => 'HDL',
-                        'Hadir Dinas Dalam Daerah' => 'HDD',
-                        'sakit' => 'S',
-                        'cuti' => 'C',
-                        'Izin' => 'I',
-                        default => 'H',
-                    };
+                    return 'A'; // default Alpha
                 })
                 ->color(fn($state) => match ($state) {
-                    'H', 'HDL', 'HDD' => 'success',
-                    'A', 'S' => 'danger',
-                    'I' => 'primary',
-                    'L' => 'secondary', // warna hari libur
-                    default => 'success',
+                    'H', 'HDLD', 'HDDD' => 'success',
+                    'A'                => 'danger',
+                    'S'                => 'warning',
+                    'I'                => 'primary',
+                    'C'                => 'info',
+                    'L'                => 'secondary',
+                    default            => 'secondary',
                 })
                 ->icon(fn($state) => match ($state) {
-                    'H', 'HDL', 'HDD' => 'heroicon-o-check-circle',
-                    'A', 'S' => 'heroicon-o-x-circle',
-                    'I' => 'heroicon-o-information-circle',
-                    'L' => 'heroicon-o-calendar', // icon hari libur
-                    default => 'heroicon-o-check-circle',
+                    'H', 'HDLD', 'HDD' => 'heroicon-o-check-circle',
+                    'A'                => 'heroicon-o-x-circle',
+                    'S'                => 'heroicon-o-exclamation-circle',
+                    'I'                => 'heroicon-o-information-circle',
+                    'C'                => 'heroicon-o-briefcase',
+                    'L'                => 'heroicon-o-calendar',
+                    default            => 'heroicon-o-question-mark-circle',
                 })
                 ->alignCenter();
         }
 
-
         return $table
-            ->query(User::query()->where('id', '!=', 1)->with(['absensiPegawai' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('date_in', [$startDate, $endDate]);
-            }]))
+            ->query(
+                User::query()
+                    // ->where('id', '!=', 1)
+                    ->with(['rekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
+                        $query->whereBetween('date', [$startDate, $endDate]);
+                    }])
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('User Name')
                     ->sortable()
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('total_kantor')
                     ->label('Kantor')
-                    ->getStateUsing(function ($record) use ($startDate, $endDate) {
-                        $count = 0;
+                    ->getStateUsing(
+                        fn($record) =>
+                        $record->rekapAbsensiPegawai
+                            ->where('status_absensi', 'Hadir')
+                            ->count()
+                    ),
 
-                        $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
-
-                        foreach ($period as $date) {
-                            // Ambil data gabungan per tanggal
-                            $attendance = $record->absensiGabunganPerTanggal($date);
-
-                            // Hitung jika hadir (baik dari absensi atau WDMS) dan bukan hari libur
-                            if ($attendance->absensi && $attendance->is_working_day) {
-                                $count++;
-                            }
-                        }
-
-                        return $count;
-                    }),
                 Tables\Columns\TextColumn::make('total_hadir_dinas_luar')
                     ->label('Luar Daerah')
-                    ->getStateUsing(function ($record) use ($startDate, $endDate) {
-                        return $record->absensiPegawai
-                            ->where('absensi', 'Hadir Dinas Luar Daerah')
-                            ->whereBetween('created_at', [$startDate, $endDate])
-                            ->count();
-                    }),
+                    ->getStateUsing(
+                        fn($record) =>
+                        $record->rekapAbsensiPegawai
+                            ->where('status_absensi', 'HDLD')
+                            ->count()
+                    ),
+
                 Tables\Columns\TextColumn::make('total_hadir_dinas_dalam')
                     ->label('Dalam Daerah')
-                    ->getStateUsing(function ($record) use ($startDate, $endDate) {
-                        return $record->absensiPegawai
-                            ->where('absensi', 'Hadir Dinas Dalam Daerah')
-                            ->whereBetween('created_at', [$startDate, $endDate])
-                            ->count();
-                    }),
+                    ->getStateUsing(
+                        fn($record) =>
+                        $record->rekapAbsensiPegawai
+                            ->where('status_absensi', 'HDDD')
+                            ->count()
+                    ),
 
                 Tables\Columns\TextColumn::make('total_izin')
                     ->label('Total Izin')
-                    ->getStateUsing(function ($record) use ($startDate, $endDate) {
-
-                        return $record->absensiPegawai
-                            ->where('absensi', 'Izin')
-                            ->whereBetween('created_at', [$startDate, $endDate])
-                            ->count();
-                    })
+                    ->getStateUsing(
+                        fn($record) =>
+                        $record->rekapAbsensiPegawai
+                            ->where('status_absensi', 'Izin')
+                            ->count()
+                    )
                     ->color(fn($state) => $state > 0 ? 'primary' : 'success')
                     ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle'),
+
                 Tables\Columns\TextColumn::make('total_absent')
                     ->label('Total Alpha')
-                    ->getStateUsing(function (User $record) use ($daysInMonth) {
-                        $count = 0;
-
-                        for ($day = 1; $day <= $daysInMonth; $day++) {
-                            $currentDate = Carbon::create($this->year, $this->month, $day);
-                            $attendance = $record->absensiPegawai()->whereDate('created_at', $currentDate)->first();
-
-                            if (!$attendance) {
-                                $count++; // Hitung sebagai A
-                                continue;
-                            }
-
-                            if ($attendance->nagari->workDays()->where('day', $currentDate->format('l'))->first()->is_working_day == false) {
-                                continue;
-                            }
-
-                            if ($attendance->absensi === null || $attendance->absensi === 'Absen') {
-                                $count++;
-                            }
-                        }
-                        if ($count = $daysInMonth) {
-                            $count = 0;
-                        }
-                        return $count;
+                    ->getStateUsing(function ($record) use ($daysInMonth) {
+                        $hadir = $record->rekapAbsensiPegawai->count();
+                        return $daysInMonth - $hadir;
                     })
                     ->color(fn($state) => $state > 0 ? 'danger' : 'success')
                     ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
                     ->alignCenter(),
+
                 ...$dayColumns,
             ])->paginated(false)
             ->striped()

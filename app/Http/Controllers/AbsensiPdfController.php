@@ -62,26 +62,23 @@ class AbsensiPdfController extends Controller
         }
 
         // Ambil data absensi
-        $sn = auth()->user()->nagari->sn_fingerprint;
-        $users = User::with(['wdms' => function ($query) use ($startDate, $endDate, $sn) {
-            $query->whereBetween('punch_time', [$startDate, $endDate])
-                ->where('terminal_sn', $sn)
-                ->orderBy('punch_time');
-        }])->get()->except([1]);
-
+        $sn = auth()->user()->nagari->id;
+        $users = User::with(['RekapAbsensiPegawai' => function ($query) use ($startDate, $endDate, $sn) {
+            $query->whereBetween('date', [$startDate, $endDate])
+                ->where('nagari_id', $sn)
+                ->orderBy('date');
+        }])->get()->except(1);
         // Format data absensi per user per tanggal
         $attendanceData = $users->map(function ($user) use ($datesInMonth, $holidays) {
-            $userAttendances = $user->wdms->groupBy(function ($item) {
-                return Carbon::parse($item->punch_time)->format('Y-m-d');
+            $userAttendances = $user->RekapAbsensiPegawai->groupBy(function ($item) {
+                return $item->date;
             });
-
             $dailyAttendance = [];
             $total_hari_kerja = 0;
             $total_masuk = 0;
             foreach ($datesInMonth as $date) {
                 $dateObj = Carbon::parse($date);
                 $isHoliday = in_array($date, $holidays);
-
                 if ($isHoliday) {
                     $dailyAttendance[$date] = [
                         'masuk' => 'L',
@@ -91,28 +88,37 @@ class AbsensiPdfController extends Controller
                     ];
                 } else {
                     $attendances = $userAttendances[$date] ?? collect();
-                    $masuk = $attendances->filter(function ($item) {
-                        return Carbon::parse($item->punch_time)->hour < 12;
+                    $masuk = $attendances->map(function ($item) {
+                        if ($item->resource === 'Fingerprint') {
+                            return Carbon::parse($item->time_in)->format('H:i'); // selalu string jam:menit
+                        } else {
+                            return $item->status_absensi; // langsung status absensi
+                        }
+                    })->first();
+                    $is_late = $attendances->filter(function ($item) {
+                        return $item->is_late;
                     })->first();
                     if ($masuk) {
-                        $pulang = $attendances->filter(function ($item) {
-                            return Carbon::parse($item->punch_time)->hour >= 12;
+                        $pulang = $attendances->map(function ($item) {
+                            if ($item->resource === 'Fingerprint') {
+                                return Carbon::parse($item->time_out)->format('H:i'); // selalu string jam:menit
+                            } else {
+                                return $item->status_absensi;
+                            }
                         })->first();
                         $total_masuk++;
                     } else {
                         $pulang = null;
                     }
-                    $masukTime = $masuk ? Carbon::parse($masuk->punch_time) : null;
-                    $isLate = $masukTime ? $masukTime->format('H:i') > '08:00' : false;
                     $total_hari_kerja++;
 
                     $dailyAttendance[$date] = [
-                        'masuk' => $masukTime ? $masukTime->format('H:i') : 'A',
-                        'pulang' => $pulang ? Carbon::parse($pulang->punch_time)->format('H:i') : 'A',
+                        'masuk'      => $masuk ?? 'A',
+                        'pulang' => $pulang ?? 'A',
                         'is_holiday' => false,
-                        'is_late' => $isLate,
+                        'is_late' => $is_late ?? false,
                         'total_masuk' => $total_masuk,
-                        'total_hari_kerja' => $total_hari_kerja
+                        'total_hari_kerja' => $total_hari_kerja,
                     ];
                 }
             }
@@ -132,18 +138,23 @@ class AbsensiPdfController extends Controller
                     }
                 }
                 return $carry;
-            }, ['total_present' => 0, 'total_late' => 0, 'total_hari_kerja' => 0, 'total_tidak_hadir' => 0]);
-
+            }, [
+                'total_present' => 0,
+                'total_late' => 0,
+                'total_hari_kerja' => 0,
+                'total_tidak_hadir' => 0,
+                'persen_hadir' => 0,
+            ]);
             return [
                 'user' => $user,
                 'attendances' => $dailyAttendance,
                 'total_present' => $stats['total_present'],
                 'total_late' => $stats['total_late'],
                 'total_tidak_hadir' => $stats['total_tidak_hadir'],
+
                 // ... (data lainnya)
             ];
         });
-
         // return view('pdf.absensi', [
         //     'datesInMonth' => $datesInMonth,
         //     'holidays' => $holidays,
@@ -162,7 +173,7 @@ class AbsensiPdfController extends Controller
             'tahun' => $tahun,
             'monthName' => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y')
         ])->setPaper('a4', 'landscape');
-        // return $pdf->stream();
-        return $pdf->download("absensi-{$bulan}-{$tahun}.pdf");
+        return $pdf->stream();
+        // return $pdf->download("absensi-{$bulan}-{$tahun}.pdf");
     }
 }

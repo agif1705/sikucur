@@ -84,15 +84,15 @@ class User extends Authenticatable
 
         // Ambil AbsensiPegawai
         $absensi = $this->absensiPegawai()
-            ->whereDate('date_in', $tanggal)
+            ->whereDate('date', $tanggal)
             ->first();
 
         if ($absensi) {
             return (object)[
-                'tanggal' => $absensi->date_in,
+                'tanggal' => $absensi->date,
                 'sn_mesin' => $absensi->sn_mesin,
-                'sumber' => 'absensi',
-                'absensi' => $absensi->absensi,
+                'sumber' => $absensi->resource,
+                'absensi' => $absensi->status_absensi,
                 'is_working_day' => $isWorkingDay,
             ];
         }
@@ -135,7 +135,7 @@ class User extends Authenticatable
     }
     public function absensiPegawai(): HasMany
     {
-        return $this->hasMany(AbsensiPegawai::class);
+        return $this->hasMany(RekapAbsensiPegawai::class);
     }
     public function wdms()
     {
