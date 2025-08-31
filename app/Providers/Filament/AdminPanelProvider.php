@@ -24,6 +24,8 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use App\Filament\Resources\AbsensiPegawaiResource\Widgets\AbsensiHariLibur;
+use App\Filament\Widgets\RekapAbsensiPegawai;
+use App\Filament\Widgets\RekapAbsensiPegawaiWidget;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -55,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 AttendaceUser::class,
             ])->sidebarCollapsibleOnDesktop()
             ->widgets([
+            RekapAbsensiPegawaiWidget::class,
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
             ])

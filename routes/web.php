@@ -15,7 +15,10 @@ use App\Livewire\TvInformasi\TvNagariLivewire;
 // Route::get('/', function () {
 //     return view('welcome');
 // });
-Route::get('/', HomePageLivewire::class)->name('home');
+// Route::get('/', HomePageLivewire::class)->name('home');
+Route::get('/', function () {
+    return redirect('/admin');
+});
 Route::get('kegiatan', KegiatanPageLivewire::class)->name('kegiatan');
 Route::get('kritik', KritikPageLivewire::class)->name('kritik');
 Route::get('agenda', AgendaPageLivewire::class)->name('agenda');

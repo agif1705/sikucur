@@ -15,12 +15,14 @@ use Termwind\Components\Dd;
 use Filament\Actions\Action;
 use Filament\Infolists\Infolist;
 use Livewire\Attributes\Reactive;
+use App\Models\RekapAbsensiPegawai;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use App\Models\AbsensiGabunganFakeModel;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\DatePicker;
 use App\Services\BulananAbsensiPegawaiService;
@@ -28,7 +30,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Infolists\Components\RepeatableEntry;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
-use App\Models\AbsensiGabunganFakeModel;
 
 class AttendaceUser extends Page implements HasTable
 {
@@ -78,13 +79,13 @@ class AttendaceUser extends Page implements HasTable
 
                     if ($attendance) {
                         return match ($attendance->status_absensi) {
-                            'Hadir'                    => 'H',
-                            'HDLD'  => 'HDLD',
-                            'HDDD' => 'HDDD',
-                            'Sakit'                    => 'S',
-                            'Cuti'                     => 'C',
-                            'Izin'                     => 'I',
-                            default                    => 'A',
+                        'Hadir' => 'H',
+                        'HDLD'  => 'HDLD',
+                        'HDDD'  => 'HDDD',
+                        'Sakit' => 'S',
+                        'Cuti'  => 'C',
+                        'Izin'  => 'I',
+                        default => 'A',
                         };
                     }
 
@@ -174,14 +175,21 @@ class AttendaceUser extends Page implements HasTable
                     ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle'),
 
                 Tables\Columns\TextColumn::make('total_absent')
-                    ->label('Total Alpha')
-                    ->getStateUsing(function ($record) use ($daysInMonth) {
-                        $hadir = $record->rekapAbsensiPegawai->count();
-                        return $daysInMonth - $hadir;
-                    })
-                    ->color(fn($state) => $state > 0 ? 'danger' : 'success')
-                    ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->alignCenter(),
+                ->label('Total Alpha')
+                ->getStateUsing(function ($record) use ($daysInMonth, $startDate, $endDate) {
+                    // ambil semua data absensi bulan ini
+                    $hari_kerja = $this->getWorkingDaysThisMonth(now()->month, now()->year);
+                    $rekap = new RekapAbsensiPegawai();
+                    $holidays = $rekap->Holiday(now()->month, now()->year);
+                    $total_hari_kerja = $hari_kerja - $holidays;
+                    // Alpha = hari kerja - semua absensi valid
+                    return  $total_hari_kerja - $record->rekapAbsensiPegawai
+                        ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])
+                        ->count();
+                })
+                ->color(fn($state) => $state > 0 ? 'danger' : 'success')
+                ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                ->alignCenter(),
 
                 ...$dayColumns,
             ])->paginated(false)
@@ -270,5 +278,22 @@ class AttendaceUser extends Page implements HasTable
                 ])
                 ->default(now()->month)
         ];
+    }
+    protected static function getWorkingDaysThisMonth($month, $year)
+    {
+        $today = Carbon::today();
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
+        $end = $today; // Hingga kemarin
+
+        $totalWorkingDays = 0;
+
+        while ($start <= $end) {
+            if (!$start->isWeekend()) {
+                $totalWorkingDays++;
+            }
+            $start->addDay();
+        }
+
+        return $totalWorkingDays;
     }
 }

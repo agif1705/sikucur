@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources;
 
-use Auth;
 use Filament\Forms;
 use App\Models\User;
 use Filament\Tables;
@@ -13,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Filament\Resources\Resource;
 use App\Models\RekapAbsensiPegawai;
 use Filament\Tables\Actions\Action;
+use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -23,7 +23,9 @@ class RekapAbsensiPegawaiResource extends Resource
 {
     protected static ?string $model = RekapAbsensiPegawai::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-user';
+    protected static ?string $navigationGroup = 'Absensi';
+    protected static ?string $navigationLabel = 'Rekap Absensi Bulanan';
 
     public static function form(Form $form): Form
     {
@@ -84,7 +86,7 @@ class RekapAbsensiPegawaiResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_late')
-                    ->label('Terlambat')
+                ->label('Tepat Waktu')
                     ->trueIcon('heroicon-o-clock')
                     ->falseIcon('heroicon-o-check-badge')
                     ->trueColor('danger')
@@ -141,8 +143,8 @@ class RekapAbsensiPegawaiResource extends Resource
     {
         return [
             'index' => Pages\ListRekapAbsensiPegawais::route('/'),
-            'create' => Pages\CreateRekapAbsensiPegawai::route('/create'),
-            'edit' => Pages\EditRekapAbsensiPegawai::route('/{record}/edit'),
+            // 'create' => Pages\CreateRekapAbsensiPegawai::route('/create'),
+            // 'edit' => Pages\EditRekapAbsensiPegawai::route('/{record}/edit'),
         ];
     }
     public static function sinkronFingerPrint(User $user)

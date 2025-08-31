@@ -69,4 +69,10 @@ class RekapAbsensiPegawai extends Model
             ->pluck('event_date', 'event_name');
         return $holidays->count();
     }
+    public function scopeForUserThisMonth($query, $userId)
+    {
+        return $query->where('user_id', $userId)
+            ->whereMonth('date', now()->month)
+            ->whereYear('date', now()->year);
+    }
 }
