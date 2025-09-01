@@ -19,6 +19,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 use CCK\LaravelWahaSaloonSdk\Waha\Waha;
 use App\Handlers\SendingWhatsappHandlers;
+use App\Services\SinkronFingerprintService;
 
 class WhatsAppController extends Controller
 {
@@ -112,6 +113,7 @@ class WhatsAppController extends Controller
                 $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']}) - {$jam} {$statusIcon}\n";
             }
             $state = self::getTerminalState();
+            $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
             $wa = new WahaService();
             if ($state = "1") {
                 $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
@@ -127,7 +129,7 @@ class WhatsAppController extends Controller
     public function getTerminalState()
     {
         // ambil token dulu
-        $authResponse = Http::timeout(10)->post('http://202.155.143.254:8081/jwt-api-token-auth/', [
+        $authResponse = Http::timeout(10)->post('https://baduo.cloud/jwt-api-token-auth/', [
             'username' => 'agif',
             'password' => '@Lvaro02',
         ]);
@@ -138,7 +140,7 @@ class WhatsAppController extends Controller
         $terminalResponse = Http::withHeaders([
             'Authorization' => 'JWT ' . $token,
         ])->timeout(10)
-            ->get('http://202.155.143.254:8081/iclock/api/terminals/1/');
+            ->get('http://baduo.cloud/iclock/api/terminals/1/');
 
         $data = $terminalResponse->json();
         // ambil value "state"
