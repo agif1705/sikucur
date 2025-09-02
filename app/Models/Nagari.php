@@ -14,6 +14,8 @@ class Nagari extends Model
         'logo',
         'longitude',
         'latitude',
+        'wali_id',
+        'seketaris_id',
 
     ];
     // public function attendences()

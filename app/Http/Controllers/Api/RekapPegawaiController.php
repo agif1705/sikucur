@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\User;
 use App\Models\Nagari;
 use Illuminate\Http\Request;
+use App\Services\WahaService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\RekapAbsensiPegawai;
@@ -14,6 +15,7 @@ class RekapPegawaiController extends Controller
 {
     public function webhook(Request $request)
     {
+        // ini ada perubahan di iclock_transaction dan mengirimkan wa ke User
         $data = $request->validate([
             'sn_mesin'  => 'required|string|max:255',
             'emp_id'    => 'required',
@@ -40,6 +42,8 @@ class RekapPegawaiController extends Controller
             ->whereUserId($user->id)
             ->whereDate('date', $date)
             ->first();
+        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
 
         if (!$absensi) {
             // Absensi pertama (masuk)
@@ -53,6 +57,10 @@ class RekapPegawaiController extends Controller
                 'time_in'        => $time_in,
                 'date'           => $date,
             ]);
+            if ($user->aktif == true) {
+                $wa = new WahaService();
+                $result = $wa->sendText($user->no_hp, $pesan);
+            }
 
             return response()->json([
                 'message'      => 'Absensi masuk tercatat',

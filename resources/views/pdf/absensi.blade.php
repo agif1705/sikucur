@@ -135,9 +135,20 @@
           <td>{{ $attendance['total_masuk'] }}</td>
           <td>{{ $data['total_late'] }}</td>
           <td>{{ $data['total_tidak_hadir'] }}</td>
-          <td>{{ round(($attendance['total_masuk'] / $attendance['total_hari_kerja']) * 100) ?: 0 }}%</td>
           <td>
-            {{ round((($attendance['total_masuk'] - $data['total_late']) / $attendance['total_masuk']) * 100) ?: 0 }}%
+            @if ($attendance['total_hari_kerja'] > 0)
+              {{ round(($attendance['total_masuk'] / $attendance['total_hari_kerja']) * 100) }}%
+            @else
+              0%
+            @endif
+          </td>
+
+          <td>
+            @if ($attendance['total_masuk'] > 0)
+              {{ round((($attendance['total_masuk'] - $data['total_late']) / $attendance['total_masuk']) * 100) }}%
+            @else
+              0%
+            @endif
           </td>
         </tr>
       @endforeach

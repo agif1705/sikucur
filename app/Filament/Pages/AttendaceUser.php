@@ -182,10 +182,11 @@ class AttendaceUser extends Page implements HasTable
                     $rekap = new RekapAbsensiPegawai();
                     $holidays = $rekap->Holiday(now()->month, now()->year);
                     $total_hari_kerja = $hari_kerja - $holidays;
-                    // Alpha = hari kerja - semua absensi valid
-                    return  $total_hari_kerja - $record->rekapAbsensiPegawai
-                        ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])
-                        ->count();
+                // dd($total_hari_kerja);
+                // Alpha = hari kerja - semua absensi valid
+                return  $total_hari_kerja - $record->rekapAbsensiPegawai
+                    ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])->whereBetween('date', [$startDate, $endDate])
+                    ->count();
                 })
                 ->color(fn($state) => $state > 0 ? 'danger' : 'success')
                 ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')

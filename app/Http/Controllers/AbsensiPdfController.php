@@ -173,7 +173,7 @@ class AbsensiPdfController extends Controller
             'tahun' => $tahun,
             'monthName' => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y')
         ])->setPaper('a4', 'landscape');
-        return $pdf->stream();
-        // return $pdf->download("absensi-{$bulan}-{$tahun}.pdf");
+        // return $pdf->stream();
+        return $pdf->download("absensi-{$bulan}-{$tahun}.pdf");
     }
 }

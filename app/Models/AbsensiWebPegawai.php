@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class AbsensiWebPegawai extends Model
 {
     protected $fillable = [
+        'alasan',
         'absensi',
         'is_late',
         'file_pendukung',

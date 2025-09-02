@@ -50,7 +50,7 @@ class FingerPrintController extends Controller
             'time_in' => $time_in,
             'date' => $date,
         ]);
-        dd($save_attandance);
+        // dd($save_attandance);
         $absensi = RekapAbsensiPegawai::where('sn_mesin', $data['sn_mesin'])
             ->whereUserId($user->id)
             ->whereDate('date', $date)

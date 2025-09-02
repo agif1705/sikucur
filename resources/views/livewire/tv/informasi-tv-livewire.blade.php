@@ -139,7 +139,7 @@
                           {{ $item['time_only'] }}
                           <span
                             class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
-                            {{ $item['is_late'] ? 'Tepat Waktu' : 'Terlambat' }}
+                            {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
                             <br>{{ $item['absensi_by'] }}
                           </span>
                         </p>
