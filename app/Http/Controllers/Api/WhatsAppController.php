@@ -102,7 +102,7 @@ class WhatsAppController extends Controller
             $absensi = WdmsModel::getAbsensiMasuk($nagari->sn_fingerprint);
             $tanggal = now()->toDateString();
             $baduo = " \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-            $pesan = "📊 Laporan Absensi Hari Ini mak wali Asrul (Semangat Hari Ini: {$tanggal})\n\n";
+            $pesan = "📊 Laporan Absensi Hari Ini mak wali Asrul & Seketaris Fadil (Semangat Hari Ini: {$tanggal})\n\n";
             foreach ($absensi as $i => $item) {
                 $statusIcon = $item['status']
                     ? ($item['is_late'] ? "⚠️ Terlambat" : "✅ HADIR")
@@ -116,13 +116,20 @@ class WhatsAppController extends Controller
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
             $wa = new WahaService();
             if ($state = "1") {
-                $result = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                // $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
-                return $this->apiResponse(true, 'Berhasil', ['nagari' => $data]);
+                return $this->apiResponse(true, 'Berhasil', ['state' => [
+                    // $wali,
+                    $seketaris
+                ]]);
             } else {
-
-                // $result = $wa->sendText('6281282779593', "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
-                return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['nagari' => $data, 'state' => $state]);
+                // $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['state' => [
+                    // $wali,
+                    $seketaris
+                ]]);
             }
         }
     }

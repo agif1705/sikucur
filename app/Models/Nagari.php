@@ -32,6 +32,10 @@ class Nagari extends Model
     {
         return $this->belongsTo(User::class, 'wali_id')->select('id', 'name', 'no_hp', 'emp_id');
     }
+    public function seketaris()
+    {
+        return $this->belongsTo(User::class, 'seketaris_id')->select('id', 'name', 'no_hp', 'emp_id');
+    }
     public function workDays()
     {
         return $this->hasMany(WorkDay::class);
