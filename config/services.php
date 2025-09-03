@@ -38,5 +38,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'gowa' => [
+        'base_url' => 'https://gowas.sikucur.com',
+        'username' => 'sikucur',
+        'password' => 'nagari-sikucur',
+    ],
 
 ];

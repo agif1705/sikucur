@@ -31,18 +31,4 @@ class WahaService
 
         return $response->json(); // bisa juga return langsung $response
     }
-
-    public function sendFile($to, $file)
-    {
-        $imageBase64 = base64_encode(file_get_contents('/path/to/image.jpg'));
-        $response = $this->waha->misc()->sendImage(
-            chatId: $to . '@c.us',
-            file: $imageBase64,
-            session: $this->session,
-            replyTo: null,
-            caption: 'Image from server storage'
-        );
-
-        return $response->json(); // bisa juga return langsung $response    
-    }
 }

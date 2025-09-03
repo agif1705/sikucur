@@ -48,8 +48,8 @@ auto.sikucur.com {
 realtime.sikucur.com {
     reverse_proxy supabase-kong:8000
 }
-realtime2.sikucur.com {
-    reverse_proxy supabase-kong2:8000
+gowas.sikucur.com {
+    reverse_proxy gowa:3045
 }
 
 

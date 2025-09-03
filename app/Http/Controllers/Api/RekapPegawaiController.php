@@ -6,15 +6,18 @@ use PDF;
 use App\Models\User;
 use App\Models\Nagari;
 use Illuminate\Http\Request;
+use App\Services\GowaService;
 use App\Services\WahaService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\RekapAbsensiPegawai;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\Pdf\AbsensiReportBulananService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use CCK\LaravelWahaSaloonSdk\Waha\Waha;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Client\RequestException;
 
@@ -57,12 +60,13 @@ class RekapPegawaiController extends Controller
             $absensi = RekapAbsensiPegawai::create([
                 'user_id'        => $user->id,
                 'nagari_id'      => $nagari_id,
-                'is_late'        => $is_late,
-                'sn_mesin'       => $data['sn_mesin'],
+                'is_late'        => Carbon::parse($data['punch_time'])->format('H:i') > '08:00',
                 'status_absensi' => 'Hadir',
+                'sn_mesin'       => $data['terminal_sn'],
                 'resource'       => 'Fingerprint',
-                'time_in'        => $time_in,
-                'date'           => $date,
+                'id_resource'    => 'fp-' . $data['id'],
+                'time_in'        => Carbon::parse($data['punch_time'])->format('H:i'),
+                'date'           => Carbon::parse($data['punch_time'])->format('Y-m-d'),
             ]);
             if ($user->aktif == true) {
                 $wa = new WahaService();
@@ -92,165 +96,52 @@ class RekapPegawaiController extends Controller
             ], 200);
         }
     }
-    public function absensiBulanan(Request $request)
+    public function absensiBulanan(Request $request,  AbsensiReportBulananService $service)
     {
         $data = $request->validate([
-            'tahun'  => 'required|integer',
-            'bulan'  => 'required|integer|min:1|max:12',
+            'tahun' => 'required|integer',
+            'bulan' => 'required',
         ]);
+
         $tahun = $data['tahun'];
-        $bulan = $data['bulan'];
-        $startDate = Carbon::create($tahun, $bulan, 1)->startOfMonth();
-        $endDate = Carbon::create($tahun, $bulan, 1)->endOfMonth();
+        $bulan = Carbon::parse($data['bulan'])->month - 1; // jangan dikurangi 1
+        $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
+        $path = storage_path("app/private/public/absensi/{$filename}");
 
-        // $holiday_api = Http::get('https://hari-libur-api.vercel.app/api')->json();
-        $holiday_api = Cache::remember('national_holidays_' . $tahun . '_' . $bulan, now()->addDay(), function () {
-            try {
-                return Http::retry(3, 500, function ($exception) {
-                    // Hanya retry untuk error koneksi atau server error
-                    return $exception instanceof RequestException &&
-                        ($exception->getCode() >= 500 || $exception->getCode() === 0);
-                })
-                    ->timeout(10) // Timeout 10 detik
-                    ->get('https://hari-libur-api.vercel.app/api')
-                    ->throw() // Throw exception untuk 4xx/5xx
-                    ->json();
-            } catch (\Exception $e) {
-                // Log error dan return array kosong
-                Log::error('Failed to fetch holidays: ' . $e->getMessage());
-                return [];
+        // ambil semua nagari beserta user + jabatan
+        $nagaris = Nagari::with('users.jabatan')->get();
+
+        // jika file belum ada → generate sekali untuk tiap nagari
+        if (!file_exists($path)) {
+            foreach ($nagaris as $nagari) {
+                $report = $service->generate($tahun, $bulan, $nagari->id);
             }
-        });
-        $holidays = collect($holiday_api)
-            ->where('is_national_holiday', true)
-            ->filter(function ($event) use ($bulan, $tahun) {
-                $eventDate = Carbon::parse($event['event_date']);
-                return $eventDate->month == $bulan &&
-                    $eventDate->year == $tahun &&
-                    !$eventDate->isWeekend();
-            })
-            ->pluck('event_date', 'event_name')
-            ->toArray();
-
-        // Generate semua tanggal dalam bulan
-        $datesInMonth = [];
-        $currentDate = $startDate->copy();
-
-        while ($currentDate <= $endDate) {
-            // Hanya tambahkan hari kerja (Senin-Jumat)
-            if (!$currentDate->isWeekend()) {
-                $datesInMonth[] = $currentDate->format('Y-m-d');
-            }
-            $currentDate->addDay();
+            // ambil hasil terakhir
+            $path = storage_path($report['path']);
+            $filename = $report['filename'];
         }
 
-        // Ambil data absensi
-        $users = User::with(['RekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('date', [$startDate, $endDate])
-                ->where('nagari_id', 1)
-                ->orderBy('date');
-        }])->get()->except(1);
-        // Format data absensi per user per tanggal
-        $attendanceData = $users->map(function ($user) use ($datesInMonth, $holidays) {
-            $userAttendances = $user->RekapAbsensiPegawai->groupBy(function ($item) {
-                return $item->date;
-            });
-            $dailyAttendance = [];
-            $total_hari_kerja = 0;
-            $total_masuk = 0;
-            foreach ($datesInMonth as $date) {
-                $dateObj = Carbon::parse($date);
-                $isHoliday = in_array($date, $holidays);
-                if ($isHoliday) {
-                    $dailyAttendance[$date] = [
-                        'masuk' => 'L',
-                        'pulang' => 'L',
-                        'is_holiday' => true,
-                        'is_late' => false
-                    ];
-                } else {
-                    $attendances = $userAttendances[$date] ?? collect();
-                    $masuk = $attendances->map(function ($item) {
-                        if ($item->resource === 'Fingerprint') {
-                            return Carbon::parse($item->time_in)->format('H:i'); // selalu string jam:menit
-                        } else {
-                            return $item->status_absensi; // langsung status absensi
-                        }
-                    })->first();
-                    $is_late = $attendances->filter(function ($item) {
-                        return $item->is_late;
-                    })->first();
-                    if ($masuk) {
-                        $pulang = $attendances->map(function ($item) {
-                            if ($item->resource === 'Fingerprint') {
-                                return Carbon::parse($item->time_out)->format('H:i'); // selalu string jam:menit
-                            } else {
-                                return $item->status_absensi;
-                            }
-                        })->first();
-                        $total_masuk++;
-                    } else {
-                        $pulang = null;
-                    }
-                    $total_hari_kerja++;
+        // kirim WA ke semua user
+        $response = [];
+        foreach ($nagaris as $nagari) {
+            foreach ($nagari->users as $user) {
+                $pesan = "Hai *" . $user->name . "(Jabatan : " . $user->jabatan->name . ")" . "* Pegawai Nagari " . $nagari->name . " , ini adalah laporan absensi bulan *" . $bulan . "* pada tahun *" . $tahun . "* , Laporan Ini Akan kami kirim setiap awal bulan untuk di review/ditinjau kembali, Laporan pdf ini bisa di ambil dan di simpan di database \n *Note: _dikirim seluruh pegawai dan pimpinan_ \n ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
 
-                    $dailyAttendance[$date] = [
-                        'masuk'      => $masuk ?? 'A',
-                        'pulang' => $pulang ?? 'A',
-                        'is_holiday' => false,
-                        'is_late' => $is_late ?? false,
-                        'total_masuk' => $total_masuk,
-                        'total_hari_kerja' => $total_hari_kerja,
-                    ];
-                }
+                $gowa = new GowaService();
+                $response[] = $gowa->sendFile(
+                    phone: $user->no_hp,
+                    path: $path,
+                    caption: $pesan
+                );
             }
+        }
 
-            // Hitung total kehadiran dan keterlambatan
-            $stats = collect($dailyAttendance)->reduce(function ($carry, $item) {
-                if (!$item['is_holiday']) {
-
-                    if ($item['masuk'] === 'A') { // Hitung jika tidak absent
-                        $carry['total_tidak_hadir']++;
-                    }
-                    if ($item['masuk'] != 'A' || $item['pulang'] != '-') {
-                        $carry['total_present']++;
-                    }
-                    if ($item['is_late']) {
-                        $carry['total_late']++;
-                    }
-                }
-                return $carry;
-            }, [
-                'total_present' => 0,
-                'total_late' => 0,
-                'total_hari_kerja' => 0,
-                'total_tidak_hadir' => 0,
-                'persen_hadir' => 0,
-            ]);
-            return [
-                'user' => $user,
-                'attendances' => $dailyAttendance,
-                'total_present' => $stats['total_present'],
-                'total_late' => $stats['total_late'],
-                'total_tidak_hadir' => $stats['total_tidak_hadir'],
-
-                // ... (data lainnya)
-            ];
-        });
-
-        $pdf = PDF::loadView('pdf.absensi', [
-            'datesInMonth' => $datesInMonth,
-            'holidays' => $holidays,
-            'attendanceData' => $attendanceData,
-            'bulan' => $bulan,
-            'tahun' => $tahun,
-            'monthName' => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y')
-        ])->setPaper('a4', 'landscape');
-        // return $pdf->stream();
-        $filename = "absensi-{$bulan}-{$tahun}.pdf";
-        $path = "public/invoices/{$filename}";
-        Storage::put($path, $pdf->output());
-        $wa = new WahaService();
-        $wa->sendFile('6281282779593', Storage::url($path));
+        // response API
+        return response()->json([
+            'file' => $filename,
+            'path' => $path,
+            'url'  => Storage::url("public/absensi/{$filename}"),
+            'gowa_response' => $response
+        ]);
     }
 }
