@@ -17,3 +17,4 @@ Route::post('/handle/command', [WhatsAppController::class, 'handleCommand'])->na
 Route::post('/kehadiran/report/harian', [WhatsAppController::class, 'scheduleHarian'])->name('scheduleHarian');
 Route::post('/wuzapi/webhook', [WusapiController::class, 'webhook'])->name('wuzapi.webhook');
 Route::post('/rekap/fingerprint', [RekapPegawaiController::class, 'webhook'])->name('rekap.webhook.fingerprint');
+Route::post('/rekap/absensi/bulanan', [RekapPegawaiController::class, 'absensiBulanan'])->name('rekap.webhook.absensi.bulanan');

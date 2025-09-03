@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use PDF;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Nagari;
-use PDF;
 use App\Models\WdmsModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Client\RequestException;
 
 class AbsensiPdfController extends Controller
@@ -173,6 +174,8 @@ class AbsensiPdfController extends Controller
             'tahun' => $tahun,
             'monthName' => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y')
         ])->setPaper('a4', 'landscape');
+        $filename = "absensi-{$bulan}-{$tahun}.pdf";
+        $pdf->save(public_path("absensi/{$filename}"));
         // return $pdf->stream();
         return $pdf->download("absensi-{$bulan}-{$tahun}.pdf");
     }
