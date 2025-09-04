@@ -18,7 +18,7 @@ class SinkronFingerprintService
         $absensi_web = AbsensiWebPegawai::where('nagari_id', $nagari->id)->whereDate('date', $today)->get();
         foreach ($absensi_web as $absensi) {
             $check = RekapAbsensiPegawai::where('user_id', $absensi->user_id)
-                ->whereDate('date', $absensi->date_in)
+                ->whereDate('date', $absensi->date)
                 ->first();
             if (!$check) {
                 RekapAbsensiPegawai::create([
