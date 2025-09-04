@@ -113,10 +113,6 @@ class IzinPegawaiLivewire extends Component implements HasForms
                 $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan . ' ' . $baduo);
                 $seketaris = $wa->sendText($this->users->nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
-                return $this->apiResponse(true, 'Berhasil', ['state' => [
-                    $wali,
-                    $seketaris
-                ]]);
             }
             $this->dispatch('absenBerhasil', nama: $this->users->name, jam: $absensiPegawai->time_in, status: $absensiPegawai->status_absensi);
             $rekapAbsensiPegawai = RekapAbsensiPegawai::create([
