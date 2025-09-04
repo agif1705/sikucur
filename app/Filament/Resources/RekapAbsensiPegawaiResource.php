@@ -113,7 +113,7 @@ class RekapAbsensiPegawaiResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])->defaultSort('date', 'desc')
+            ])->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

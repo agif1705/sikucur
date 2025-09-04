@@ -25,10 +25,7 @@ class RekapAbsensiPegawaiWidget extends BaseWidget
         // ambil hanya user ini dengan hitungan
         $query = RekapAbsensiPegawai::forUserThisMonth(Auth::id());
 
-        $finger   = $query->clone()->where('status_absensi', 'Hadir')->count();
-        $hdld        = $query->clone()->where('status_absensi', 'HDLD')->count();
-        $hddd   = $query->clone()->where('status_absensi', 'HDDD')->count();
-        $kehadiran = $finger + $hdld + $hddd;
+        $kehadiran   = $query->clone()->whereIn('status_absensi', ['Hadir', 'I', 'S', 'HDLD', 'HDDD'])->count();
         $terlambat   = $query->clone()->where('is_late', true)->count();
         $tepat_waktu = $query->clone()->where('is_late', false)->count();
         $persen_hadir = $total_hari_kerja > 0 ? round(($kehadiran / $total_hari_kerja) * 100, 2) : 0;
@@ -43,7 +40,7 @@ class RekapAbsensiPegawaiWidget extends BaseWidget
             Stat::make('Total Hari Kerja', $total_hari_kerja)
                 ->description(now()->translatedFormat('F Y'))
                 ->color('success'),
-            Stat::make('Kehadiran', $kehadiran)
+            Stat::make('Absensi', $kehadiran)
                 ->description(now()->translatedFormat('F Y'))
                 ->color('success'),
             Stat::make('Terlambat', $terlambat)
