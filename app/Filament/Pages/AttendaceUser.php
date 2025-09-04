@@ -72,7 +72,11 @@ class AttendaceUser extends Page implements HasTable
             $dayColumns[] = TextColumn::make($currentDate->format('Y-m-d'))
                 ->label($day)
                 ->getStateUsing(function ($record) use ($currentDate, $dayName) {
-                    // 1️⃣ cek absensi rekap
+                // 1️⃣ cek absensi rekap
+                $today = now()->toDateString();
+                if ($currentDate->toDateString() > $today) {
+                    return '-'; // Belum lewat → kasih tanda "-"
+                }
                     $attendance = $record->rekapAbsensiPegawai
                         ->where('date', $currentDate->toDateString())
                         ->first();
@@ -176,23 +180,59 @@ class AttendaceUser extends Page implements HasTable
 
                 Tables\Columns\TextColumn::make('total_absent')
                 ->label('Total Alpha')
-                ->getStateUsing(function ($record) use ($daysInMonth, $startDate, $endDate) {
-                    // ambil semua data absensi bulan ini
-                    $hari_kerja = $this->getWorkingDaysThisMonth(now()->month, now()->year);
+                ->getStateUsing(function ($record) use ($startDate, $endDate) {
+                    $today = now();
+
+                    // tentukan batas hitung absensi
+                    if ($startDate->isSameMonth($today)) {
+                        $lastCountDate = $today->toDateString();
+                    } elseif ($startDate->lt($today)) {
+                        $lastCountDate = $endDate->toDateString();
+                    } else {
+                        return '-'; // bulan depan, belum ada absensi
+                    }
+
+                    // generate semua tanggal kerja (weekday saja)
+                    $dates = [];
+                    $current = $startDate->copy();
+                    while ($current->toDateString() <= $lastCountDate) {
+                        if (!$current->isWeekend()) {
+                            $dates[] = $current->toDateString();
+                        }
+                        $current->addDay();
+                    }
+
+                    // ambil holiday resmi bulan itu
                     $rekap = new RekapAbsensiPegawai();
-                    $holidays = $rekap->Holiday(now()->month, now()->year);
-                    $total_hari_kerja = $hari_kerja - $holidays;
-                // dd($total_hari_kerja);
-                // Alpha = hari kerja - semua absensi valid
-                return  $total_hari_kerja - $record->rekapAbsensiPegawai
-                    ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])->whereBetween('date', [$startDate, $endDate])
-                    ->count();
-                })
-                ->color(fn($state) => $state > 0 ? 'danger' : 'success')
-                ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                $holidays = $rekap->Holiday($startDate->month, $startDate->year);
+
+                // jika Holiday() ternyata return angka, paksa jadi array kosong
+                if (!is_array($holidays)) {
+                    $holidays = [];
+                }
+
+                // filter keluar holiday dari tanggal kerja
+                $workingDays = collect($dates)->reject(fn($d) => in_array($d, $holidays));
+
+                // ambil semua absensi valid user
+                $hadirDates = $record->rekapAbsensiPegawai
+                    ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])
+                    ->whereBetween('date', [$startDate->toDateString(), $lastCountDate])
+                    ->pluck('date')
+                    ->toArray();
+
+                // hitung alpha = tanggal kerja - tanggal hadir
+                $alpha = $workingDays->reject(fn($d) => in_array($d, $hadirDates))->count();
+
+                return $alpha;
+            })
+                ->color(fn($state) => is_numeric($state) && $state > 0 ? 'danger' : 'success')
+                ->icon(fn($state) => is_numeric($state) && $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
                 ->alignCenter(),
 
-                ...$dayColumns,
+
+
+            ...$dayColumns,
             ])->paginated(false)
             ->striped()
             ->defaultSort('created_at', 'desc')

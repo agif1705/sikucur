@@ -140,14 +140,14 @@
                           <span
                             class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
                             {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
-                            <br>{{ $item['absensi_by'] }}
+                            <br>{{ $item['absensi_by'] }} - {{ $item['status'] }}
                           </span>
                         </p>
                       @endif
                       @if ($item['absensi_by'] === 'web')
-                        <p class="fw-bold text-muted mb-0 fs-md text-start ">
-                          Masuk : Dinas Luar Kantor
+                        <p class="fw-bold text-muted mb-0 fs-md text-start ">  
                           <span class="fw-bold text-success text-end fst-italic">
+                            
                             @switch($item['status'])
                               @case('HDDD')
                                 Dinas Dalam Daerah
@@ -168,6 +168,7 @@
                               @default
                                 {{ $item['status'] }}
                             @endswitch
+                             : {{ $item['absensi_by'] }} - {{ $item['time_only'] }}
                           </span>
                         </p>
                       @endif

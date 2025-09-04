@@ -20,4 +20,8 @@ class HistorySendWa extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function nagari(): BelongsTo
+    {
+        return $this->belongsTo(Nagari::class);
+    }
 }

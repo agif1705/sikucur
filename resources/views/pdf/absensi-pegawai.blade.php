@@ -115,6 +115,7 @@
       @foreach ($attendanceData as $data)
         <tr>
           <td style="text-align: left">{{ $data['user']->name }}</td>
+          
           @foreach ($datesInMonth as $date)
             @php
               $attendance = $data['attendances'][$date];
@@ -127,7 +128,7 @@
 
               </div>
               <div class="time-entry pulang @if ($attendance['pulang'] == '-' && !$isHoliday) empty @endif">
-                {{ $attendance['pulang'] }}
+                {{ $attendance['pulang'] ?? 'A' }}
               </div>
             </td>
           @endforeach

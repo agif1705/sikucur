@@ -58,16 +58,25 @@ class RekapAbsensiPegawai extends Model
                 return [];
             }
         });
+        $today = now()->toDateString();
         $holidays = collect($holiday_api)
             ->where('is_national_holiday', true)
-            ->filter(function ($event) use ($bulan, $tahun) {
+            ->filter(function ($event) use ($bulan, $tahun, $today) {
                 $eventDate = Carbon::parse($event['event_date']);
                 return $eventDate->month == $bulan &&
                     $eventDate->year == $tahun &&
-                    !$eventDate->isWeekend();
+                $eventDate->toDateString() <= $today &&   // hanya libur sampai hari ini
+                !$eventDate->isWeekend();
             })
             ->pluck('event_date', 'event_name');
+
         return $holidays->count();
+    }
+    public function getAbsensiToday($now)
+    {
+        return $this->with('user.nagari', 'user.jabatan')
+            ->whereDate('date', now()->format('Y-m-d'))
+            ->get();
     }
     public function scopeForUserThisMonth($query, $userId)
     {

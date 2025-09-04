@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash ini dev
 # git checkout main
 # git pull origin main        # update dulu biar sinkron
 # git merge dev               # gabungkan perubahan dari dev

@@ -26,6 +26,7 @@ class AbsensiPdfController extends Controller
             return response()->download($path);
         }
         $report = $service->generate($tahun, $bulan, $nagari_id);
-        return $report['pdf']->download($report['filename']);
+        return $report['pdf']->stream($report['filename']);
+        // return $report['pdf']->download($report['filename']);
     }
 }

@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Nagari;
 use Illuminate\Http\Request;
 use App\Services\GowaService;
-use App\Services\WahaService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\RekapAbsensiPegawai;
@@ -17,7 +16,6 @@ use App\Services\Pdf\AbsensiReportBulananService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
-use CCK\LaravelWahaSaloonSdk\Waha\Waha;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Client\RequestException;
 
@@ -27,6 +25,7 @@ class RekapPegawaiController extends Controller
     {
         // ini ada perubahan di iclock_transaction dan mengirimkan wa ke User
         $data = $request->validate([
+            'id'  => 'required|integer',
             'sn_mesin'  => 'required|string|max:255',
             'emp_id'    => 'required',
             'emp_code'  => 'required',
@@ -52,7 +51,7 @@ class RekapPegawaiController extends Controller
             ->whereUserId($user->id)
             ->whereDate('date', $date)
             ->first();
-        $pesan = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
+        $pesan_masuk = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
             '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
 
         if (!$absensi) {
@@ -62,15 +61,15 @@ class RekapPegawaiController extends Controller
                 'nagari_id'      => $nagari_id,
                 'is_late'        => Carbon::parse($data['punch_time'])->format('H:i') > '08:00',
                 'status_absensi' => 'Hadir',
-                'sn_mesin'       => $data['terminal_sn'],
+                'sn_mesin'       => $data['sn_mesin'],
                 'resource'       => 'Fingerprint',
                 'id_resource'    => 'fp-' . $data['id'],
                 'time_in'        => Carbon::parse($data['punch_time'])->format('H:i'),
                 'date'           => Carbon::parse($data['punch_time'])->format('Y-m-d'),
             ]);
             if ($user->aktif == true) {
-                $wa = new WahaService();
-                $result = $wa->sendText($user->no_hp, $pesan);
+                $wa = new GowaService();
+                $result = $wa->sendText($user->no_hp, $pesan_masuk);
             }
 
             return response()->json([
@@ -79,19 +78,27 @@ class RekapPegawaiController extends Controller
                 'time_in'      => $time_in,
                 'date'         => $date,
                 'absensi_type' => 'IN',
-                'dataSender'   => 'Fingerprint'
+                'dataSender'   => 'Fingerprint',
+                'wa_response'  => $result ?? null
             ], 200);
         } else {
             // Absensi kedua (pulang)
             $absensi->update([
-                'time_out' => $time_in,
+                'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
             ]);
-
+            $pesan_pulang = "Hai *" . $user->name . "* , Anda telah melakukan absensi pulang pada jam *" .
+                Carbon::parse($data['punch_time'])->format('H:i') . "* menggunakan fingerprint di *Nagari " . $user->nagari->name .
+                "* ,terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut.\n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
+            if ($user->aktif == true) {
+                $wa = new GowaService();
+                $result = $wa->sendText($user->no_hp, $pesan_pulang);
+            }
             return response()->json([
                 'message'      => 'Absensi pulang tercatat',
                 'user_id'      => $user->emp_code,
                 'time_out'     => $time_in,
                 'date'         => $date,
+                'wa_response'  => $result ?? null,
                 'absensi_type' => 'OUT',
             ], 200);
         }

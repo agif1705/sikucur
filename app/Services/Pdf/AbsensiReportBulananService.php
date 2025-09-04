@@ -81,25 +81,25 @@ class AbsensiReportBulananService
                     ];
                 } else {
                     $attendances = $userAttendances[$date] ?? collect();
-                    $masuk = $attendances->map(function ($item) {
-                        if ($item->resource === 'Fingerprint') {
-                            return Carbon::parse($item->time_in)->format('H:i'); // selalu string jam:menit
-                        } else {
-                            return $item->status_absensi; // langsung status absensi
-                        }
-                    })->first();
-                    $is_late = $attendances->filter(function ($item) {
-                        return $item->is_late;
-                    })->first();
+                    $masuk = $attendances
+                        ->filter(fn($item) => $item->resource === 'Fingerprint' && $item->time_in)
+                        ->min('time_in');
+
                     if ($masuk) {
-                        $pulang = $attendances->map(function ($item) {
-                            if ($item->resource === 'Fingerprint') {
-                                return Carbon::parse($item->time_out)->format('H:i'); // selalu string jam:menit
-                            } else {
-                                return $item->status_absensi;
-                            }
-                        })->first();
+                        $masuk = Carbon::parse($masuk)->format('H:i');
                         $total_masuk++;
+                        $is_late = Carbon::parse($masuk)->format('H:i') > '08:00';
+                    } else {
+                        $masuk = null;
+                        $is_late = false;
+                    }
+
+                    $pulang = $attendances
+                        ->filter(fn($item) => $item->resource === 'Fingerprint' && $item->time_out)
+                        ->max('time_out');
+
+                    if ($pulang) {
+                        $pulang = Carbon::parse($pulang)->format('H:i');
                     } else {
                         $pulang = null;
                     }
@@ -109,7 +109,7 @@ class AbsensiReportBulananService
                         'masuk'      => $masuk ?? 'A',
                         'pulang' => $pulang ?? 'A',
                         'is_holiday' => false,
-                        'is_late' => $is_late ?? false,
+                        'is_late' => $is_late,
                         'total_masuk' => $total_masuk,
                         'total_hari_kerja' => $total_hari_kerja,
                     ];

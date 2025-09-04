@@ -2,33 +2,51 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Http;
 use CCK\LaravelWahaSaloonSdk\Waha\Waha;
 
 class WahaService
 {
-    protected $waha;
-    protected $session;
+    protected string $baseUrl;
+    protected string $username;
+    protected string $password;
 
-    public function __construct($session = 'default')
+    public function __construct()
     {
-        $this->waha = new Waha();
-        $this->session = $session;
-
-        // start session (kalau WAHA belum aktif akan di-start)
-        $this->waha->sessions()->startTheSession($this->session);
+        $this->baseUrl  = config('services.gowa.base_url', 'http://localhost:3000');
+        $this->username = config('services.gowa.username');
+        $this->password = config('services.gowa.password');
     }
 
-    public function sendText($to, $message)
+    /**
+     * Kirim file (PDF, Excel, dsb) via Gowa API
+     */
+    public function sendFile(string $phone, string $path, string $caption = '', bool $isForwarded = false, int $duration = 3600)
     {
-        $response = $this->waha->sendText()->sendTextMessage(
-            chatId: $to . '@c.us',
-            text: $message,
-            session: $this->session,
-            replyTo: null,
-            linkPreview: null,
-            linkPreviewHighQuality: null
-        );
+        if (!file_exists($path)) {
+            throw new \Exception("File {$path} tidak ditemukan");
+        }
 
-        return $response->json(); // bisa juga return langsung $response
+        $response = Http::withBasicAuth($this->username, $this->password)
+            ->attach('file', fopen($path, 'r'), basename($path))
+            ->post($this->baseUrl . '/send/file', [
+                'phone'        => "{$phone}@s.whatsapp.net",
+                'caption'      => $caption,
+                'is_forwarded' => $isForwarded ? 'true' : 'false',
+                'duration'     => $duration,
+            ]);
+
+        return $response->json();
+    }
+    public function sendText(string $phone, string $message, bool $isForwarded = false, int $duration = 3600)
+    {
+        $response = Http::withBasicAuth($this->username, $this->password)
+            ->post($this->baseUrl . '/send/message', [
+                'phone' => "{$phone}@s.whatsapp.net",
+                'message' => $message,
+                'is_forwarded' => $isForwarded ? true : false,
+                'duration' => $duration,
+            ]);
+        return $response->json();
     }
 }

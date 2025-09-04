@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\FingerPrint;
 use App\Models\RekapAbsensiPegawai;
-use App\Services\WahaService;
 
 class FingerPrintController extends Controller
 {

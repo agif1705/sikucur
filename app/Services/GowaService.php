@@ -37,4 +37,15 @@ class GowaService
 
         return $response->json();
     }
+    public function sendText(string $phone, string $message, bool $isForwarded = false, int $duration = 3600)
+    {
+        $response = Http::withBasicAuth($this->username, $this->password)
+            ->post($this->baseUrl . '/send/message', [
+                'phone' => "{$phone}@s.whatsapp.net",
+                'message' => $message,
+                'is_forwarded' => $isForwarded ? true : false,
+                'duration' => $duration,
+            ]);
+        return $response->json();
+    }
 }

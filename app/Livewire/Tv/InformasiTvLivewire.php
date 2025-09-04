@@ -12,7 +12,6 @@ use App\Models\Attendance;
 use App\Models\ListYoutube;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
-use App\Services\WahaService;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
 use Livewire\Attributes\Layout;
@@ -124,5 +123,6 @@ class InformasiTvLivewire extends Component
         $month = Carbon::now()->month;
 
         $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp);
+        // dd($this->users);
     }
 }

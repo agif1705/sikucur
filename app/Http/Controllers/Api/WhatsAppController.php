@@ -10,15 +10,14 @@ use App\Models\WdmsModel;
 use App\Models\IzinPegawai;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Services\WahaService;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
 use App\Models\WhatsAppCommand;
 use Illuminate\Support\Facades\URL;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
-use CCK\LaravelWahaSaloonSdk\Waha\Waha;
 use App\Handlers\SendingWhatsappHandlers;
+use App\Services\GowaService;
 use App\Services\SinkronFingerprintService;
 
 class WhatsAppController extends Controller
@@ -114,8 +113,8 @@ class WhatsAppController extends Controller
             }
             $state = self::getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
-            $wa = new WahaService();
-            if ($state = "1") {
+            $wa = new GowaService();
+            if ($state['state'] == "1") {
                 $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
                 $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
