@@ -114,7 +114,7 @@ class WhatsAppController extends Controller
             $state = self::getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
             $wa = new GowaService();
-            if ($state['state'] == "1") {
+            if (!$state->original['state'] == null) {
                 $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
                 $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
@@ -135,23 +135,20 @@ class WhatsAppController extends Controller
     public function getTerminalState()
     {
         // ambil token dulu
-        $authResponse = Http::timeout(10)->post('https://baduo.cloud/jwt-api-token-auth/', [
+        $authResponse = Http::timeout(10)->post('https://fingerprint.baduo.cloud/jwt-api-token-auth/', [
             'username' => 'agif',
             'password' => '@Lvaro02',
         ]);
-
         $token = $authResponse->json('token');
-
         // ambil data terminal
         $terminalResponse = Http::withHeaders([
             'Authorization' => 'JWT ' . $token,
         ])->timeout(10)
-            ->get('http://baduo.cloud/iclock/api/terminals/1/');
+            ->get('https://fingerprint.baduo.cloud/iclock/api/terminals/2/');
 
         $data = $terminalResponse->json();
         // ambil value "state"
         $state = $data['state'] ?? null;
-
         return response()->json([
             'state' => $state,
         ]);

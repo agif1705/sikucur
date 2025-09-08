@@ -82,7 +82,7 @@ class SinkronFingerprintService
 
         // ================== ABSENSI PULANG ==================
         $absensi_pulang = WdmsModel::with('user')
-            ->whereTime('punch_time', '>=', '12:00')
+            ->whereTime('punch_time', '>=', '15:00')
             ->select('emp_id', 'punch_time', 'emp_code')
             ->get()
             ->map(function ($item) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use PDF;
 use App\Models\User;
 use App\Models\Nagari;
+use App\Models\WhatsAppLog;
 use Illuminate\Http\Request;
 use App\Services\GowaService;
 use Illuminate\Support\Carbon;
@@ -12,12 +13,12 @@ use Illuminate\Support\Facades\DB;
 use App\Models\RekapAbsensiPegawai;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Services\Pdf\AbsensiReportBulananService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Client\RequestException;
+use App\Services\Pdf\AbsensiReportBulananService;
 
 class RekapPegawaiController extends Controller
 {
@@ -69,38 +70,47 @@ class RekapPegawaiController extends Controller
             ]);
             if ($user->aktif == true) {
                 $wa = new GowaService();
-                $result = $wa->sendText($user->no_hp, $pesan_masuk);
+                $result = $wa->sendText("681282779593", $pesan_masuk);
             }
 
             return response()->json([
-                'message'      => 'Absensi masuk tercatat',
+                'message'      => $pesan_masuk,
                 'user_id'      => $user->emp_code,
                 'time_in'      => $time_in,
                 'date'         => $date,
                 'absensi_type' => 'IN',
-                'dataSender'   => 'Fingerprint',
+                'dataSender'   =>  $absensi,
                 'wa_response'  => $result ?? null
             ], 200);
         } else {
             // Absensi kedua (pulang)
-            $absensi->update([
-                'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
-            ]);
-            $pesan_pulang = "Hai *" . $user->name . "* , Anda telah melakukan absensi pulang pada jam *" .
-                Carbon::parse($data['punch_time'])->format('H:i') . "* menggunakan fingerprint di *Nagari " . $user->nagari->name .
-                "* ,terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut.\n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-            if ($user->aktif == true) {
-                $wa = new GowaService();
-                $result = $wa->sendText($user->no_hp, $pesan_pulang);
+            if (Carbon::parse($data['punch_time'])->format('H:i')   > '12:00') {
+                $absensi->update([
+                    'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
+                ]);
+                $pesan_pulang = "Hai *" . $user->name . "* , Anda telah melakukan absensi pulang pada jam *" .
+                    Carbon::parse($data['punch_time'])->format('H:i') . "* menggunakan fingerprint di *Nagari " . $user->nagari->name .
+                    "* ,terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut.\n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
+                if ($user->aktif == true) {
+                    $wa = new GowaService();
+                    $result = $wa->sendText($user->no_hp, $pesan_pulang);
+                    WhatsAppLog::create([
+                        'user_id' => $user->id,
+                        'phone'   => $user->no_hp,
+                        'message' => $pesan_masuk,
+                        'status'  => $result['success'] ?? false ? 'success' : 'failed',
+                        'response' => $result,
+                    ]);
+                }
+                return response()->json([
+                    'message'      => 'Absensi pulang tercatat',
+                    'user_id'      => $user->emp_code,
+                    'time_out'     => Carbon::parse($data['punch_time'])->format('H:i'),
+                    'date'         => Carbon::parse($data['punch_time'])->format('Y-m-d'),
+                    'wa_response'  => $result ?? null,
+                    'absensi_type' => 'OUT',
+                ], 200);
             }
-            return response()->json([
-                'message'      => 'Absensi pulang tercatat',
-                'user_id'      => $user->emp_code,
-                'time_out'     => $time_in,
-                'date'         => $date,
-                'wa_response'  => $result ?? null,
-                'absensi_type' => 'OUT',
-            ], 200);
         }
     }
     public function absensiBulanan(Request $request,  AbsensiReportBulananService $service)

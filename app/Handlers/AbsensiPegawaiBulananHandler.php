@@ -37,7 +37,8 @@ class AbsensiPegawaiBulananHandler implements WhatsAppCommandHandler
         ])->find($user->id);
         $rekap_kehadiran = $user->load(['RekapAbsensiPegawai' => function ($query) use ($bulan, $tahun) {
             $query->whereMonth('date', $bulan)
-                ->whereYear('date', $tahun);
+                ->whereYear('date', $tahun)
+                ->orderBy('date', 'asc');
         }]);
 
         // dd($rekap_kehadiran->RekapAbsensiPegawai);

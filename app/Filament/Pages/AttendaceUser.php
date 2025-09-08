@@ -128,11 +128,15 @@ class AttendaceUser extends Page implements HasTable
 
         return $table
             ->query(
-                User::query()
-                    // ->where('id', '!=', 1)
-                    ->with(['rekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
-                        $query->whereBetween('date', [$startDate, $endDate]);
-                    }])
+            User::query()
+                ->when(
+                    Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan'),
+                    fn($q) => $q->where('id', '!=', 1), // super_admin & kaur umum → semua user kecuali id=1
+                    fn($q) => $q->where('id', Auth::id()) // user biasa → hanya dirinya
+                )
+                ->with(['rekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('date', [$startDate, $endDate]);
+                }])
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')
@@ -294,7 +298,7 @@ class AttendaceUser extends Page implements HasTable
                 })->openUrlInNewTab()
                 ->form(self::getMonthYearForm())
                 ->modalSubmitActionLabel('Generate PDF')
-                ->modalDescription('Pilih bulan dan tahun untuk generate PDF')
+                ->modalDescription('Pilih bulan dan tahun untuk generate PDF')->visible(fn() => auth()->user()->hasRole('super_admin') || auth()->user()->hasRole('Kaur Umum dan Perencanan')),
 
         ];
     }

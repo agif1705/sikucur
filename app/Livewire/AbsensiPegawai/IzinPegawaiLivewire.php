@@ -7,11 +7,12 @@ use Filament\Forms;
 use App\Models\User;
 use Livewire\Component;
 use App\Models\IzinPegawai;
+use App\Models\WhatsAppLog;
+use App\Services\GowaService;
 use App\Models\AbsensiPegawai;
 use Livewire\Attributes\Layout;
 use App\Models\AbsensiWebPegawai;
 use App\Models\RekapAbsensiPegawai;
-use App\Services\GowaService;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Components\Textarea;
@@ -110,7 +111,21 @@ class IzinPegawaiLivewire extends Component implements HasForms
                 "\n Alasan : *" . $this->data['alasan'] . "*  ";
             $wa = new GowaService();
                 $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                WhatsAppLog::create([
+                       'user_id' => $this->users->id,
+                       'phone'   => $this->users->nagari->wali->no_hp,
+                       'message' =>  $pesan . ' ' . $baduo,
+                       'status'  => $wali['success'] ?? false ? 'success' : 'failed',
+                       'response' => $wali,
+                   ]);
                 $seketaris = $wa->sendText($this->users->nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+                WhatsAppLog::create([
+                       'user_id' => $this->users->id,
+                       'phone'   => $this->users->nagari->seketaris->no_hp,
+                       'message' =>  $pesan . ' ' . $baduo,
+                       'status'  => $seketaris['success'] ?? false ? 'success' : 'failed',
+                       'response' => $seketaris,
+                   ]);
             // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
 
             $this->dispatch('absenBerhasil', nama: $this->users->name, jam: $absensiPegawai->time_in, status: $absensiPegawai->status_absensi);

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use App\Models\User;
 use Filament\Tables;
+use App\Models\Nagari;
 use Filament\Forms\Form;
 use App\Models\WdmsModel;
 use Filament\Tables\Table;
@@ -12,14 +13,15 @@ use Illuminate\Support\Carbon;
 use Filament\Resources\Resource;
 use App\Models\RekapAbsensiPegawai;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use App\Services\SinkronFingerprintService;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\RekapAbsensiPegawaiResource\Pages;
 use App\Filament\Resources\RekapAbsensiPegawaiResource\RelationManagers;
-use App\Models\Nagari;
-use App\Services\SinkronFingerprintService;
 
 class RekapAbsensiPegawaiResource extends Resource
 {
@@ -68,10 +70,10 @@ class RekapAbsensiPegawaiResource extends Resource
                 $currentYear = now()->year;
 
                 if (!$is_super_admin) {
-                    $query->where('user_id', Auth::user()->id)
-                        ->whereMonth('date', $currentMonth)
-                        ->whereYear('date', $currentYear);
-                } else {
+                $query->where('user_id', Auth::user()->id);
+                // ->whereMonth('date', $currentMonth)
+                // ->whereYear('date', $currentYear);
+            } else {
                     $query->whereMonth('date', $currentMonth)
                         ->whereYear('date', $currentYear);
                 }
@@ -82,7 +84,7 @@ class RekapAbsensiPegawaiResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Nama Pegawai')
                     ->numeric()
-                    ->sortable(),
+                ->searchable(),
                 Tables\Columns\TextColumn::make('nagari.name')
                     ->label('Nagari')
                     ->numeric()
@@ -101,21 +103,11 @@ class RekapAbsensiPegawaiResource extends Resource
                 Tables\Columns\TextColumn::make('id_resource')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('time_in'),
-                Tables\Columns\TextColumn::make('time_out'),
+                Tables\Columns\TextColumn::make('time_out'),               
                 Tables\Columns\TextColumn::make('date')
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                ->searchable(),
             ])->defaultSort('created_at', 'desc')
             ->filters([
-                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
