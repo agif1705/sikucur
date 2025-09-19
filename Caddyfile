@@ -20,22 +20,17 @@ sikucur.com {
         }
     }
 }
+sekolah.sikucur.com {
+    root * /var/www/sekolah/public
+    php_server
+    encode gzip
+    file_server
+}
 dev.sikucur.com {
     root * /var/www/sikucur/public
     php_server
     encode gzip
     file_server
-
-
-    reverse_proxy /reverb* 127.0.0.1:8080 {
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-        transport http {
-            versions h1
-        }
-    }
 }
 
 
@@ -51,6 +46,11 @@ realtime.sikucur.com {
 gowas.sikucur.com {
     reverse_proxy gowa:3000
 }
+db-sekolah.sikucur.com {
+    reverse_proxy supabase-kong2:8000
+}
+
+
 
 
 

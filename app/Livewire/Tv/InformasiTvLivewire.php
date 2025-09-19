@@ -10,8 +10,10 @@ use Livewire\Component;
 use App\Models\WdmsModel;
 use App\Models\Attendance;
 use App\Models\ListYoutube;
+use App\Models\WhatsAppLog;
 use Illuminate\Support\Str;
 use Livewire\Attributes\On;
+use App\Services\GowaService;
 use App\Models\AbsensiPegawai;
 use App\Helpers\WhatsAppHelper;
 use Livewire\Attributes\Layout;
@@ -61,6 +63,7 @@ class InformasiTvLivewire extends Component
 
         if (!$absensi) {
             // Absensi pertama (masuk)
+            $pesan_masuk = "Hai *" . $user->name . "* (Jabatan : " . $user->jabatan->name . ")" . ",\nKehadiran :  " . $is_late . "* anda telah hadir pada jam *" . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name ."* ,ini akan masuk ke WhatsApp Wali Nagari " . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n_Sent || via *Cv.Baduo Mitra Solustion*_";
             $absensi = RekapAbsensiPegawai::create([
                 'user_id'        => $user->id,
                 'nagari_id'      => $nagari_id,
@@ -72,11 +75,37 @@ class InformasiTvLivewire extends Component
                 'time_in'        => Carbon::parse($data['punch_time'])->format('H:i'),
                 'date'           => Carbon::parse($data['punch_time'])->format('Y-m-d'),
             ]);
+            if ($user->aktif) {
+                $wa = new GowaService();
+                $result = $wa->sendText($user->no_hp, $pesan_masuk);
+                WhatsAppLog::create([
+                        'user_id' => $user->id,
+                        'phone'   => $user->no_hp,
+                        'message' => $pesan_masuk,
+                        'status'  => $result['code'] ?? false,
+                        'response' => $result,
+                    ]);
+            }
         } else {
-            // Absensi kedua (pulang)
-            $absensi->update([
-                'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
-            ]);
+            if (Carbon::parse($data['punch_time'])->greaterThan(Carbon::createFromTime(12, 0))) {
+                $absensi->update([
+                    'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
+                ]);
+                $pesan_pulang = "Hai *" . $user->name . "* , Anda telah melakukan absensi pulang pada jam *" .
+                    Carbon::parse($data['punch_time'])->format('H:i') . "* menggunakan fingerprint di *Nagari " . $user->nagari->name .
+                    "* ,terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut.\n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
+                if ($user->aktif) {
+                    $wa = new GowaService();
+                    $result = $wa->sendText($user->no_hp, $pesan_pulang);
+                    WhatsAppLog::create([
+                        'user_id' => $user->id,
+                        'phone'   => $user->no_hp,
+                        'message' => $pesan_pulang,
+                        'status'  => $result['code'] ?? false,
+                        'response' => $result,
+                    ]);
+                }
+            }
         }
         $this->dispatch('absenBerhasil', nama: $user->name, jam: Carbon::parse($data['punch_time'])->format('H:i'), status: $is_late);
         $this->users = WdmsModel::getAbsensiMasuk($mesin);

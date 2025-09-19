@@ -117,7 +117,7 @@ class WhatsAppController extends Controller
             if (!$state->original['state'] == null) {
                 $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
                 $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
-                // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
+                $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
                     $wali,
                     $seketaris

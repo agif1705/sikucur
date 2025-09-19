@@ -9,15 +9,9 @@ use App\Models\WhatsAppLog;
 use Illuminate\Http\Request;
 use App\Services\GowaService;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use App\Models\RekapAbsensiPegawai;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\Client\RequestException;
 use App\Services\Pdf\AbsensiReportBulananService;
 
 class RekapPegawaiController extends Controller
@@ -35,10 +29,11 @@ class RekapPegawaiController extends Controller
 
         $date = Carbon::parse($data['punch_time'])->format('Y-m-d');
         $time_in = Carbon::parse($data['punch_time'])->format('H:i:s');
-        $is_late = $time_in > '08:00:00';
+        $is_late = Carbon::parse($data['punch_time'])->greaterThan(Carbon::createFromTime(8,0))? 'Terlambat' : 'Ontime';
 
         // Tentukan emp_id yang dipakai
-        $emp_id = $data['emp_id'] ?? intval($data['emp_code']);
+       $emp_id = !empty($data['emp_id']) ? intval($data['emp_id']) : intval($data['emp_code']);
+
 
         // Cari nagari dan user
         $nagari_id = Nagari::where('sn_fingerprint', $data['sn_mesin'])->first()?->id;
@@ -52,15 +47,14 @@ class RekapPegawaiController extends Controller
             ->whereUserId($user->id)
             ->whereDate('date', $date)
             ->first();
-        $pesan_masuk = "Hai *" . $user->name . "* , Anda *" . $is_late . '* anda telah hadir pada jam *' . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name .
-            '* ,ini akan masuk ke WhatsApp Wali Nagari ' . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-
-        if (!$absensi) {
-            // Absensi pertama (masuk)
+            
+            if (!$absensi) {
+                // Absensi pertama (masuk)
+            $pesan_masuk = "Hai *" . $user->name . "* (Jabatan : " . $user->jabatan->name . ")" . ",\nKehadiran :  " . $is_late . "* anda telah hadir pada jam *" . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name ."* ,ini akan masuk ke WhatsApp Wali Nagari " . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n_Sent || via *Cv.Baduo Mitra Solustion*_";
             $absensi = RekapAbsensiPegawai::create([
                 'user_id'        => $user->id,
                 'nagari_id'      => $nagari_id,
-                'is_late'        => Carbon::parse($data['punch_time'])->format('H:i') > '08:00',
+                'is_late'        => $is_late,
                 'status_absensi' => 'Hadir',
                 'sn_mesin'       => $data['sn_mesin'],
                 'resource'       => 'Fingerprint',
@@ -68,13 +62,20 @@ class RekapPegawaiController extends Controller
                 'time_in'        => Carbon::parse($data['punch_time'])->format('H:i'),
                 'date'           => Carbon::parse($data['punch_time'])->format('Y-m-d'),
             ]);
-            if ($user->aktif == true) {
+            if ($user->aktif) {
                 $wa = new GowaService();
-                $result = $wa->sendText("681282779593", $pesan_masuk);
+                $result = $wa->sendText($user->no_hp, $pesan_masuk);
+                WhatsAppLog::create([
+                        'user_id' => $user->id,
+                        'phone'   => $user->no_hp,
+                        'message' => $pesan_masuk,
+                        'status'  => $result['code'] ?? false,
+                        'response' => $result,
+                    ]);
             }
-
             return response()->json([
                 'message'      => $pesan_masuk,
+                'phone'       => $user->no_hp,
                 'user_id'      => $user->emp_code,
                 'time_in'      => $time_in,
                 'date'         => $date,
@@ -84,26 +85,27 @@ class RekapPegawaiController extends Controller
             ], 200);
         } else {
             // Absensi kedua (pulang)
-            if (Carbon::parse($data['punch_time'])->format('H:i')   > '12:00') {
+            if (Carbon::parse($data['punch_time'])->greaterThan(Carbon::createFromTime(12, 0))) {
                 $absensi->update([
                     'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
                 ]);
                 $pesan_pulang = "Hai *" . $user->name . "* , Anda telah melakukan absensi pulang pada jam *" .
                     Carbon::parse($data['punch_time'])->format('H:i') . "* menggunakan fingerprint di *Nagari " . $user->nagari->name .
                     "* ,terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut.\n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-                if ($user->aktif == true) {
+                if ($user->aktif) {
                     $wa = new GowaService();
                     $result = $wa->sendText($user->no_hp, $pesan_pulang);
                     WhatsAppLog::create([
                         'user_id' => $user->id,
                         'phone'   => $user->no_hp,
-                        'message' => $pesan_masuk,
-                        'status'  => $result['success'] ?? false ? 'success' : 'failed',
+                        'message' => $pesan_pulang,
+                        'status'  => $result['code'] ?? false,
                         'response' => $result,
                     ]);
                 }
                 return response()->json([
-                    'message'      => 'Absensi pulang tercatat',
+                    'message'      => $pesan_pulang,
+                    'phone'       => $user->no_hp,
                     'user_id'      => $user->emp_code,
                     'time_out'     => Carbon::parse($data['punch_time'])->format('H:i'),
                     'date'         => Carbon::parse($data['punch_time'])->format('Y-m-d'),
