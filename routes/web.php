@@ -27,3 +27,6 @@ Route::get('/pdf/absensi/{bulan}/{tahun}', [AbsensiPdfController::class, 'index'
 Route::get('/izin-pegawai/{link}/{nagari}', IzinPegawaiLivewire::class)
     ->name('izin-pegawai.form')
     ->middleware('signed');
+Route::get('/test-pdf', [App\Http\Controllers\AbsensiPdfController::class, 'test'])
+    ->middleware('auth')
+    ->name('test.pdf');

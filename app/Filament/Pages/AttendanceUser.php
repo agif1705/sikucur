@@ -27,7 +27,7 @@ class AttendanceUser extends Page implements HasTable
     use HasPageShield;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static string $view = 'filament.pages.attendace-user';
+    protected static string $view = 'filament.pages.attendance-user';
     protected static ?string $navigationGroup = 'Absensi';
     protected static ?string $navigationLabel = 'Absensi Bulanan';
 
@@ -329,7 +329,7 @@ class AttendanceUser extends Page implements HasTable
                         $year = now()->year;
                     }
 
-                    $this->redirect(route('filament.admin.pages.attendace-user', [
+                    $this->redirect(route('filament.admin.pages.attendance-user', [
                         'month' => $month,
                         'year' => $year,
                     ]));

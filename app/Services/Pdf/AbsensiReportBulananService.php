@@ -7,63 +7,165 @@ use App\Models\User;
 use App\Models\Nagari;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * Service untuk generate laporan absensi bulanan dalam format PDF
- * Mengambil data absensi pegawai per nagari dan menghasilkan PDF yang siap download
  */
-
 class AbsensiReportBulananService
 {
     /**
      * Generate laporan absensi bulanan dalam format PDF
-     *
-     * @param int $tahun Tahun laporan
-     * @param int $bulan Bulan laporan (1-12)
-     * @param int $nagariId ID Nagari
-     * @return array Array berisi path, filename, dan PDF object
-     * @throws \Exception Jika terjadi error dalam proses generate
      */
     public function generate(int $tahun, int $bulan, int $nagariId)
     {
         try {
-            // Validasi input
-            $this->validateInput($tahun, $bulan, $nagariId);
-
-            // Setup tanggal awal dan akhir bulan
-            $startDate = Carbon::create($tahun, $bulan, 1)->startOfMonth();
-            $endDate   = Carbon::create($tahun, $bulan, 1)->endOfMonth();
-
-            // Ambil hari libur nasional dengan caching dan error handling
-            $holidays = $this->getNationalHolidays($tahun, $bulan);
-
-            // Generate daftar tanggal kerja dalam bulan (exclude weekend)
-            $datesInMonth = $this->getWorkingDatesInMonth($startDate, $endDate);
-
-            // Ambil data absensi pegawai sesuai nagari
-            $users = $this->getUsersWithAttendance($startDate, $endDate, $nagariId);
-
-            // Format data absensi per user
-            $attendanceData = $this->formatAttendanceData($users, $datesInMonth, $holidays);
-
-            // Generate PDF
-            return $this->generatePDF($attendanceData, $datesInMonth, $holidays, $bulan, $tahun);
-
-        } catch (\Exception $e) {
-            Log::error('Error generating attendance report: ' . $e->getMessage(), [
+            Log::info('Starting PDF generation in service', [
                 'tahun' => $tahun,
                 'bulan' => $bulan,
                 'nagariId' => $nagariId
             ]);
-            throw $e;
+
+            // Validasi input
+            $this->validateInput($tahun, $bulan, $nagariId);
+
+            // Buat tanggal periode
+            $startDate = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+            $endDate = $startDate->copy()->endOfMonth();
+
+            Log::info('Date range created', [
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString()
+            ]);
+
+            // Ambil data hari libur
+            $holidays = $this->getNationalHolidays($tahun, $bulan);
+
+            // Generate tanggal dalam bulan
+            $datesInMonth = $this->getWorkingDatesInMonth($startDate, $endDate);
+
+            Log::info('Dates and holidays prepared', [
+                'total_dates' => count($datesInMonth),
+                'total_holidays' => count($holidays)
+            ]);
+
+            // Ambil data users dengan attendance
+            $users = $this->getUsersWithAttendance($startDate, $endDate, $nagariId);
+
+            Log::info('Users data retrieved', [
+                'total_users' => $users->count(),
+                'user_names' => $users->pluck('name')->toArray()
+            ]);
+
+            if ($users->isEmpty()) {
+                Log::warning('No users found for PDF generation');
+
+                // Buat PDF kosong dengan pesan
+                $emptyHtml = $this->generateEmptyPdfHtml($tahun, $bulan, $nagariId);
+                $pdf = PDF::loadHTML($emptyHtml);
+
+                return [
+                    'pdf' => $pdf,
+                    'data' => [],
+                    'message' => 'Tidak ada data pegawai untuk periode ini'
+                ];
+            }
+
+            // Format data attendance
+            $attendanceData = $this->formatAttendanceData($users, $datesInMonth, $holidays);
+
+            Log::info('Attendance data formatted', [
+                'total_records' => $attendanceData->count()
+            ]);
+
+            // Generate PDF
+            return $this->generatePDF($attendanceData, $datesInMonth, $holidays, $bulan, $tahun, $nagariId);
+
+        } catch (\Exception $e) {
+            Log::error('Error in AbsensiReportBulananService::generate', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return error PDF
+            $errorHtml = $this->generateErrorPdfHtml($e->getMessage());
+            $pdf = PDF::loadHTML($errorHtml);
+
+            return [
+                'pdf' => $pdf,
+                'data' => [],
+                'error' => $e->getMessage()
+            ];
         }
     }
 
     /**
-     * Validasi input parameter
+     * Generate HTML untuk PDF kosong
+     */
+    private function generateEmptyPdfHtml(int $tahun, int $bulan, int $nagariId): string
+    {
+        $nagari = \App\Models\Nagari::find($nagariId);
+        $bulanName = Carbon::create($tahun, $bulan)->locale('id')->monthName;
+
+        return '
+        <html>
+        <head>
+            <title>Laporan Absensi - Tidak Ada Data</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .message { text-align: center; color: #666; font-size: 18px; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>LAPORAN ABSENSI PEGAWAI</h1>
+                <h2>' . ($nagari ? $nagari->name : 'Unknown Nagari') . '</h2>
+                <h3>Periode: ' . $bulanName . ' ' . $tahun . '</h3>
+            </div>
+            <div class="message">
+                <p><strong>Tidak ada data pegawai untuk periode ini</strong></p>
+                <p>Tanggal Generate: ' . now()->format('d/m/Y H:i:s') . '</p>
+            </div>
+        </body>
+        </html>';
+    }
+
+    /**
+     * Generate HTML untuk error PDF
+     */
+    private function generateErrorPdfHtml(string $errorMessage): string
+    {
+        return '
+        <html>
+        <head>
+            <title>Error - Laporan Absensi</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .error { color: red; text-align: center; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>ERROR - LAPORAN ABSENSI</h1>
+            </div>
+            <div class="error">
+                <p><strong>Terjadi kesalahan:</strong></p>
+                <p>' . htmlspecialchars($errorMessage) . '</p>
+                <p>Tanggal: ' . now()->format('d/m/Y H:i:s') . '</p>
+            </div>
+        </body>
+        </html>';
+    }
+
+    /**
+     * Validasi input parameters
      */
     private function validateInput(int $tahun, int $bulan, int $nagariId): void
     {
@@ -75,81 +177,16 @@ class AbsensiReportBulananService
             throw new \InvalidArgumentException('Tahun tidak valid');
         }
 
-        if ($nagariId <= 0) {
-            throw new \InvalidArgumentException('Nagari ID tidak valid');
-        }
-
-        // Validasi nagari exists
-        if (!Nagari::find($nagariId)) {
+        $nagari = Nagari::find($nagariId);
+        if (!$nagari) {
             throw new \InvalidArgumentException('Nagari tidak ditemukan');
         }
-    }
 
-    /**
-     * Ambil daftar hari libur nasional dengan caching
-     */
-    private function getNationalHolidays(int $tahun, int $bulan): array
-    {
-        $cacheKey = "national_holidays_{$tahun}_{$bulan}";
-
-        $holiday_api = Cache::remember($cacheKey, now()->addDay(), function () {
-            try {
-                $response = Http::retry(3, 500, function ($exception) {
-                    return $exception->getCode() >= 500 || $exception->getCode() === 0;
-                })
-                ->timeout(10)
-                ->get('https://hari-libur-api.vercel.app/api');
-
-                if ($response->successful()) {
-                    return $response->json();
-                }
-
-                Log::warning('Holiday API returned non-successful response', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
-                return [];
-
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch holidays from API: ' . $e->getMessage());
-                return [];
-            }
-        });
-
-        // Filter hari libur nasional sesuai bulan dan tahun
-        return collect($holiday_api)
-            ->where('is_national_holiday', true)
-            ->filter(function ($event) use ($bulan, $tahun) {
-                try {
-                    $eventDate = Carbon::parse($event['event_date']);
-                    return $eventDate->month == $bulan &&
-                           $eventDate->year == $tahun &&
-                           !$eventDate->isWeekend();
-                } catch (\Exception $e) {
-                    Log::warning('Invalid event date format', ['event' => $event]);
-                    return false;
-                }
-            })
-            ->pluck('event_date', 'event_name')
-            ->toArray();
-    }
-
-    /**
-     * Generate daftar tanggal kerja dalam bulan (exclude weekend)
-     */
-    private function getWorkingDatesInMonth(Carbon $startDate, Carbon $endDate): array
-    {
-        $dates = [];
-        $current = $startDate->copy();
-
-        while ($current <= $endDate) {
-            if (!$current->isWeekend()) {
-                $dates[] = $current->format('Y-m-d');
-            }
-            $current->addDay();
-        }
-
-        return $dates;
+        Log::info('Input validation passed', [
+            'tahun' => $tahun,
+            'bulan' => $bulan,
+            'nagari' => $nagari->name
+        ]);
     }
 
     /**
@@ -157,15 +194,45 @@ class AbsensiReportBulananService
      */
     private function getUsersWithAttendance(Carbon $startDate, Carbon $endDate, int $nagariId)
     {
-        return User::with(['RekapAbsensiPegawai' => function ($query) use ($startDate, $endDate, $nagariId) {
-            $query->whereBetween('date', [$startDate, $endDate])
-                ->where('nagari_id', $nagariId)
-                ->orderBy('date');
-        }, 'nagari', 'jabatan'])
-        ->where('nagari_id', $nagariId)
-        ->where('id', '!=', 1) // Exclude super admin
-        ->orderBy('name')
-        ->get();
+        Log::info('Fetching users with attendance', [
+            'start_date' => $startDate->toDateString(),
+            'end_date' => $endDate->toDateString(),
+            'nagari_id' => $nagariId
+        ]);
+
+        $query = User::query()
+            ->where('nagari_id', $nagariId)
+            ->where('id', '!=', 1) // Exclude super admin
+            ->with([
+                'rekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
+                    $query->whereBetween('date', [$startDate, $endDate])
+                          ->orderBy('date');
+                },
+                'nagari.workDays',
+                'jabatan'
+            ])
+            ->orderBy('name');
+
+        // Filter berdasarkan role user yang sedang login
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (!($user->hasRole('super_admin') || $user->hasRole('Kaur Umum dan Perencanan'))) {
+                $query->where('id', $user->id);
+            }
+        }
+
+        $users = $query->get();
+
+        Log::info('Users fetched', [
+            'count' => $users->count(),
+            'users' => $users->map(fn($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'attendance_count' => $u->rekapAbsensiPegawai->count()
+            ])->toArray()
+        ]);
+
+        return $users;
     }
 
     /**
@@ -250,9 +317,62 @@ class AbsensiReportBulananService
     }
 
     /**
+     * Ambil tanggal-tanggal dalam bulan
+     */
+    private function getWorkingDatesInMonth(Carbon $startDate, Carbon $endDate): array
+    {
+        $dates = [];
+        $current = $startDate->copy();
+
+        while ($current <= $endDate) {
+            $dates[] = $current->toDateString();
+            $current->addDay();
+        }
+
+        return $dates;
+    }
+
+    /**
+     * Ambil hari libur nasional
+     */
+    private function getNationalHolidays(int $tahun, int $bulan): array
+    {
+        try {
+            $cacheKey = "holidays_{$tahun}_{$bulan}";
+
+            return Cache::remember($cacheKey, 3600, function () use ($tahun, $bulan) {
+                $response = Http::timeout(10)->get("https://api-harilibur.vercel.app/api", [
+                    'year' => $tahun,
+                    'month' => $bulan
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    return collect($data)->pluck('holiday_date')->toArray();
+                }
+
+                Log::warning('Failed to fetch holidays from API', [
+                    'status' => $response->status(),
+                    'year' => $tahun,
+                    'month' => $bulan
+                ]);
+
+                return [];
+            });
+        } catch (\Exception $e) {
+            Log::error('Error fetching national holidays', [
+                'error' => $e->getMessage(),
+                'year' => $tahun,
+                'month' => $bulan
+            ]);
+            return [];
+        }
+    }
+
+    /**
      * Generate PDF dari data yang telah diformat
      */
-    private function generatePDF($attendanceData, array $datesInMonth, array $holidays, int $bulan, int $tahun): array
+    private function generatePDF($attendanceData, array $datesInMonth, array $holidays, int $bulan, int $tahun, int $nagariId): array
     {
         try {
             $pdf = PDF::loadView('pdf.absensi-pegawai', [
@@ -267,7 +387,7 @@ class AbsensiReportBulananService
             $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
 
             // Buat direktori jika belum ada
-            $directory = 'private/public/absensi';
+            $directory = 'private/public/test';
             if (!Storage::exists($directory)) {
                 Storage::makeDirectory($directory);
                 Log::info('Created directory: ' . $directory);
