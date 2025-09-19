@@ -11,6 +11,7 @@ use App\Filament\Auth\CustomLogin;
 use Filament\Support\Colors\Color;
 use App\Forms\Components\MapAbsensi;
 use App\Filament\Pages\AttendaceUser;
+use App\Filament\Pages\AttendanceUser;
 use Filament\Http\Middleware\Authenticate;
 use Filament\View\LegacyComponents\Widget;
 use Illuminate\Session\Middleware\StartSession;
@@ -54,7 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,
-                AttendaceUser::class,
+                AttendanceUser::class,
             ])->sidebarCollapsibleOnDesktop()
             ->widgets([
             RekapAbsensiPegawaiWidget::class,

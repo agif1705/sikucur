@@ -47,7 +47,7 @@ class RekapPegawaiController extends Controller
             ->whereUserId($user->id)
             ->whereDate('date', $date)
             ->first();
-            
+
             if (!$absensi) {
                 // Absensi pertama (masuk)
             $pesan_masuk = "Hai *" . $user->name . "* (Jabatan : " . $user->jabatan->name . ")" . ",\nKehadiran :  " . $is_late . "* anda telah hadir pada jam *" . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name ."* ,ini akan masuk ke WhatsApp Wali Nagari " . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n_Sent || via *Cv.Baduo Mitra Solustion*_";
@@ -123,7 +123,7 @@ class RekapPegawaiController extends Controller
         ]);
 
         $tahun = $data['tahun'];
-        $bulan = Carbon::parse($data['bulan'])->month - 1; // jangan dikurangi 1
+        $bulan = Carbon::parse($data['bulan'])->month; // jangan dikurangi 1
         $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
         $path = storage_path("app/private/public/absensi/{$filename}");
 
