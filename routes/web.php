@@ -42,4 +42,6 @@ if (app()->environment(['local', 'development'])) {
     // Include debug routes
     include __DIR__ . '/debug-pdf.php';
     include __DIR__ . '/debug-workdays.php';
+    include __DIR__ . '/test-fix.php';
+    include __DIR__ . '/debug-holiday.php';
 }

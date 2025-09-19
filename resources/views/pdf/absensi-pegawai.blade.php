@@ -112,10 +112,10 @@
           @endphp
           <th colspan="1"
             class="@if ($isHolidayApi) holiday-api @elseif($isFutureDate) future-date @endif"
-            @if ($isHolidayApi) title="{{ $holidays[$date]['name'] }}" @endif>
+            @if ($isHolidayApi && isset($holidays[$date]['name'])) title="{{ $holidays[$date]['name'] }}" @endif>
             {{ $dateObj->format('d') }}<br>
             {{ $dateObj->translatedFormat('D') }}
-            @if ($isHolidayApi)
+            @if ($isHolidayApi && isset($holidays[$date]['name']))
               <br><small>{{ $holidays[$date]['name'] }}</small>
             @endif
           </th>
@@ -177,17 +177,26 @@
   </table>
   <table border="0" cellspacing="10" cellpadding="0" style="width: 100%;">
     <tr>
+      @php $holidayCount = 0; @endphp
       @foreach ($holidays as $date => $holidayData)
-        <td
-          style="border: 1px solid #ff8c00; padding: 8px; vertical-align: top; width: 200px; background-color: #fff3e0;">
-          <strong>{{ $holidayData['name'] }}</strong><br>
-          <small>{{ Carbon\Carbon::parse($date)->locale('id')->translatedFormat('l, d F Y') }}</small>
-        </td>
-        @if ($loop->iteration % 4 == 0 && !$loop->last)
+        @if (is_array($holidayData) && isset($holidayData['name']))
+          <td
+            style="border: 1px solid #ff8c00; padding: 8px; vertical-align: top; width: 200px; background-color: #fff3e0;">
+            <strong>{{ $holidayData['name'] }}</strong><br>
+            <small>{{ Carbon\Carbon::parse($date)->locale('id')->translatedFormat('l, d F Y') }}</small>
+          </td>
+          @php $holidayCount++; @endphp
+          @if ($holidayCount % 4 == 0 && !$loop->last)
     </tr>
     <tr>
       @endif
+      @endif
       @endforeach
+      @if ($holidayCount === 0)
+        <td style="padding: 8px; text-align: center; width: 100%; color: #666;">
+          <em>Tidak ada hari libur nasional pada bulan ini</em>
+        </td>
+      @endif
     </tr>
   </table>
 

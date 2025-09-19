@@ -2,19 +2,8 @@
 
 namespace App\Services\Pdf;
 
-use App\Model            Log::info('Dates and holidays prepared', [
-                'total_dates' => count($allDatesInMonth),
-                'working_dates_only' => count($workingDatesOnly),
-                'total_holidays' => count($holidays)
-            ]);
-
-            // Ambil data users dengan attendance
-            $users = $this->getUsersWithAttendance($startDate, $endDate, $nagariId);
-
-            Log::info('Users fetched with attendance data', [
-                'user_count' => $users->count(),
-                'user_names' => $users->pluck('name')->toArray()
-            ]);App\Models\Nagari;
+use App\Models\User;
+use App\Models\Nagari;
 use PDF;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -274,13 +263,15 @@ class AbsensiReportBulananService
 
                 if ($isHoliday) {
                     // Hari libur nasional - tandai H dengan nama libur
+                    $holidayName = isset($holidays[$date]['name']) ? $holidays[$date]['name'] : 'Hari Libur';
+
                     $dailyAttendance[$date] = [
                         'masuk' => 'H',
                         'pulang' => 'H',
                         'is_holiday' => true,
                         'is_late' => false,
                         'is_working_day' => true,
-                        'holiday_name' => $holidays[$date]['name']
+                        'holiday_name' => $holidayName
                     ];
                 } elseif ($isFutureDate) {
                     // Tanggal masa depan - tandai dengan "-"
@@ -314,7 +305,9 @@ class AbsensiReportBulananService
             }
 
             // Set total hari kerja setelah loop (tidak termasuk holidays dan future dates)
-            $stats['total_hari_kerja'] = $workingDaysCount;            return [
+            $stats['total_hari_kerja'] = $workingDaysCount;
+
+            return [
                 'user' => $user,
                 'attendances' => $dailyAttendance,
                 'stats' => $stats
@@ -439,11 +432,25 @@ class AbsensiReportBulananService
                     $data = $response->json();
                     $holidays = [];
 
-                    foreach ($data as $holiday) {
-                        $holidays[$holiday['holiday_date']] = [
-                            'name' => $holiday['holiday_name'],
-                            'date' => $holiday['holiday_date']
-                        ];
+                    if (is_array($data)) {
+                        foreach ($data as $holiday) {
+                            // Validate API response structure
+                            if (isset($holiday['holiday_date']) && isset($holiday['holiday_name'])) {
+                                $holidays[$holiday['holiday_date']] = [
+                                    'name' => $holiday['holiday_name'],
+                                    'date' => $holiday['holiday_date']
+                                ];
+                            } else {
+                                Log::warning('Invalid holiday data structure from API', [
+                                    'holiday_data' => $holiday
+                                ]);
+                            }
+                        }
+                    } else {
+                        Log::warning('API returned non-array data', [
+                            'response_type' => gettype($data),
+                            'response_data' => $data
+                        ]);
                     }
 
                     Log::info('Holidays fetched from API', [
