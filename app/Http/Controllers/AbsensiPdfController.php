@@ -60,7 +60,7 @@ class AbsensiPdfController extends Controller
             }
 
             // Download PDF langsung
-            return $report['pdf']->download($filename);
+            return $report['pdf']->stream($filename);
 
         } catch (\Exception $e) {
             Log::error('Error generating PDF report: ' . $e->getMessage(), [

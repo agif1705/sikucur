@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Services\GowaService;
 use Illuminate\Support\Carbon;
 use App\Models\RekapAbsensiPegawai;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use App\Services\Pdf\AbsensiReportBulananService;
@@ -117,50 +118,174 @@ class RekapPegawaiController extends Controller
     }
     public function absensiBulanan(Request $request,  AbsensiReportBulananService $service)
     {
-        $data = $request->validate([
-            'tahun' => 'required|integer',
-            'bulan' => 'required',
-        ]);
+        try {
+            $data = $request->validate([
+                'tahun' => 'required|integer|min:2020|max:' . (now()->year + 1),
+                'bulan' => 'required|integer|min:1|max:12',
+            ]);
 
-        $tahun = $data['tahun'];
-        $bulan = Carbon::parse($data['bulan'])->month; // jangan dikurangi 1
-        $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
-        $path = storage_path("app/private/public/absensi/{$filename}");
+            $tahun = $data['tahun'];
+            $bulan = $data['bulan'];
+            $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
+            $storagePath = "private/public/absensi/{$filename}";
+            $fullPath = storage_path("app/{$storagePath}");
 
-        // ambil semua nagari beserta user + jabatan
-        $nagaris = Nagari::with('users.jabatan')->get();
+            // Ambil semua nagari beserta user + jabatan
+            $nagaris = Nagari::with(['users.jabatan' => function($query) {
+                $query->whereNotNull('name');
+            }])->whereHas('users')->get();
 
-        // jika file belum ada → generate sekali untuk tiap nagari
-        if (!file_exists($path)) {
+            if ($nagaris->isEmpty()) {
+                return response()->json([
+                    'error' => 'Tidak ada nagari dengan pegawai yang ditemukan'
+                ], 404);
+            }
+
+            // Cek apakah file sudah ada
+            if (!Storage::exists($storagePath)) {
+                Log::info('Generating new PDF report', [
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
+                    'nagari_count' => $nagaris->count()
+                ]);
+
+                // Generate PDF untuk setiap nagari (ambil yang terakhir sebagai master)
+                $report = null;
+                foreach ($nagaris as $nagari) {
+                    try {
+                        $report = $service->generate($tahun, $bulan, $nagari->id);
+                        Log::info('Generated report for nagari', [
+                            'nagari_id' => $nagari->id,
+                            'nagari_name' => $nagari->name
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to generate report for nagari', [
+                            'nagari_id' => $nagari->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
+                if (!$report) {
+                    return response()->json([
+                        'error' => 'Gagal membuat laporan PDF'
+                    ], 500);
+                }
+            } else {
+                Log::info('Using existing PDF file', ['path' => $fullPath]);
+            }
+
+            // Verifikasi file exists
+            if (!Storage::exists($storagePath)) {
+                return response()->json([
+                    'error' => 'File PDF tidak ditemukan setelah generate'
+                ], 500);
+            }
+
+            // Kirim WhatsApp ke semua user
+            $response = [];
+            $totalSent = 0;
+            $totalFailed = 0;
+
             foreach ($nagaris as $nagari) {
-                $report = $service->generate($tahun, $bulan, $nagari->id);
+                foreach ($nagari->users as $user) {
+                    if (!$user->aktif || !$user->no_hp) {
+                        Log::info('Skipping inactive user or user without phone', [
+                            'user_id' => $user->id,
+                            'name' => $user->name,
+                            'aktif' => $user->aktif,
+                            'has_phone' => !empty($user->no_hp)
+                        ]);
+                        continue;
+                    }
+
+                    $jabatan = $user->jabatan->name ?? 'Tidak ada jabatan';
+                    $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\\n\\n" .
+                             "Pegawai Nagari {$nagari->name}\\n\\n" .
+                             "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\\n\\n" .
+                             "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\\n" .
+                             "Laporan PDF dapat disimpan untuk dokumentasi.\\n\\n" .
+                             "_Note: Dikirim ke seluruh pegawai dan pimpinan_\\n\\n" .
+                             "Ketik: *info* untuk bantuan lebih lanjut.\\n\\n" .
+                             "_Sent via Cv.Baduo Mitra Solution_";
+
+                    try {
+                        $gowa = new GowaService();
+                        $result = $gowa->sendFile(
+                            phone: $user->no_hp,
+                            path: $fullPath,
+                            caption: $pesan
+                        );
+
+                        $response[] = [
+                            'user_id' => $user->id,
+                            'name' => $user->name,
+                            'phone' => $user->no_hp,
+                            'nagari' => $nagari->name,
+                            'status' => 'sent',
+                            'response' => $result
+                        ];
+                        $totalSent++;
+
+                        // Log WhatsApp
+                        WhatsAppLog::create([
+                            'user_id' => $user->id,
+                            'phone' => $user->no_hp,
+                            'message' => $pesan,
+                            'status' => $result['code'] ?? false,
+                            'response' => $result,
+                        ]);
+
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send WhatsApp', [
+                            'user_id' => $user->id,
+                            'phone' => $user->no_hp,
+                            'error' => $e->getMessage()
+                        ]);
+
+                        $response[] = [
+                            'user_id' => $user->id,
+                            'name' => $user->name,
+                            'phone' => $user->no_hp,
+                            'nagari' => $nagari->name,
+                            'status' => 'failed',
+                            'error' => $e->getMessage()
+                        ];
+                        $totalFailed++;
+                    }
+
+                    // Delay untuk avoid rate limiting
+                    usleep(500000); // 0.5 second delay
+                }
             }
-            // ambil hasil terakhir
-            $path = storage_path($report['path']);
-            $filename = $report['filename'];
+
+            // Response API
+            return response()->json([
+                'success' => true,
+                'file' => $filename,
+                'path' => $fullPath,
+                'storage_path' => $storagePath,
+                'file_size' => Storage::size($storagePath) . ' bytes',
+                'url' => Storage::url("public/absensi/{$filename}"),
+                'summary' => [
+                    'total_nagari' => $nagaris->count(),
+                    'total_users' => $nagaris->sum(fn($n) => $n->users->count()),
+                    'total_sent' => $totalSent,
+                    'total_failed' => $totalFailed
+                ],
+                'gowa_response' => $response
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in absensiBulanan: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Terjadi kesalahan saat memproses laporan',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // kirim WA ke semua user
-        $response = [];
-        foreach ($nagaris as $nagari) {
-            foreach ($nagari->users as $user) {
-                $pesan = "Hai *" . $user->name . "(Jabatan : " . $user->jabatan->name . ")" . "* Pegawai Nagari " . $nagari->name . " , ini adalah laporan absensi bulan *" . $bulan . "* pada tahun *" . $tahun . "* , Laporan Ini Akan kami kirim setiap awal bulan untuk di review/ditinjau kembali, Laporan pdf ini bisa di ambil dan di simpan di database \n *Note: _dikirim seluruh pegawai dan pimpinan_ \n ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-
-                $gowa = new GowaService();
-                $response[] = $gowa->sendFile(
-                    phone: $user->no_hp,
-                    path: $path,
-                    caption: $pesan
-                );
-            }
-        }
-
-        // response API
-        return response()->json([
-            'file' => $filename,
-            'path' => $path,
-            'url'  => Storage::url("public/absensi/{$filename}"),
-            'gowa_response' => $response
-        ]);
     }
 }

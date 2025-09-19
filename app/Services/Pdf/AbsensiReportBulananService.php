@@ -264,20 +264,51 @@ class AbsensiReportBulananService
                 'monthName'      => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y'),
             ])->setPaper('a4', 'landscape');
 
-            $filename = "Laporan_Absensi_{$bulan}_{$tahun}.pdf";
+            $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
 
-            // Simpan ke storage jika diperlukan (optional)
-            // $path = "public/absensi/{$filename}";
-            // Storage::put($path, $pdf->output());
+            // Buat direktori jika belum ada
+            $directory = 'private/public/absensi';
+            if (!Storage::exists($directory)) {
+                Storage::makeDirectory($directory);
+                Log::info('Created directory: ' . $directory);
+            }
+
+            // Path untuk menyimpan file
+            $storagePath = "{$directory}/{$filename}";
+            $fullPath = storage_path("app/{$storagePath}");
+
+            // Simpan PDF ke storage
+            $pdfContent = $pdf->output();
+            Storage::put($storagePath, $pdfContent);
+
+            // Verifikasi file tersimpan
+            if (Storage::exists($storagePath)) {
+                Log::info('PDF file saved successfully', [
+                    'filename' => $filename,
+                    'path' => $fullPath,
+                    'size' => Storage::size($storagePath) . ' bytes'
+                ]);
+            } else {
+                Log::error('PDF file failed to save', [
+                    'filename' => $filename,
+                    'path' => $fullPath
+                ]);
+            }
 
             return [
+                'path' => $storagePath,
+                'full_path' => $fullPath,
                 'filename' => $filename,
                 'pdf' => $pdf,
                 'success' => true
             ];
 
         } catch (\Exception $e) {
-            Log::error('Error creating PDF: ' . $e->getMessage());
+            Log::error('Error creating PDF: ' . $e->getMessage(), [
+                'bulan' => $bulan,
+                'tahun' => $tahun,
+                'trace' => $e->getTraceAsString()
+            ]);
             throw new \Exception('Gagal membuat file PDF: ' . $e->getMessage());
         }
     }
