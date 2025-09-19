@@ -217,34 +217,10 @@
     </div>
   @endif
 
-  <table border="0" cellspacing="10" cellpadding="0" style="width: 100%; display: none;">
-    <!-- Hidden old holiday table -->
-    <tr>
-      @php $holidayCount = 0; @endphp
-      @foreach ($holidays as $date => $holidayData)
-        @if (is_array($holidayData) && isset($holidayData['name']))
-          <td
-            style="border: 1px solid #ff8c00; padding: 8px; vertical-align: top; width: 200px; background-color: #fff3e0;">
-            <strong>{{ $holidayData['name'] }}</strong><br>
-            <small>{{ Carbon\Carbon::parse($date)->locale('id')->translatedFormat('l, d F Y') }}</small>
-          </td>
-          @php $holidayCount++; @endphp
-          @if ($holidayCount % 4 == 0 && !$loop->last)
-    </tr>
-    <tr>
-      @endif
-      @endif
-      @endforeach
-      @if ($holidayCount === 0)
-        <td style="padding: 8px; text-align: center; width: 100%; color: #666;">
-          <em>Tidak ada hari libur nasional pada bulan ini</em>
-        </td>
-      @endif
-    </tr>
-    <footer>
-      <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
-      <h6>Dicetak oleh: {{ auth()->user()->name ?? 'Anonim' }}</h6>
-    </footer>
+  <footer>
+    <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
+    <h6>Dicetak oleh: {{ auth()->user()->name ?? 'Anonim' }}</h6>
+  </footer>
 </body>
 
 </html>

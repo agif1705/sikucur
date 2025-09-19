@@ -427,36 +427,49 @@ class AbsensiReportBulananService
                     'year' => $tahun,
                     'month' => $bulan
                 ]);
-                // dd($response->json()); // Debug line removed
+
+                Log::info('Holiday API call', [
+                    'url' => 'https://api-harilibur.vercel.app/api',
+                    'year' => $tahun,
+                    'month' => $bulan,
+                    'status' => $response->status()
+                ]);
+
                 if ($response->successful()) {
                     $data = $response->json();
                     $holidays = [];
 
                     if (is_array($data)) {
                         foreach ($data as $holiday) {
-                            // Validate API response structure dan filter hanya hari libur nasional
-                            if (isset($holiday['holiday_date']) && isset($holiday['holiday_name']) &&
-                                isset($holiday['is_national_holiday']) && $holiday['is_national_holiday'] == true) {
+                            // ambil hanya yang is_national_holiday = true
+                            if (isset($holiday['is_national_holiday']) && $holiday['is_national_holiday'] === true) {
+                                // API: "2025-09-5" → System: "2025-09-05"
+                                $normalizedDate = Carbon::parse($holiday['holiday_date'])->format('Y-m-d');
+                                // Filter hanya untuk bulan yang diminta
+                                $holidayMonth = Carbon::parse($holiday['holiday_date'])->month;
+                                $holidayYear = Carbon::parse($holiday['holiday_date'])->year;
 
-                                // Normalize date format from API (2025-09-5 -> 2025-09-05)
-                                $apiDate = $holiday['holiday_date'];
-                                $normalizedDate = Carbon::parse($apiDate)->format('Y-m-d');
+                                if ($holidayMonth === $bulan && $holidayYear === $tahun) {
+                                    $holidays[$normalizedDate] = [
+                                        'name' => $holiday['holiday_name'],
+                                        'date' => $normalizedDate,
+                                        'is_national' => true
+                                    ];
 
-                                $holidays[$normalizedDate] = [
-                                    'name' => $holiday['holiday_name'],
-                                    'date' => $normalizedDate,
-                                    'is_national' => true
-                                ];
-
-                                Log::debug('Holiday processed', [
-                                    'original_date' => $apiDate,
-                                    'normalized_date' => $normalizedDate,
-                                    'name' => $holiday['holiday_name']
-                                ]);
+                                    Log::info('National holiday found and processed', [
+                                        'original_date' => $holiday['holiday_date'],
+                                        'normalized_date' => $normalizedDate,
+                                        'name' => $holiday['holiday_name'],
+                                        'year' => $holidayYear,
+                                        'month' => $holidayMonth
+                                    ]);
+                                }
                             } else {
-                                Log::debug('Holiday skipped (not national or invalid)', [
+                                Log::debug('Holiday skipped', [
                                     'holiday_data' => $holiday,
-                                    'is_national' => $holiday['is_national_holiday'] ?? 'missing'
+                                    'is_national' => $holiday['is_national_holiday'] ?? 'missing',
+                                    'reason' => !isset($holiday['is_national_holiday']) ? 'missing_field' :
+                                               ($holiday['is_national_holiday'] !== true ? 'not_national' : 'other')
                                 ]);
                             }
                         }
