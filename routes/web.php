@@ -30,3 +30,16 @@ Route::get('/izin-pegawai/{link}/{nagari}', IzinPegawaiLivewire::class)
 Route::get('/test-pdf', [App\Http\Controllers\AbsensiPdfController::class, 'test'])
     ->middleware('auth')
     ->name('test.pdf');
+
+// Test routes untuk debugging PDF (hanya development)
+if (app()->environment(['local', 'development'])) {
+    Route::get('/debug-pdf/{bulan}/{tahun}/{nagari?}', [App\Http\Controllers\Test\TestAbsensiPdfController::class, 'testPdf'])
+        ->name('debug.pdf');
+
+    Route::get('/debug-data/{bulan}/{tahun}/{nagari?}', [App\Http\Controllers\Test\TestAbsensiPdfController::class, 'testData'])
+        ->name('debug.data');
+
+    // Include debug routes
+    include __DIR__ . '/debug-pdf.php';
+    include __DIR__ . '/debug-workdays.php';
+}

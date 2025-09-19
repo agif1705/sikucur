@@ -31,6 +31,17 @@
 
     .holiday {
       background-color: #ce3232;
+      color: white;
+    }
+
+    .holiday-api {
+      background-color: #ff8c00;
+      color: white;
+    }
+
+    .future-date {
+      background-color: #e0e0e0;
+      color: #666;
     }
 
     .weekend {
@@ -87,7 +98,7 @@
 
 <body>
   <h1 class="text-center">Nagari Sikucur - Kehadiran {{ $monthName }}</h1>
-  <h5>Laporan ini di cetak tanggal {{ now() }}</h5>
+  <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
 
   <table>
     <thead>
@@ -96,11 +107,17 @@
         @foreach ($datesInMonth as $date)
           @php
             $dateObj = Carbon\Carbon::parse($date);
-            $isHoliday = in_array($date, $holidays);
+            $isHolidayApi = isset($holidays[$date]);
+            $isFutureDate = $date > now()->toDateString();
           @endphp
-          <th colspan="1" class="@if ($isHoliday) holiday @endif">
+          <th colspan="1"
+            class="@if ($isHolidayApi) holiday-api @elseif($isFutureDate) future-date @endif"
+            @if ($isHolidayApi) title="{{ $holidays[$date]['name'] }}" @endif>
             {{ $dateObj->format('d') }}<br>
             {{ $dateObj->translatedFormat('D') }}
+            @if ($isHolidayApi)
+              <br><small>{{ $holidays[$date]['name'] }}</small>
+            @endif
           </th>
         @endforeach
         <th>Work<br>day</th>
@@ -115,38 +132,41 @@
       @foreach ($attendanceData as $data)
         <tr>
           <td style="text-align: left">{{ $data['user']->name }}</td>
-          
+
           @foreach ($datesInMonth as $date)
             @php
               $attendance = $data['attendances'][$date];
-              $isHoliday = in_array($date, $holidays);
+              $isHolidayApi = isset($holidays[$date]);
+              $isFutureDate = isset($attendance['is_future']) && $attendance['is_future'];
             @endphp
-            <td class="@if ($isHoliday) holiday @endif">
-              <div class="time-entry masuk @if ($attendance['masuk'] == 'A' && !$isHoliday) empty @endif">
-
-                <span style="@if ($attendance['is_late']) color:red @endif">{{ $attendance['masuk'] }}</span>
-
+            <td
+              class="@if ($isHolidayApi) holiday-api @elseif($isFutureDate) future-date @endif"
+              @if ($isHolidayApi) title="{{ $holidays[$date]['name'] }}" @endif>
+              <div class="time-entry masuk">
+                <span style="@if (isset($attendance['is_late']) && $attendance['is_late']) color:red @endif">
+                  {{ $attendance['masuk'] }}
+                </span>
               </div>
-              <div class="time-entry pulang @if ($attendance['pulang'] == '-' && !$isHoliday) empty @endif">
-                {{ $attendance['pulang'] ?? 'A' }}
+              <div class="time-entry pulang">
+                {{ $attendance['pulang'] ?? '-' }}
               </div>
             </td>
           @endforeach
-          <td>{{ $attendance['total_hari_kerja'] }}</td>
-          <td>{{ $attendance['total_masuk'] }}</td>
-          <td>{{ $data['total_late'] }}</td>
-          <td>{{ $data['total_tidak_hadir'] }}</td>
+          <td>{{ $data['stats']['total_hari_kerja'] }}</td>
+          <td>{{ $data['stats']['total_present'] }}</td>
+          <td>{{ $data['stats']['total_late'] }}</td>
+          <td>{{ $data['stats']['total_tidak_hadir'] }}</td>
           <td>
-            @if ($attendance['total_hari_kerja'] > 0)
-              {{ round(($attendance['total_masuk'] / $attendance['total_hari_kerja']) * 100) }}%
+            @if ($data['stats']['total_hari_kerja'] > 0)
+              {{ round(($data['stats']['total_present'] / $data['stats']['total_hari_kerja']) * 100) }}%
             @else
               0%
             @endif
           </td>
 
           <td>
-            @if ($attendance['total_masuk'] > 0)
-              {{ round((($attendance['total_masuk'] - $data['total_late']) / $attendance['total_masuk']) * 100) }}%
+            @if ($data['stats']['total_present'] > 0)
+              {{ round((($data['stats']['total_present'] - $data['stats']['total_late']) / $data['stats']['total_present']) * 100) }}%
             @else
               0%
             @endif
@@ -157,10 +177,11 @@
   </table>
   <table border="0" cellspacing="10" cellpadding="0" style="width: 100%;">
     <tr>
-      @foreach ($holidays as $name => $date)
-        <td style="border: 1px solid #ddd; padding: 8px; vertical-align: top; width: 200px;">
-          <strong>{{ $name }}</strong><br>
-          {{ $date }}
+      @foreach ($holidays as $date => $holidayData)
+        <td
+          style="border: 1px solid #ff8c00; padding: 8px; vertical-align: top; width: 200px; background-color: #fff3e0;">
+          <strong>{{ $holidayData['name'] }}</strong><br>
+          <small>{{ Carbon\Carbon::parse($date)->locale('id')->translatedFormat('l, d F Y') }}</small>
         </td>
         @if ($loop->iteration % 4 == 0 && !$loop->last)
     </tr>
@@ -169,25 +190,30 @@
       @endforeach
     </tr>
   </table>
-  {{-- <table class="table-libur">
-        <thead>
-            <tr>
-                <th>Hari Libur</th>
-                <th>Tanggal Libur</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($holidays as $item => $value)
-                <tr>
-                    <td>{{ $item }}</td>
-                    <td>{{ $value }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table> --}}
+
+  <!-- Legend -->
+  <table style="margin-top: 10px; font-size: 10px;">
+    <tr>
+      <td style="background-color: #16c472; padding: 5px; width: 30px;">H</td>
+      <td style="padding: 5px;">Hadir Tepat Waktu</td>
+      <td style="background-color: #ff8c00; padding: 5px; width: 30px; color: white;">H</td>
+      <td style="padding: 5px;">Hari Libur Nasional</td>
+      <td style="background-color: #e0e0e0; padding: 5px; width: 30px;">-</td>
+      <td style="padding: 5px;">Tanggal Masa Depan</td>
+    </tr>
+    <tr>
+      <td style="background-color: #ffcccc; padding: 5px; width: 30px;">A</td>
+      <td style="padding: 5px;">Tidak Hadir</td>
+      <td style="background-color: #d0ec6c; padding: 5px; width: 30px;">P</td>
+      <td style="padding: 5px;">Pulang</td>
+      <td style="color: red; padding: 5px; width: 30px;">*</td>
+      <td style="padding: 5px;">Terlambat (Merah)</td>
+    </tr>
+  </table>
+
   <footer>
-    <h5>Laporan ini di cetak tanggal {{ now() }}</h5>
-    <h6>Dicetak ole Pegawai: {{ auth()->user()->name ?? "Anonim" }}</h6>
+    <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
+    <h6>Dicetak oleh: {{ auth()->user()->name ?? 'Anonim' }}</h6>
   </footer>
 </body>
 

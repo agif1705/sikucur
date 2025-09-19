@@ -336,8 +336,8 @@ class AttendanceUser extends Page implements HasTable
                 }),
             Action::make('pdf')
                 ->color('warning')
-                ->label('Laporan Absensi PDF')
-                ->icon('heroicon-o-document-arrow-down')
+                ->label('Preview PDF')
+                ->icon('heroicon-o-eye')
                 ->action(function (array $data) {
                     $month = (int) ($data['month'] ?? now()->month);
                     $year = (int) ($data['year'] ?? now()->year);
@@ -351,11 +351,35 @@ class AttendanceUser extends Page implements HasTable
                         $year = now()->year;
                     }
 
-                    return redirect()->to("/pdf/absensi/{$month}/{$year}");
+                    return redirect()->to("/pdf/absensi/{$month}/{$year}?stream=true");
                 })->openUrlInNewTab()
                 ->form(self::getMonthYearForm())
-                ->modalSubmitActionLabel('Generate PDF')
-                ->modalDescription('Pilih bulan dan tahun untuk generate PDF')
+                ->modalSubmitActionLabel('Preview PDF')
+                ->modalDescription('Pilih bulan dan tahun untuk preview PDF di browser')
+                ->visible(fn() => Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan')),
+
+            Action::make('download-pdf')
+                ->color('success')
+                ->label('Download PDF')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->action(function (array $data) {
+                    $month = (int) ($data['month'] ?? now()->month);
+                    $year = (int) ($data['year'] ?? now()->year);
+
+                    // Validasi input
+                    if ($month < 1 || $month > 12) {
+                        $month = now()->month;
+                    }
+
+                    if ($year < 2020 || $year > now()->year + 1) {
+                        $year = now()->year;
+                    }
+
+                    return redirect()->to("/pdf/absensi/{$month}/{$year}?download=true");
+                })->openUrlInNewTab()
+                ->form(self::getMonthYearForm())
+                ->modalSubmitActionLabel('Download PDF')
+                ->modalDescription('Pilih bulan dan tahun untuk download PDF langsung')
                 ->visible(fn() => Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan')),
 
         ];

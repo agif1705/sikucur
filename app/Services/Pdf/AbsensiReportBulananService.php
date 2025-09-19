@@ -2,9 +2,20 @@
 
 namespace App\Services\Pdf;
 
+use App\Model            Log::info('Dates and holidays prepared', [
+                'total_dates' => count($allDatesInMonth),
+                'working_dates_only' => count($workingDatesOnly),
+                'total_holidays' => count($holidays)
+            ]);
+
+            // Ambil data users dengan attendance
+            $users = $this->getUsersWithAttendance($startDate, $endDate, $nagariId);
+
+            Log::info('Users fetched with attendance data', [
+                'user_count' => $users->count(),
+                'user_names' => $users->pluck('name')->toArray()
+            ]);App\Models\Nagari;
 use PDF;
-use App\Models\User;
-use App\Models\Nagari;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -41,14 +52,18 @@ class AbsensiReportBulananService
                 'end_date' => $endDate->toDateString()
             ]);
 
-            // Ambil data hari libur
+            // Ambil data hari libur dengan nama
             $holidays = $this->getNationalHolidays($tahun, $bulan);
 
-            // Generate tanggal dalam bulan
-            $datesInMonth = $this->getWorkingDatesInMonth($startDate, $endDate);
+            // Generate semua tanggal dalam bulan
+            $allDatesInMonth = $this->getAllDatesInMonth($startDate, $endDate);
+
+            // Filter hanya hari kerja untuk ditampilkan di PDF
+            $workingDatesOnly = $this->getWorkingDatesOnly($allDatesInMonth, $nagariId);
 
             Log::info('Dates and holidays prepared', [
-                'total_dates' => count($datesInMonth),
+                'total_dates' => count($allDatesInMonth),
+                'working_dates_only' => count($workingDatesOnly),
                 'total_holidays' => count($holidays)
             ]);
 
@@ -74,15 +89,15 @@ class AbsensiReportBulananService
                 ];
             }
 
-            // Format data attendance
-            $attendanceData = $this->formatAttendanceData($users, $datesInMonth, $holidays);
+            // Format data attendance (hanya untuk hari kerja yang ditampilkan)
+            $attendanceData = $this->formatAttendanceData($users, $workingDatesOnly, $holidays);
 
             Log::info('Attendance data formatted', [
                 'total_records' => $attendanceData->count()
             ]);
 
             // Generate PDF
-            return $this->generatePDF($attendanceData, $datesInMonth, $holidays, $bulan, $tahun, $nagariId);
+            return $this->generatePDF($attendanceData, $workingDatesOnly, $holidays, $bulan, $tahun, $nagariId);
 
         } catch (\Exception $e) {
             Log::error('Error in AbsensiReportBulananService::generate', [
@@ -240,31 +255,52 @@ class AbsensiReportBulananService
      */
     private function formatAttendanceData($users, array $datesInMonth, array $holidays): \Illuminate\Support\Collection
     {
-        return $users->map(function ($user) use ($datesInMonth, $holidays) {
+        $today = now()->toDateString();
+
+        return $users->map(function ($user) use ($datesInMonth, $holidays, $today) {
             $userAttendances = $user->RekapAbsensiPegawai->groupBy('date');
             $dailyAttendance = [];
+            $workingDaysCount = 0;
             $stats = [
                 'total_present' => 0,
                 'total_late' => 0,
                 'total_tidak_hadir' => 0,
-                'total_hari_kerja' => count($datesInMonth) - count($holidays)
+                'total_hari_kerja' => 0  // Will be calculated below
             ];
 
             foreach ($datesInMonth as $date) {
-                $isHoliday = in_array($date, $holidays);
+                $isHoliday = isset($holidays[$date]);
+                $isFutureDate = $date > $today;
 
                 if ($isHoliday) {
+                    // Hari libur nasional - tandai H dengan nama libur
                     $dailyAttendance[$date] = [
-                        'masuk' => 'L',
-                        'pulang' => 'L',
+                        'masuk' => 'H',
+                        'pulang' => 'H',
                         'is_holiday' => true,
-                        'is_late' => false
+                        'is_late' => false,
+                        'is_working_day' => true,
+                        'holiday_name' => $holidays[$date]['name']
+                    ];
+                } elseif ($isFutureDate) {
+                    // Tanggal masa depan - tandai dengan "-"
+                    $dailyAttendance[$date] = [
+                        'masuk' => '-',
+                        'pulang' => '-',
+                        'is_holiday' => false,
+                        'is_late' => false,
+                        'is_working_day' => true,
+                        'is_future' => true
                     ];
                 } else {
+                    // Hari kerja normal
+                    $workingDaysCount++;
                     $attendanceInfo = $this->processUserDailyAttendance($userAttendances[$date] ?? collect());
+                    $attendanceInfo['is_working_day'] = true;
+                    $attendanceInfo['is_holiday'] = false;
                     $dailyAttendance[$date] = $attendanceInfo;
 
-                    // Update statistics
+                    // Update statistics hanya untuk hari kerja yang sudah lewat
                     if ($attendanceInfo['masuk'] !== 'A') {
                         $stats['total_present']++;
                     } else {
@@ -277,7 +313,8 @@ class AbsensiReportBulananService
                 }
             }
 
-            return [
+            // Set total hari kerja setelah loop (tidak termasuk holidays dan future dates)
+            $stats['total_hari_kerja'] = $workingDaysCount;            return [
                 'user' => $user,
                 'attendances' => $dailyAttendance,
                 'stats' => $stats
@@ -317,9 +354,32 @@ class AbsensiReportBulananService
     }
 
     /**
-     * Ambil tanggal-tanggal dalam bulan
+     * Filter hanya tanggal hari kerja untuk ditampilkan di PDF
      */
-    private function getWorkingDatesInMonth(Carbon $startDate, Carbon $endDate): array
+    private function getWorkingDatesOnly(array $allDates, int $nagariId): array
+    {
+        $nagari = \App\Models\Nagari::with('workDays')->find($nagariId);
+        $workingDates = [];
+
+        foreach ($allDates as $date) {
+            if ($this->isWorkingDay($date, $nagari)) {
+                $workingDates[] = $date;
+            }
+        }
+
+        Log::info('Filtered working dates', [
+            'total_dates' => count($allDates),
+            'working_dates' => count($workingDates),
+            'filtered_out' => count($allDates) - count($workingDates)
+        ]);
+
+        return $workingDates;
+    }
+
+    /**
+     * Ambil semua tanggal dalam bulan (termasuk weekend)
+     */
+    private function getAllDatesInMonth(Carbon $startDate, Carbon $endDate): array
     {
         $dates = [];
         $current = $startDate->copy();
@@ -333,22 +393,65 @@ class AbsensiReportBulananService
     }
 
     /**
-     * Ambil hari libur nasional
+     * Cek apakah tanggal adalah hari kerja berdasarkan work_days nagari
+     */
+    private function isWorkingDay($date, $nagari): bool
+    {
+        $dayName = strtolower(Carbon::parse($date)->format('l')); // monday, tuesday, etc
+
+        $workDay = $nagari->workDays->where('day', $dayName)->first();
+
+        // Jika tidak ada setting work_day, default weekdays = kerja, weekend = libur
+        if (!$workDay) {
+            $isWorking = !in_array($dayName, ['saturday', 'sunday']);
+            Log::debug('No work_day setting found', [
+                'date' => $date,
+                'day_name' => $dayName,
+                'default_is_working' => $isWorking
+            ]);
+            return $isWorking;
+        }
+
+        Log::debug('Work day check', [
+            'date' => $date,
+            'day_name' => $dayName,
+            'is_working_day' => $workDay->is_working_day
+        ]);
+
+        return $workDay->is_working_day;
+    }
+
+    /**
+     * Ambil hari libur nasional dengan nama dari API
      */
     private function getNationalHolidays(int $tahun, int $bulan): array
     {
         try {
-            $cacheKey = "holidays_{$tahun}_{$bulan}";
+            $cacheKey = "national_holidays_{$tahun}_{$bulan}";
 
             return Cache::remember($cacheKey, 3600, function () use ($tahun, $bulan) {
-                $response = Http::timeout(10)->get("https://api-harilibur.vercel.app/api", [
+                $response = Http::timeout(10)->get('https://api-harilibur.vercel.app/api', [
                     'year' => $tahun,
                     'month' => $bulan
                 ]);
 
                 if ($response->successful()) {
                     $data = $response->json();
-                    return collect($data)->pluck('holiday_date')->toArray();
+                    $holidays = [];
+
+                    foreach ($data as $holiday) {
+                        $holidays[$holiday['holiday_date']] = [
+                            'name' => $holiday['holiday_name'],
+                            'date' => $holiday['holiday_date']
+                        ];
+                    }
+
+                    Log::info('Holidays fetched from API', [
+                        'count' => count($holidays),
+                        'holidays' => array_keys($holidays)
+                    ]);
+
+                    return $holidays;
                 }
 
                 Log::warning('Failed to fetch holidays from API', [
@@ -387,7 +490,7 @@ class AbsensiReportBulananService
             $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
 
             // Buat direktori jika belum ada
-            $directory = 'private/public/test';
+            $directory = 'private/public/absensi/';
             if (!Storage::exists($directory)) {
                 Storage::makeDirectory($directory);
                 Log::info('Created directory: ' . $directory);
