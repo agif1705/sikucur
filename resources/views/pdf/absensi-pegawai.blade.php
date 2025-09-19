@@ -4,7 +4,7 @@
 <head>
   <style>
     @page {
-      size: A4 landscape;
+      size: legal landscape;
       margin: 0.1cm;
     }
 
@@ -86,11 +86,32 @@
       margin: 20px 0;
     }
 
-    .holiday-card {
-      border: 1px solid #ddd;
-      padding: 10px 15px;
+    .holiday-info {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #fff3e0;
+      border: 1px solid #ff8c00;
       border-radius: 5px;
-      background: #e45a5a;
+    }
+
+    .holiday-info h4 {
+      margin: 0 0 10px 0;
+      color: #ff8c00;
+      font-size: 12px;
+    }
+
+    .holiday-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .holiday-item {
+      background-color: #ff8c00;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 10px;
       min-width: 200px;
     }
   </style>
@@ -175,7 +196,29 @@
       @endforeach
     </tbody>
   </table>
-  <table border="0" cellspacing="10" cellpadding="0" style="width: 100%;">
+  <!-- Keterangan Hari Libur Nasional -->
+  @if (count($holidays) > 0)
+    <div class="holiday-info">
+      <h4>🏛️ Hari Libur Nasional Bulan {{ $monthName }}</h4>
+      <div class="holiday-list">
+        @foreach ($holidays as $date => $holidayData)
+          @if (is_array($holidayData) && isset($holidayData['name']))
+            <div class="holiday-item">
+              <strong>{{ $holidayData['name'] }}</strong><br>
+              <small>{{ Carbon\Carbon::parse($date)->locale('id')->translatedFormat('l, d F Y') }}</small>
+            </div>
+          @endif
+        @endforeach
+      </div>
+    </div>
+  @else
+    <div class="holiday-info">
+      <h4>📅 Tidak ada hari libur nasional pada bulan {{ $monthName }}</h4>
+    </div>
+  @endif
+
+  <table border="0" cellspacing="10" cellpadding="0" style="width: 100%; display: none;">
+    <!-- Hidden old holiday table -->
     <tr>
       @php $holidayCount = 0; @endphp
       @foreach ($holidays as $date => $holidayData)
@@ -198,32 +241,10 @@
         </td>
       @endif
     </tr>
-  </table>
-
-  <!-- Legend -->
-  <table style="margin-top: 10px; font-size: 10px;">
-    <tr>
-      <td style="background-color: #16c472; padding: 5px; width: 30px;">H</td>
-      <td style="padding: 5px;">Hadir Tepat Waktu</td>
-      <td style="background-color: #ff8c00; padding: 5px; width: 30px; color: white;">H</td>
-      <td style="padding: 5px;">Hari Libur Nasional</td>
-      <td style="background-color: #e0e0e0; padding: 5px; width: 30px;">-</td>
-      <td style="padding: 5px;">Tanggal Masa Depan</td>
-    </tr>
-    <tr>
-      <td style="background-color: #ffcccc; padding: 5px; width: 30px;">A</td>
-      <td style="padding: 5px;">Tidak Hadir</td>
-      <td style="background-color: #d0ec6c; padding: 5px; width: 30px;">P</td>
-      <td style="padding: 5px;">Pulang</td>
-      <td style="color: red; padding: 5px; width: 30px;">*</td>
-      <td style="padding: 5px;">Terlambat (Merah)</td>
-    </tr>
-  </table>
-
-  <footer>
-    <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
-    <h6>Dicetak oleh: {{ auth()->user()->name ?? 'Anonim' }}</h6>
-  </footer>
+    <footer>
+      <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
+      <h6>Dicetak oleh: {{ auth()->user()->name ?? 'Anonim' }}</h6>
+    </footer>
 </body>
 
 </html>

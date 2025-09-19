@@ -38,10 +38,4 @@ if (app()->environment(['local', 'development'])) {
 
     Route::get('/debug-data/{bulan}/{tahun}/{nagari?}', [App\Http\Controllers\Test\TestAbsensiPdfController::class, 'testData'])
         ->name('debug.data');
-
-    // Include debug routes
-    include __DIR__ . '/debug-pdf.php';
-    include __DIR__ . '/debug-workdays.php';
-    include __DIR__ . '/test-fix.php';
-    include __DIR__ . '/debug-holiday.php';
 }

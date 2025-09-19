@@ -427,22 +427,36 @@ class AbsensiReportBulananService
                     'year' => $tahun,
                     'month' => $bulan
                 ]);
-
+                // dd($response->json()); // Debug line removed
                 if ($response->successful()) {
                     $data = $response->json();
                     $holidays = [];
 
                     if (is_array($data)) {
                         foreach ($data as $holiday) {
-                            // Validate API response structure
-                            if (isset($holiday['holiday_date']) && isset($holiday['holiday_name'])) {
-                                $holidays[$holiday['holiday_date']] = [
+                            // Validate API response structure dan filter hanya hari libur nasional
+                            if (isset($holiday['holiday_date']) && isset($holiday['holiday_name']) &&
+                                isset($holiday['is_national_holiday']) && $holiday['is_national_holiday'] == true) {
+
+                                // Normalize date format from API (2025-09-5 -> 2025-09-05)
+                                $apiDate = $holiday['holiday_date'];
+                                $normalizedDate = Carbon::parse($apiDate)->format('Y-m-d');
+
+                                $holidays[$normalizedDate] = [
                                     'name' => $holiday['holiday_name'],
-                                    'date' => $holiday['holiday_date']
+                                    'date' => $normalizedDate,
+                                    'is_national' => true
                                 ];
+
+                                Log::debug('Holiday processed', [
+                                    'original_date' => $apiDate,
+                                    'normalized_date' => $normalizedDate,
+                                    'name' => $holiday['holiday_name']
+                                ]);
                             } else {
-                                Log::warning('Invalid holiday data structure from API', [
-                                    'holiday_data' => $holiday
+                                Log::debug('Holiday skipped (not national or invalid)', [
+                                    'holiday_data' => $holiday,
+                                    'is_national' => $holiday['is_national_holiday'] ?? 'missing'
                                 ]);
                             }
                         }
@@ -492,7 +506,7 @@ class AbsensiReportBulananService
                 'bulan'          => $bulan,
                 'tahun'          => $tahun,
                 'monthName'      => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y'),
-            ])->setPaper('a4', 'landscape');
+            ])->setPaper('legal', 'landscape'); // F4 size
 
             $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
 
