@@ -1,4 +1,4 @@
-<div>
+<div class="vh-100 d-flex flex-column">
   <div x-data="absensiModal" x-init="initModal">
     <!-- Modal -->
     <div class="modal fade" id="absensiModal" tabindex="-1" aria-labelledby="absensiModalLabel" aria-hidden="true"
@@ -78,6 +78,47 @@
       });
     </script>
   @endpush
+
+  <style>
+    /* Full height styling */
+    html,
+    body {
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .navbar {
+      flex-shrink: 0;
+    }
+
+    /* Ensure main content fills remaining space */
+    main {
+      min-height: 0;
+      flex: 1;
+    }
+
+    /* Fix card height for video */
+    .col-8 .card {
+      height: 100% !important;
+    }
+
+    .col-8 .card-body {
+      flex: 1 !important;
+      min-height: 0 !important;
+    }
+
+    /* Gallery swiper full height */
+    .swiper.mySwiper {
+      height: 100% !important;
+    }
+
+    .swiper-slide img {
+      object-fit: cover;
+    }
+  </style>
+
   {{-- bootsrap --}}
   <nav class="navbar navbar-expand-lg navbar-light bg-warning  ">
     <div class="container-fluid ">
@@ -113,11 +154,11 @@
       </div>
     </div>
   </nav>
-  <main class="flex-grow-1 d-flex align-items-center justify-content-center">
-    <div class="container-fluid text-center w-100 h-100"> <!-- Tambahkan h-100 di sini -->
-      <div class="row align-items-start h-100"> <!-- Tambahkan h-100 di sini -->
+  <main class="flex-grow-1">
+    <div class="container-fluid h-100">
+      <div class="row h-100 g-0">
         <div class="col-2 mt-0 rounded bg-info h-100 d-flex flex-column">
-          <h6 class="fs-5 fw-bold mb-1 text-start text-center  badge rounded-pill ">E-Absensi {{ $tvNow }}
+          <h6 class="fs-5 fw-bold mb-1 text-center badge rounded-pill">E-Absensi {{ $tvNow }}
           </h6>
           <div id="absensi-container" wire:ignore.self>
             <ul class="list-group mt-1 rounded w-100 ">
@@ -145,9 +186,9 @@
                         </p>
                       @endif
                       @if ($item['absensi_by'] === 'web')
-                        <p class="fw-bold text-muted mb-0 fs-md text-start ">  
+                        <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           <span class="fw-bold text-success text-end fst-italic">
-                            
+
                             @switch($item['status'])
                               @case('HDDD')
                                 Dinas Dalam Daerah
@@ -168,7 +209,7 @@
                               @default
                                 {{ $item['status'] }}
                             @endswitch
-                             : {{ $item['absensi_by'] }} - {{ $item['time_only'] }}
+                            : {{ $item['absensi_by'] }} - {{ $item['time_only'] }}
                           </span>
                         </p>
                       @endif
@@ -186,31 +227,31 @@
 
               </ul>
             </div>
-            <div class="bg-dark mb-1 mt-3 flex-grow-1 d-flex align-items-center justify-content-center"
-              style="height: 100%;">
+            <div class="bg-dark mb-1 mt-3 p-2 flex-grow-1 d-flex align-items-center justify-content-center"
+              style="height: 25%;">
               <h1 class="text-center text-white shadow">Coming soon CCTV Area Public</h1>
             </div>
           </div>
           <!-- video youtube -->
-          <div class="col-8" style="height: 85vh;"> <!-- Sesuaikan height sesuai kebutuhan -->
-            <div class="card h-100">
+          <div class="col-8 h-100 d-flex">
+            <div class="card w-100 d-flex flex-column">
               <!-- Header -->
-              <div class="card-header bg-success">
+              <div class="card-header bg-success flex-shrink-0">
                 <marquee class="text-white fs-1 fw-bold">{{ $tv->name }}</marquee>
               </div>
               <!-- Video Body -->
-              <div class="card-body p-0 bg-dark flex-grow-1">
-                <div style="width:100%; height:100%;">
+              <div class="card-body p-0 bg-dark flex-grow-1 d-flex">
+                <div class="w-100 h-100">
                   <iframe
                     src="https://www.youtube.com/embed/{{ $videoId }}?playlist={{ $playlistStr }}&loop=1&autoplay=1&mute=0&rel=0&modestbranding=1"
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen style="width:100%; height:100%;">
+                    allowfullscreen class="w-100 h-100">
                   </iframe>
                 </div>
               </div>
               <!-- Footer -->
-              <div class="card-footer bg-warning position-relative">
+              <div class="card-footer bg-warning position-relative flex-shrink-0">
                 <marquee class="text-white fs-4 fw-bold" style="padding-right: 7em;">
                   {{ $tv->running_text }}
                 </marquee>
@@ -242,19 +283,18 @@
               </div>
             </div>
             <!-- Carousel wrapper -->
-            <div class="container w-100 h-100 justify-center">
+            <div class="container w-100 flex-grow-1 d-flex flex-column">
               <div class="card-header bg-danger text-light fw-bold">
                 Galeri Nagari Sikucur
               </div>
-              <div class="swiper mySwiper position-relative" wire:ignore>
+              <div class="swiper mySwiper position-relative flex-grow-1" wire:ignore>
                 <div class="swiper-wrapper">
                   @foreach ($galeri as $gale)
                     <div class="swiper-slide">
-                      <img src="{{ asset('storage/' . $gale->image) }}" alt="sikucur" class="w-100 h-25">
+                      <img src="{{ asset('storage/' . $gale->image) }}" alt="sikucur" class="w-100 h-100">
                     </div>
                   @endforeach
                 </div>
-
               </div>
             </div>
           </div>
