@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('status_surat', function (Blueprint $table) {
             $table->id();
+            $table->string('nama_status');
+            $table->string('kode_status', 5)->unique();
+            $table->string('warna_status', 20)->default('secondary');
+            $table->text('deskripsi')->nullable();
+            $table->integer('urutan')->default(1);
             $table->timestamps();
         });
     }

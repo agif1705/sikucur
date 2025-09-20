@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('tracking_surat', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('permohonan_id')->constrained('permohonan_surat');
+            $table->foreignId('status_lama_id')->nullable()->constrained('status_surat');
+            $table->foreignId('status_baru_id')->constrained('status_surat');
+            $table->foreignId('petugas_id')->constrained('users');
+            $table->datetime('tanggal_perubahan');
+            $table->text('catatan')->nullable();
             $table->timestamps();
         });
     }

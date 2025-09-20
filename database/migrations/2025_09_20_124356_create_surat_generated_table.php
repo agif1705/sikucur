@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('surat_generated', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('permohonan_id')->constrained('permohonan_surat');
+            $table->string('nomor_surat')->unique();
+            $table->string('file_path');
+            $table->string('qr_code_path')->nullable();
+            $table->date('tanggal_terbit');
+            $table->date('berlaku_sampai')->nullable();
+            $table->string('ditandatangani_oleh');
+            $table->string('jabatan_penandatangan');
             $table->timestamps();
         });
     }

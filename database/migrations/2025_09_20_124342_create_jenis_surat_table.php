@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('jenis_surat', function (Blueprint $table) {
             $table->id();
+            $table->string('nama_jenis');
+            $table->string('kode_surat', 10)->unique();
+            $table->text('persyaratan')->nullable();
+            $table->text('template_path')->nullable();
+            $table->integer('estimasi_hari')->default(3);
+            $table->text('keterangan')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
