@@ -120,9 +120,7 @@ class PermohonanSuratResource extends Resource
                                 Forms\Components\Select::make('status_id')
                                     ->label('Status')
                                     ->relationship('status', 'nama_status')
-                                    ->required()
-                                    ->default(1) // Default status pertama
-                                    ->disabled(fn (?PermohonanSurat $record) => $record === null),
+                                    ->default(1), // Default status pertama
 
                                 Forms\Components\Select::make('petugas_id')
                                     ->label('Petugas')
