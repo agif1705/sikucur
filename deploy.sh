@@ -5,7 +5,7 @@
 # git push origin main
 set -e
 
-APP_DIR="/var/www/laravel-frankenphp"
+APP_DIR="/var/www/sikucur"
 RELEASES_DIR="$APP_DIR/releases"
 STORAGE_DIR="$APP_DIR/storage"
 BRANCH="main"   # ganti jadi 'dev' kalau mau branch dev
@@ -35,7 +35,7 @@ php artisan migrate --force || true
 
 # 6. Cache ulang
 php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear
-php artisan config:cache && php artisan route:cache && php artisan view:cache
+php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan app:bersihkan
 
 # 7. Update symlink current
 ln -sfn $NEW_RELEASE $APP_DIR/current

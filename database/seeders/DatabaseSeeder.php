@@ -38,6 +38,8 @@ class DatabaseSeeder extends Seeder
             WhatsAppCommandSeeder::class,
             ListYoutubeSeeder::class,
             NagariWaliSeeder::class,
+            jenisSuratSeeder::class,
+            statusSuratSeeder::class,
         ]);
     }
 }
