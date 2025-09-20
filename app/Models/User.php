@@ -149,4 +149,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(RekapAbsensiPegawai::class);
     }
+
+    public function absensiWebPegawai(): HasMany
+    {
+        return $this->hasMany(AbsensiWebPegawai::class);
+    }
 }

@@ -49,15 +49,17 @@ class AbsensiPdfController extends Controller
             $nagari_id = Auth::user()->nagari->id;
             $nagari_name = str_replace([' ', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '_', Auth::user()->nagari->name);
 
-            // Generate filename dengan hash untuk caching
-            $today = now()->toDateString();
-            $cacheKey = md5("{$bulan}_{$tahun}_{$nagari_id}_{$today}");
-            $filename = "Laporan_Absensi_{$nagari_name}_{$bulan}_{$tahun}_{$cacheKey}.pdf";
+            // Generate filename sederhana untuk tracking yang mudah
+            $filename = "Laporan_Absensi_{$nagari_name}_{$bulan}_{$tahun}.pdf";
 
-            // Cek apakah PDF sudah ada di storage untuk hari ini
+            // Cek apakah PDF sudah ada di storage (1 file per bulan-tahun-nagari)
             $storagePath = "public/absensi/{$filename}";
             if (Storage::exists($storagePath)) {
-                Log::info('PDF found in cache, serving existing file');
+                Log::info('PDF found in storage, serving existing file', [
+                    'filename' => $filename,
+                    'file_size' => Storage::size($storagePath),
+                    'last_modified' => Storage::lastModified($storagePath)
+                ]);
 
                 $pdfContent = Storage::get($storagePath);
 

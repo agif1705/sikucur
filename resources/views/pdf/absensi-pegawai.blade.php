@@ -4,7 +4,7 @@
 <head>
   <style>
     @page {
-      size: legal landscape;
+      size: A4 landscape;
       margin: 0.1cm;
     }
 
@@ -31,17 +31,6 @@
 
     .holiday {
       background-color: #ce3232;
-      color: white;
-    }
-
-    .holiday-api {
-      background-color: #ff8c00;
-      color: white;
-    }
-
-    .future-date {
-      background-color: #e0e0e0;
-      color: #666;
     }
 
     .weekend {
@@ -86,41 +75,49 @@
       margin: 20px 0;
     }
 
-    .holiday-info {
-      margin-top: 15px;
-      padding: 10px;
-      background-color: #fff3e0;
-      border: 1px solid #ff8c00;
+    .holiday-card {
+      border: 1px solid #ddd;
+      padding: 10px 15px;
       border-radius: 5px;
-    }
-
-    .holiday-info h4 {
-      margin: 0 0 10px 0;
-      color: #ff8c00;
-      font-size: 12px;
-    }
-
-    .holiday-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .holiday-item {
-      background-color: #ff8c00;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 3px;
-      font-size: 10px;
+      background: #e45a5a;
       min-width: 200px;
+    }
+
+    .status-sakit {
+      background-color: #ff9999 !important;
+      color: #000;
+    }
+
+    .status-izin {
+      background-color: #ffcc99 !important;
+      color: #000;
+    }
+
+    .status-cuti {
+      background-color: #cc99ff !important;
+      color: #000;
+    }
+
+    .status-alpha {
+      background-color: #ffcccc !important;
+      color: #000;
+    }
+
+    .status-hdld {
+      background-color: #99ff99 !important;
+      color: #000;
+    }
+
+    .status-hddd {
+      background-color: #99ccff !important;
+      color: #000;
     }
   </style>
 </head>
 
 <body>
   <h1 class="text-center">Nagari Sikucur - Kehadiran {{ $monthName }}</h1>
-  <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
-
+  <h5>Laporan ini di cetak tanggal {{ now() }}</h5>
   <table>
     <thead>
       <tr>
@@ -128,17 +125,11 @@
         @foreach ($datesInMonth as $date)
           @php
             $dateObj = Carbon\Carbon::parse($date);
-            $isHolidayApi = isset($holidays[$date]);
-            $isFutureDate = $date > now()->toDateString();
+            $isHoliday = in_array($date, $holidays);
           @endphp
-          <th colspan="1"
-            class="@if ($isHolidayApi) holiday-api @elseif($isFutureDate) future-date @endif"
-            @if ($isHolidayApi && isset($holidays[$date]['name'])) title="{{ $holidays[$date]['name'] }}" @endif>
+          <th colspan="1" class="@if ($isHoliday) holiday @endif">
             {{ $dateObj->format('d') }}<br>
             {{ $dateObj->translatedFormat('D') }}
-            @if ($isHolidayApi && isset($holidays[$date]['name']))
-              <br><small>{{ $holidays[$date]['name'] }}</small>
-            @endif
           </th>
         @endforeach
         <th>Work<br>day</th>
@@ -157,37 +148,56 @@
           @foreach ($datesInMonth as $date)
             @php
               $attendance = $data['attendances'][$date];
-              $isHolidayApi = isset($holidays[$date]);
-              $isFutureDate = isset($attendance['is_future']) && $attendance['is_future'];
+              $isHoliday = in_array($date, $holidays);
+              $statusClass = '';
+
+              if (isset($attendance['status_absensi'])) {
+                  switch ($attendance['status_absensi']) {
+                      case 'S':
+                          $statusClass = 'status-sakit';
+                          break;
+                      case 'I':
+                          $statusClass = 'status-izin';
+                          break;
+                      case 'C':
+                          $statusClass = 'status-cuti';
+                          break;
+                      case 'HDLD':
+                          $statusClass = 'status-hdld';
+                          break;
+                      case 'HDDD':
+                          $statusClass = 'status-hddd';
+                          break;
+                      case 'A':
+                          $statusClass = 'status-alpha';
+                          break;
+                  }
+              }
             @endphp
-            <td
-              class="@if ($isHolidayApi) holiday-api @elseif($isFutureDate) future-date @endif"
-              @if ($isHolidayApi) title="{{ $holidays[$date]['name'] }}" @endif>
-              <div class="time-entry masuk">
-                <span style="@if (isset($attendance['is_late']) && $attendance['is_late']) color:red @endif">
-                  {{ $attendance['masuk'] }}
-                </span>
+            <td class="@if ($isHoliday) holiday @else {{ $statusClass }} @endif">
+              <div class="time-entry masuk @if ($attendance['masuk'] == 'A' && !$isHoliday) empty @endif">
+                <span style="@if ($attendance['is_late']) color:red @endif">{{ $attendance['masuk'] }}</span>
               </div>
-              <div class="time-entry pulang">
-                {{ $attendance['pulang'] ?? '-' }}
+              <div class="time-entry pulang @if ($attendance['pulang'] == '-' && !$isHoliday) empty @endif">
+                {{ $attendance['pulang'] ?? 'A' }}
               </div>
             </td>
           @endforeach
-          <td>{{ $data['stats']['total_hari_kerja'] }}</td>
-          <td>{{ $data['stats']['total_present'] }}</td>
-          <td>{{ $data['stats']['total_late'] }}</td>
-          <td>{{ $data['stats']['total_tidak_hadir'] }}</td>
+          <td>{{ $attendance['total_hari_kerja'] }}</td>
+          <td>{{ $attendance['total_masuk'] }}</td>
+          <td>{{ $data['total_late'] }}</td>
+          <td>{{ $data['total_tidak_hadir'] }}</td>
           <td>
-            @if ($data['stats']['total_hari_kerja'] > 0)
-              {{ round(($data['stats']['total_present'] / $data['stats']['total_hari_kerja']) * 100) }}%
+            @if ($attendance['total_hari_kerja'] > 0)
+              {{ round(($attendance['total_masuk'] / $attendance['total_hari_kerja']) * 100) }}%
             @else
               0%
             @endif
           </td>
 
           <td>
-            @if ($data['stats']['total_present'] > 0)
-              {{ round((($data['stats']['total_present'] - $data['stats']['total_late']) / $data['stats']['total_present']) * 100) }}%
+            @if ($attendance['total_masuk'] > 0)
+              {{ round((($attendance['total_masuk'] - $data['total_late']) / $attendance['total_masuk']) * 100) }}%
             @else
               0%
             @endif
@@ -196,30 +206,190 @@
       @endforeach
     </tbody>
   </table>
-  <!-- Keterangan Hari Libur Nasional -->
-  @if (count($holidays) > 0)
-    <div class="holiday-info">
-      <h4>🏛️ Hari Libur Nasional Bulan {{ $monthName }}</h4>
-      <div class="holiday-list">
-        @foreach ($holidays as $date => $holidayData)
-          @if (is_array($holidayData) && isset($holidayData['name']))
-            <div class="holiday-item">
-              <strong>{{ $holidayData['name'] }}</strong><br>
-              <small>{{ Carbon\Carbon::parse($date)->locale('id')->translatedFormat('l, d F Y') }}</small>
-            </div>
-          @endif
+  {{-- <table class="table-libur">
+        <thead>
+            <tr>
+                <th>Hari Libur</th>
+                <th>Tanggal Libur</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($holidays as $item => $value)
+                <tr>
+                    <td>{{ $item }}</td>
+                    <td>{{ $value }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table> --}}
+  @if (count($detailKeterangan) > 0)
+    <!-- Page Break untuk Halaman 2 -->
+    <div style="page-break-before: always;"></div>
+
+    <h1 class="text-center">Detail Keterangan Absensi - {{ $monthName }}</h1>
+    <h5>Laporan ini di cetak tanggal {{ now() }}</h5>
+
+    <table style="margin-top: 20px;">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Nama Pegawai</th>
+          <th>Tanggal</th>
+          <th>Status</th>
+          <th>Keterangan Status</th>
+          <th>Alasan/Keterangan</th>
+          <th>Jam Masuk</th>
+          <th>Jam Pulang</th>
+          <th>Terlambat</th>
+          <th>Sumber Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach ($detailKeterangan as $index => $detail)
+          <tr>
+            <td>{{ $index + 1 }}</td>
+            <td style="text-align: left;">{{ $detail['user_name'] }}</td>
+            <td>{{ Carbon\Carbon::parse($detail['date'])->translatedFormat('d F Y') }}</td>
+            <td
+              style="text-align: center; font-weight: bold;
+          @if ($detail['status_absensi'] == 'S') background-color: #ff9999;
+          @elseif($detail['status_absensi'] == 'I') background-color: #ffcc99;
+          @elseif($detail['status_absensi'] == 'C') background-color: #cc99ff;
+          @elseif($detail['status_absensi'] == 'HDLD') background-color: #99ff99;
+          @elseif($detail['status_absensi'] == 'HDDD') background-color: #99ccff; @endif
+        ">
+              {{ $detail['status_absensi'] }}</td>
+            <td style="text-align: left;">
+              @switch($detail['status_absensi'])
+                @case('HDLD')
+                  Hadir Dinas Luar Daerah
+                @break
+
+                @case('HDDD')
+                  Hadir Dinas Dalam Daerah
+                @break
+
+                @case('S')
+                  Sakit
+                @break
+
+                @case('C')
+                  Cuti
+                @break
+
+                @case('I')
+                  Izin
+                @break
+
+                @default
+                  -
+              @endswitch
+            </td>
+            <td style="text-align: left; font-size: 7pt; max-width: 100px;">
+              @if (isset($detail['alasan']) && $detail['alasan'])
+                {{ $detail['alasan'] }}
+                @if (isset($detail['id_resource']) && str_starts_with($detail['id_resource'], 'web-'))
+                  <br><small style="color: #666; font-style: italic;">(ID: {{ $detail['id_resource'] }})</small>
+                @endif
+              @else
+                <span style="color: #999;">-</span>
+              @endif
+            </td>
+            <td>{{ $detail['time_in'] ? Carbon\Carbon::parse($detail['time_in'])->format('H:i') : '-' }}</td>
+            <td>{{ $detail['time_out'] ? Carbon\Carbon::parse($detail['time_out'])->format('H:i') : '-' }}</td>
+            <td style="color: @if ($detail['is_late']) red @else green @endif; text-align: center;">
+              @if ($detail['is_late'])
+                Ya
+              @else
+                Tidak
+              @endif
+            </td>
+            <td>{{ $detail['resource'] }}</td>
+          </tr>
         @endforeach
+      </tbody>
+    </table>
+
+    <div style="margin-top: 20px; font-size: 10px;">
+      <p><strong>Total {{ count($detailKeterangan) }} record dengan keterangan khusus</strong></p>
+      <p><strong>Keterangan Status:</strong></p>
+      <ul style="margin: 5px 0; padding-left: 20px;">
+        <li><strong>HDLD:</strong> Hadir Dinas Luar Daerah - Pegawai bertugas di luar daerah</li>
+        <li><strong>HDDD:</strong> Hadir Dinas Dalam Daerah - Pegawai bertugas dalam daerah</li>
+        <li><strong>S:</strong> Sakit - Pegawai tidak hadir karena sakit</li>
+        <li><strong>C:</strong> Cuti - Pegawai mengambil cuti</li>
+        <li><strong>I:</strong> Izin - Pegawai tidak hadir dengan izin</li>
+      </ul>
+    </div>
+
+    @if (count($holidays) > 0)
+      <!-- Tabel Hari Libur -->
+      <div style="margin-top: 30px;">
+        <h3 style="margin-bottom: 10px; color: #ce3232;">Daftar Hari Libur Nasional - {{ $monthName }}</h3>
+
+        <table style="margin-top: 10px; width: 80%;">
+          <thead>
+            <tr style="background-color: #ce3232; color: white;">
+              <th style="background-color: #ce3232; color: white;">No</th>
+              <th style="background-color: #ce3232; color: white;">Nama Hari Libur</th>
+              <th style="background-color: #ce3232; color: white;">Tanggal</th>
+              <th style="background-color: #ce3232; color: white;">Hari</th>
+              <th style="background-color: #ce3232; color: white;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @php $no = 1; @endphp
+            @foreach ($holidays as $holidayName => $holidayDate)
+              <tr style="@if ($loop->iteration % 2 == 0) background-color: #ffe6e6; @endif">
+                <td>{{ $no++ }}</td>
+                <td style="text-align: left; padding-left: 5px;">{{ $holidayName }}</td>
+                <td>{{ Carbon\Carbon::parse($holidayDate)->translatedFormat('d F Y') }}</td>
+                <td>{{ Carbon\Carbon::parse($holidayDate)->translatedFormat('l') }}</td>
+                <td style="background-color: #ff9999; font-weight: bold; color: #800000;">LIBUR</td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+
+        <!-- Legend Keterangan -->
+        <div style="margin: 10px 0; font-size: 10px;">
+          <strong>Keterangan:</strong>
+          <span style="color: green;">H = Hadir</span> |
+          <span style="color: red;">A = Alpha</span> |
+          <span style="color: blue;">S = Sakit</span> |
+          <span style="color: orange;">I = Izin</span> |
+          <span style="color: purple;">C = Cuti</span> |
+          <span style="color: darkgreen;">HDLD = Hadir Dinas Luar Daerah</span> |
+          <span style="color: darkblue;">HDDD = Hadir Dinas Dalam Daerah</span> |
+          <span style="background-color: orange; padding: 2px;">L = Libur</span>
+        </div>
+        <div style="margin-top: 15px; font-size: 9pt; color: #666;">
+          <p><strong>Catatan Hari Libur:</strong></p>
+          <ul style="margin: 5px 0; padding-left: 20px; font-size: 8pt;">
+            <li>Total <strong>{{ count($holidays) }} hari libur nasional</strong> pada bulan {{ $monthName }}</li>
+            <li>Hari libur ditandai dengan background <span
+                style="background-color: #ce3232; color: white; padding: 2px 4px;">merah</span> pada kalender absensi
+            </li>
+            <li>Pegawai <strong>tidak wajib hadir</strong> pada tanggal-tanggal tersebut</li>
+            <li>Status "L" pada tabel absensi menunjukkan hari libur nasional</li>
+          </ul>
+        </div>
       </div>
-    </div>
-  @else
-    <div class="holiday-info">
-      <h4>📅 Tidak ada hari libur nasional pada bulan {{ $monthName }}</h4>
-    </div>
+    @else
+      <!-- Pesan jika tidak ada hari libur -->
+      <div
+        style="margin-top: 30px; padding: 15px; background-color: #f0f8ff; border: 1px solid #b0d4f1; border-radius: 5px;">
+        <h4 style="margin: 0; color: #2c5aa0;">ℹ️ Informasi Hari Libur</h4>
+        <p style="margin: 5px 0; font-size: 9pt; color: #555;">
+          Tidak ada hari libur nasional yang tercatat pada bulan {{ $monthName }}.
+        </p>
+      </div>
+    @endif
   @endif
 
   <footer>
-    <h5>Laporan ini dicetak tanggal: {{ now()->locale('id')->translatedFormat('l, d F Y \p\u\k\u\l H:i') }} WIB</h5>
-    <h6>Dicetak oleh: {{ auth()->user()->name ?? 'Anonim' }}</h6>
+    <h5>Laporan ini di cetak tanggal {{ now() }}</h5>
+    <h6>Dicetak ole Pegawai: {{ auth()->user()->name ?? 'Anonim' }}</h6>
   </footer>
 </body>
 
