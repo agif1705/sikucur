@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Surat;
 
 use App\Models\PermohonanSurat;
 use App\Models\JenisSurat;
