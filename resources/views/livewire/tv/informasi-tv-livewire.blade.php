@@ -77,6 +77,37 @@
         }));
       });
     </script>
+
+    <script>
+      // Bootstrap Carousel Enhancement
+      document.addEventListener('DOMContentLoaded', function() {
+        const carousel = document.querySelector('#galleryCarousel');
+
+        if (carousel) {
+          console.log('✅ Bootstrap Carousel initialized');
+
+          // Optional: Pause on hover
+          carousel.addEventListener('mouseenter', function() {
+            bootstrap.Carousel.getInstance(carousel)?.pause();
+          });
+
+          carousel.addEventListener('mouseleave', function() {
+            bootstrap.Carousel.getInstance(carousel)?.cycle();
+          });
+
+          // Add fade animation to carousel items
+          carousel.addEventListener('slide.bs.carousel', function(event) {
+            const nextImg = event.relatedTarget.querySelector('img');
+            if (nextImg) {
+              nextImg.classList.add('animate__animated', 'animate__fadeIn');
+              setTimeout(() => {
+                nextImg.classList.remove('animate__fadeIn');
+              }, 600);
+            }
+          });
+        }
+      });
+    </script>
   @endpush
 
   <style>
@@ -109,13 +140,97 @@
       min-height: 0 !important;
     }
 
-    /* Gallery swiper full height */
-    .swiper.mySwiper {
-      height: 100% !important;
+    /* Gallery container */
+    .gallery-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+      max-height: 400px;
     }
 
-    .swiper-slide img {
-      object-fit: cover;
+    /* Bootstrap Carousel styling */
+    #galleryCarousel {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 250px;
+    }
+
+    .carousel-inner {
+      height: 100%;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .carousel-item {
+      height: 100%;
+    }
+
+    /* Carousel gallery image styling */
+    .carousel-gallery-img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+      background: #f8f9fa;
+      transition: transform 0.3s ease;
+      border-radius: 4px;
+    }
+
+    /* No gallery fallback */
+    .no-gallery {
+      width: 100%;
+      height: 200px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    /* Carousel controls styling */
+    .carousel-control-prev,
+    .carousel-control-next {
+      width: 8%;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+    }
+
+    .carousel-control-prev:hover,
+    .carousel-control-next:hover {
+      opacity: 1;
+    }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+      background-size: 16px 16px;
+    }
+
+    /* Carousel indicators */
+    .carousel-indicators {
+      margin-bottom: 0.5rem;
+    }
+
+    .carousel-indicators [data-bs-target] {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin: 0 3px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border: none;
+    }
+
+    .carousel-indicators .active {
+      background-color: rgba(255, 255, 255, 1);
+      width: 10px;
+      height: 10px;
+    }
+
+    /* Hover effect */
+    .carousel-item:hover .carousel-gallery-img {
+      transform: scale(1.02);
+    }
+
+    /* Carousel transition effects */
+    .carousel-item {
+      transition: transform 0.6s ease-in-out;
     }
   </style>
 
@@ -155,13 +270,13 @@
     </div>
   </nav>
   <main class="flex-grow-1">
-    <div class="container-fluid h-100">
+    <div class="container-fluid h-100 w-100">
       <div class="row h-100 g-0">
         <div class="col-2 mt-0 rounded bg-info h-100 d-flex flex-column">
           <h6 class="fs-5 fw-bold mb-1 text-center badge rounded-pill">E-Absensi {{ $tvNow }}
           </h6>
           <div id="absensi-container" wire:ignore.self>
-            <ul class="list-group mt-1 rounded w-100 ">
+            <ul class="list-group mt-1 rounded w-100 p-2">
               @forelse ($users as $item)
                 {{-- @dd($users) --}}
                 <li
@@ -180,6 +295,7 @@
                           {{ $item['time_only'] }}
                           <span
                             class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
+
                             {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
                             <br>{{ $item['absensi_by'] }} - {{ $item['status'] }}
                           </span>
@@ -188,7 +304,6 @@
                       @if ($item['absensi_by'] === 'web')
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           <span class="fw-bold text-success text-end fst-italic">
-
                             @switch($item['status'])
                               @case('HDDD')
                                 Dinas Dalam Daerah
@@ -214,9 +329,15 @@
                         </p>
                       @endif
                       @if ($item['absensi_by'] === null)
-                        <p class="fw-bold text-muted mb-0 fs-md text-start ">
-                          <span class="fw-bold text-danger text-end fst-italic">Tidak Masuk</span>
-                        </p>
+                        @if ($item['jabatan'] === 'WaliNagari')
+                          <p class="fw-bold text-muted mb-0 fs-md text-start ">
+                            <span class="fw-bold text-success text-end fst-italic">Sedang diluar Kantor</span>
+                          </p>
+                        @else
+                          <p class="fw-bold text-muted mb-0 fs-md text-start ">
+                            <span class="fw-bold text-danger text-end fst-italic">Tidak Masuk</span>
+                          </p>
+                        @endif
                       @endif
                     </div>
                   </div>
@@ -227,10 +348,7 @@
 
               </ul>
             </div>
-            <div class="bg-dark mb-1 mt-3 p-2 flex-grow-1 d-flex align-items-center justify-content-center"
-              style="height: 25%;">
-              <h1 class="text-center text-white shadow">Coming soon CCTV Area Public</h1>
-            </div>
+
           </div>
           <!-- video youtube -->
           <div class="col-8 h-100 d-flex">
@@ -252,6 +370,8 @@
               </div>
               <!-- Footer -->
               <div class="card-footer bg-warning position-relative flex-shrink-0">
+                <img src="{{ asset('storage/wali_tv.png') }}" alt="..."
+                  class="position-absolute start-25 translate-middle-x" style="height: 20em; width: 18em; bottom: 0.0em;">
                 <marquee class="text-white fs-4 fw-bold" style="padding-right: 7em;">
                   {{ $tv->running_text }}
                 </marquee>
@@ -261,20 +381,7 @@
             </div>
           </div>
           <div class="col-2 bg-light h-100 d-flex flex-column text-center">
-            <!-- foto wali -->
 
-            <div class="row row-cols-1 bg-light row-cols-sm-1 g-1 mt-1">
-              <div class="col-sm-12 bg-warning justify-center">
-                <div class="card-body">
-                  <span class="card-text">Wali Nagari Sikucur</span>
-
-                  <img src="{{ asset('storage/' . $tv->wali_nagari_image) }}" class="card-img-top p-2 w-100 h-100"
-                    alt="...">
-                  <span class="card-text fs-3 fw-bold">{{ $tv->wali_nagari }}</span>
-
-                </div>
-              </div>
-            </div>
             <div class="row mt-3 mb-1 bg-light p-2">
               <div class="col">
                 <a href="/path/to/image1.jpg" data-toggle="lightbox">
@@ -282,20 +389,57 @@
                 </a>
               </div>
             </div>
-            <!-- Carousel wrapper -->
-            <div class="container w-100 flex-grow-1 d-flex flex-column">
-              <div class="card-header bg-danger text-light fw-bold">
-                Galeri Nagari Sikucur
+            <!-- Bootstrap Carousel -->
+            <div class="gallery-container">
+              <div class="card-header bg-danger text-light fw-bold text-center py-2">
+                <small>Galeri Nagari Sikucur</small>
               </div>
-              <div class="swiper mySwiper position-relative flex-grow-1" wire:ignore>
-                <div class="swiper-wrapper">
-                  @foreach ($galeri as $gale)
-                    <div class="swiper-slide">
-                      <img src="{{ asset('storage/' . $gale->image) }}" alt="sikucur" class="w-100 h-100">
+              <div id="galleryCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000"
+                wire:ignore>
+                <div class="carousel-inner">
+                  @forelse ($galeri as $index => $gale)
+                    <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                      <img src="{{ asset('storage/' . $gale->image) }}" alt="sikucur"
+                        class="d-block w-100 carousel-gallery-img">
                     </div>
-                  @endforeach
+                  @empty
+                    <div class="carousel-item active">
+                      <div class="no-gallery d-flex align-items-center justify-content-center">
+                        <h6 class="text-center text-muted mb-0">Tidak ada galeri</h6>
+                      </div>
+                    </div>
+                  @endforelse
                 </div>
+
+                <!-- Controls -->
+                @if (count($galeri) > 1)
+                  <button class="carousel-control-prev" type="button" data-bs-target="#galleryCarousel"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                  </button>
+                  <button class="carousel-control-next" type="button" data-bs-target="#galleryCarousel"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                  </button>
+
+                  <!-- Indicators -->
+                  <div class="carousel-indicators">
+                    @foreach ($galeri as $index => $gale)
+                      <button type="button" data-bs-target="#galleryCarousel" data-bs-slide-to="{{ $index }}"
+                        class="{{ $index === 0 ? 'active' : '' }}"
+                        aria-current="{{ $index === 0 ? 'true' : 'false' }}"
+                        aria-label="Slide {{ $index + 1 }}"></button>
+                    @endforeach
+                  </div>
+                @endif
               </div>
+            </div>
+            <!-- foto wali -->
+            <div class="bg-dark mb-1 mt-3 p-2 flex-grow-1 d-flex align-items-center justify-content-center"
+              style="height: 25%;">
+              <h1 class="text-center text-white shadow">Coming soon CCTV Area Public</h1>
             </div>
           </div>
           <!-- Carousel wrapper -->

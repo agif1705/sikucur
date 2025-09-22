@@ -24,20 +24,8 @@
       /* Hapus border default jika ada */
     }
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
   <style>
-    .swiper-slide img {
-      width: 100%;
-      height: 500px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-
-    .swiper-pagination-bullet-active {
-      background-color: #0d6efd;
-    }
-
     #absensi-container {
       height: 65vh;
       /* Tinggi maksimal daftar */
@@ -67,11 +55,10 @@
   @livewireScripts
   @vite('resources/js/supabase.js')
 
+  <!-- Load Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   @stack('scripts')
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const container = document.querySelector("#absensi-container ul");
