@@ -107,21 +107,21 @@ class SuratGeneratorService
         return $filePath;
     }
 
-    // private function generateQRCode(PermohonanSurat $permohonan, array $data): string
-    // {
-    //     $verificationUrl = url("/verify-surat/{$permohonan->nomor_permohonan}");
+    private function generateQRCode(PermohonanSurat $permohonan, array $data): string
+    {
+        $verificationUrl = url("/verify-surat/{$permohonan->nomor_permohonan}");
 
-    //     $qrCode = QrCode::format('png')
-    //         ->size(200)
-    //         ->generate($verificationUrl);
+        $qrCode = QrCode::format('png')
+            ->size(200)
+            ->generate($verificationUrl);
 
-    //     $fileName = "qr_surat_{$permohonan->id}_" . time() . ".png";
-    //     $filePath = "qr-codes/{$fileName}";
+        $fileName = "qr_surat_{$permohonan->id}_" . time() . ".png";
+        $filePath = "qr-codes/{$fileName}";
 
-    //     Storage::put($filePath, $qrCode);
+        Storage::put($filePath, $qrCode);
 
-    //     return $filePath;
-    // }
+        return $filePath;
+    }
 
     public function regenerateSurat(SuratGenerated $suratGenerated, array $options = []): SuratGenerated
     {
