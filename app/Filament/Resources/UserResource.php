@@ -39,7 +39,7 @@ class UserResource extends Resource
                             ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'ini adalah username untuk login')
                             ->maxLength(50),
                         Forms\Components\Select::make('jabatan_id')
-                            ->disabled(fn(): bool => !auth()->user()->hasRole('super_admin'))
+                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin'))
                             ->label('Jabatan')
                             ->relationship('jabatan', 'name')
                             ->searchable()
@@ -93,16 +93,16 @@ class UserResource extends Resource
                             ->label('Role')
                             ->relationship('roles', 'name')
                             ->searchable()
-                            ->disabled(fn(): bool => !auth()->user()->hasRole('super_admin'))
+                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin'))
                             ->required(),
                         Forms\Components\TextInput::make('emp_id')
                             ->label('Finggerprint ID')
                             ->maxLength(255)
-                            ->disabled(fn(): bool => !auth()->user()->hasRole('super_admin')),
+                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin')),
                         Forms\Components\Select::make('nagari_id')
                             ->label('Nama Nagari')
                             ->relationship('nagari', 'name')
-                            ->disabled(fn(): bool => !auth()->user()->hasRole('super_admin'))
+                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin'))
                             ->required(),
 
                     ])->columns(2)
