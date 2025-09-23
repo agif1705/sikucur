@@ -166,7 +166,7 @@ class InformasiTvLivewire extends Component
         $pesanPulang = $this->generatePesanAbsensiPulang($user, $punchTime);
 
         // Kirim WhatsApp jika user aktif
-        if ($user->aktif && $user->no_hp) {
+        if ($user->aktif) {
             $this->sendWhatsAppNotification($user, $pesanPulang);
         }
     }
