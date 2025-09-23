@@ -146,7 +146,7 @@ class InformasiTvLivewire extends Component
             'date'           => $punchTime->format('Y-m-d'),
         ]);
 
-        // Kirim WhatsApp jika user aktif dan perubahan
+        // Kirim WhatsApp jika user aktif
         if ($user->aktif) {
             $this->sendWhatsAppNotification($user, $pesanMasuk);
         }
