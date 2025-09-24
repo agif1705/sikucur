@@ -2,16 +2,17 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ListYoutubeResource\Pages;
-use App\Filament\Resources\ListYoutubeResource\RelationManagers;
-use App\Models\ListYoutube;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Models\ListYoutube;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\ListYoutubeResource\Pages;
+use App\Filament\Resources\ListYoutubeResource\RelationManagers;
 
 class ListYoutubeResource extends Resource
 {
@@ -25,12 +26,43 @@ class ListYoutubeResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('url')
+                TextInput::make('url')
+                    ->label('YouTube URL')
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('id_youtube')
+                    ->reactive()
+                    ->hintIcon('heroicon-m-information-circle')
+                    ->hint(function ($state) {
+                        return empty($state)
+                            ? 'Copy Paste URL dari YouTube Video kemudian simpan, ID YouTube akan terisi otomatis'
+                            : null;
+                    })->hintColor(fn($state) => empty($state) ? 'danger' : 'gray')->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            // Ambil ID dari url YouTube
+                            $videoId = null;
+
+                            // Pola standard ?v=
+                            if (preg_match('/v=([a-zA-Z0-9_-]{11})/', $state, $matches)) {
+                                $videoId = $matches[1];
+                            }
+
+                            // Pola shortlink youtu.be
+                            if (preg_match('#youtu\.be/([a-zA-Z0-9_-]{11})#', $state, $matches)) {
+                                $videoId = $matches[1];
+                            }
+
+                            // Pola embed
+                            if (preg_match('#embed/([a-zA-Z0-9_-]{11})#', $state, $matches)) {
+                                $videoId = $matches[1];
+                            }
+
+                            $set('id_youtube', $videoId);
+                        }
+                    }),
+
+                TextInput::make('id_youtube')
+                    ->label('YouTube ID')
                     ->required()
-                    ->maxLength(255),
+                    ->disabled(),
             ]);
     }
 
@@ -38,7 +70,7 @@ class ListYoutubeResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('nagari_id')
+                Tables\Columns\TextColumn::make('nagari.name')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('url')
@@ -46,14 +78,14 @@ class ListYoutubeResource extends Resource
                 Tables\Columns\TextColumn::make('id_youtube')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ])->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

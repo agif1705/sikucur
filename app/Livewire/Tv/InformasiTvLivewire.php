@@ -45,7 +45,7 @@ class InformasiTvLivewire extends Component
     /**
      * ID video YouTube default
      */
-    public $videoId = "Lb4AwReHYxQ";
+    public $videoId;
 
     /**
      * Event listener untuk update data fingerprint
@@ -109,7 +109,8 @@ class InformasiTvLivewire extends Component
             }
 
             // Dispatch event untuk update UI
-            $this->dispatch('absenBerhasil',
+            $this->dispatch(
+                'absenBerhasil',
                 nama: $user->name,
                 jam: $timeFormatted,
                 status: $statusKehadiran
@@ -117,7 +118,6 @@ class InformasiTvLivewire extends Component
 
             // Update data users untuk tampilan
             $this->users = WdmsModel::getAbsensiMasuk($mesin);
-
         } catch (\Exception $e) {
             // Log error jika diperlukan
             Log::error('Error processing fingerprint data: ' . $e->getMessage());
@@ -180,13 +180,13 @@ class InformasiTvLivewire extends Component
         $nagariName = $user->nagari->name ?? 'Unknown';
 
         return "Hai *{$user->name}* (Jabatan: {$jabatan}),\n\n" .
-               "✅ Status Kehadiran: *{$statusKehadiran}*\n" .
-               "🕐 Waktu Absen: *{$punchTime->format('H:i')}*\n" .
-               "📍 Lokasi: Nagari {$nagariName}\n" .
-               "📱 Metode: Fingerprint\n\n" .
-               "Data ini akan dikirim ke WhatsApp Wali Nagari {$nagariName} sebelum jam 10:05.\n\n" .
-               "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
-               "_Sent via Cv.Baduo Mitra Solution_";
+            "✅ Status Kehadiran: *{$statusKehadiran}*\n" .
+            "🕐 Waktu Absen: *{$punchTime->format('H:i')}*\n" .
+            "📍 Lokasi: Nagari {$nagariName}\n" .
+            "📱 Metode: Fingerprint\n\n" .
+            "Data ini akan dikirim ke WhatsApp Wali Nagari {$nagariName} sebelum jam 10:05.\n\n" .
+            "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
+            "_Sent via Cv.Baduo Mitra Solution_";
     }
 
     /**
@@ -197,13 +197,13 @@ class InformasiTvLivewire extends Component
         $nagariName = $user->nagari->name ?? 'Unknown';
 
         return "Hai *{$user->name}*,\n\n" .
-               "✅ Absensi pulang berhasil\n" .
-               "🕐 Waktu Pulang: *{$punchTime->format('H:i')}*\n" .
-               "📍 Lokasi: Nagari {$nagariName}\n" .
-               "📱 Metode: Fingerprint\n\n" .
-               "Terima kasih atas dedikasi Anda hari ini.\n\n" .
-               "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
-               "_Sent via Cv.Baduo Mitra Solution_";
+            "✅ Absensi pulang berhasil\n" .
+            "🕐 Waktu Pulang: *{$punchTime->format('H:i')}*\n" .
+            "📍 Lokasi: Nagari {$nagariName}\n" .
+            "📱 Metode: Fingerprint\n\n" .
+            "Terima kasih atas dedikasi Anda hari ini.\n\n" .
+            "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
+            "_Sent via Cv.Baduo Mitra Solution_";
     }
 
     /**
@@ -237,7 +237,8 @@ class InformasiTvLivewire extends Component
         $user = User::whereId($data['user_id'])->first();
         if ($user) {
             $statusKehadiran = $data['is_late'] ? 'Terlambat' : 'Tepat Waktu';
-            $this->dispatch('absenBerhasil',
+            $this->dispatch(
+                'absenBerhasil',
                 nama: $user->name,
                 jam: $data['time_in'],
                 status: $statusKehadiran
@@ -286,14 +287,13 @@ class InformasiTvLivewire extends Component
             $this->logo = $nagari->logo;
             $this->sn_fp = $nagari->sn_fingerprint;
             $this->tv = $nagari->TvInformasi;
-            $this->galeri = $nagari->galeri->take(10);
-
+            //ambil data galeri paling terakhir
+            $this->galeri = $nagari->galeri->sortByDesc('created_at')->values();
             // Ambil playlist YouTube dengan optimasi query
             $this->setupYouTubePlaylist($nagari->id);
 
             // Ambil data absensi hari ini
             $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp);
-
         } catch (\Exception $e) {
             Log::error('Error in mount method: ' . $e->getMessage());
             abort(500, 'Terjadi kesalahan saat memuat data');
@@ -307,9 +307,9 @@ class InformasiTvLivewire extends Component
     {
         try {
             $youtubeList = ListYoutube::where('nagari_id', $nagariId)
-                ->select('id_youtube')
-                ->get();
-
+                ->select('id_youtube', 'created_at')
+                ->get()->sortByDesc('created_at');
+            $this->videoId = $youtubeList->first()->id_youtube;
             if ($youtubeList->isNotEmpty()) {
                 $this->playlistStr = $youtubeList->pluck('id_youtube')->implode(',');
             } else {

@@ -110,22 +110,22 @@ class IzinPegawaiLivewire extends Component implements HasForms
                 "\n Jabatan : " . $this->users->jabatan->name .
                 "\n Alasan : *" . $this->data['alasan'] . "*  ";
             $wa = new GowaService();
-                $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan . ' ' . $baduo);
-                WhatsAppLog::create([
-                       'user_id' => $this->users->id,
-                       'phone'   => $this->users->nagari->wali->no_hp,
-                       'message' =>  $pesan . ' ' . $baduo,
-                       'status'  => $wali['success'] ?? false ? 'success' : 'failed',
-                       'response' => $wali,
-                   ]);
-                $seketaris = $wa->sendText($this->users->nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
-                WhatsAppLog::create([
-                       'user_id' => $this->users->id,
-                       'phone'   => $this->users->nagari->seketaris->no_hp,
-                       'message' =>  $pesan . ' ' . $baduo,
-                       'status'  => $seketaris['success'] ?? false ? 'success' : 'failed',
-                       'response' => $seketaris,
-                   ]);
+            $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan . ' ' . $baduo);
+            WhatsAppLog::create([
+                'user_id' => $this->users->id,
+                'phone'   => $this->users->nagari->wali->no_hp,
+                'message' =>  $pesan . ' ' . $baduo,
+                'status'  => $wali['success'] ?? false ? 'success' : 'failed',
+                'response' => $wali,
+            ]);
+            $seketaris = $wa->sendText($this->users->nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+            WhatsAppLog::create([
+                'user_id' => $this->users->id,
+                'phone'   => $this->users->nagari->seketaris->no_hp,
+                'message' =>  $pesan . ' ' . $baduo,
+                'status'  => $seketaris['success'] ?? false ? 'success' : 'failed',
+                'response' => $seketaris,
+            ]);
             // $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
 
             $this->dispatch('absenBerhasil', nama: $this->users->name, jam: $absensiPegawai->time_in, status: $absensiPegawai->status_absensi);

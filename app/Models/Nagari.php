@@ -64,6 +64,6 @@ class Nagari extends Model
     }
     public function galeri()
     {
-        return $this->hasMany(TvGaleri::class);
+        return $this->hasMany(TvGaleri::class)->latest();
     }
 }

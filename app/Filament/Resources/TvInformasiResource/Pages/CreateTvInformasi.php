@@ -17,4 +17,9 @@ class CreateTvInformasi extends CreateRecord
         $data['user_id'] = Auth::user()->id;
         return $data;
     }
+    protected function getRedirectUrl(): string
+    {
+        // redirect ke list setelah create
+        return $this->getResource()::getUrl('index');
+    }
 }

@@ -26,7 +26,7 @@ class AttendanceUser extends Page implements HasTable
     use InteractsWithTable;
     use HasPageShield;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static string $view = 'filament.pages.attendance-user';
     protected static ?string $navigationGroup = 'Absensi';
     protected static ?string $navigationLabel = 'Absensi Bulanan';
@@ -97,24 +97,24 @@ class AttendanceUser extends Page implements HasTable
             $dayColumns[] = TextColumn::make($currentDate->format('Y-m-d'))
                 ->label($day)
                 ->getStateUsing(function ($record) use ($currentDate, $dayName) {
-                // Cek tanggal masa depan
-                $today = now()->toDateString();
-                if ($currentDate->toDateString() > $today) {
-                    return '-'; // Tanggal belum terjadi
-                }
+                    // Cek tanggal masa depan
+                    $today = now()->toDateString();
+                    if ($currentDate->toDateString() > $today) {
+                        return '-'; // Tanggal belum terjadi
+                    }
                     $attendance = $record->rekapAbsensiPegawai
                         ->where('date', $currentDate->toDateString())
                         ->first();
 
                     if ($attendance) {
                         return match ($attendance->status_absensi) {
-                        'Hadir' => 'H',
-                        'HDLD'  => 'HDLD',
-                        'HDDD'  => 'HDDD',
-                        'S' => 'S',
-                        'C'  => 'C',
-                        'I'  => 'I',
-                        default => 'A',
+                            'Hadir' => 'H',
+                            'HDLD'  => 'HDLD',
+                            'HDDD'  => 'HDDD',
+                            'S' => 'S',
+                            'C'  => 'C',
+                            'I'  => 'I',
+                            default => 'A',
                         };
                     }
 
@@ -153,18 +153,18 @@ class AttendanceUser extends Page implements HasTable
 
         return $table
             ->query(
-            User::query()
-                ->when(
-                    Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan'),
-                    fn($q) => $q->where('id', '!=', 1), // super_admin & kaur umum dapat melihat semua user kecuali id=1
-                    fn($q) => $q->where('id', Auth::id()) // user biasa hanya dapat melihat data dirinya sendiri
-                )
-                ->with([
-                    'rekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
-                        $query->whereBetween('date', [$startDate, $endDate]);
-                    },
-                    'nagari.workDays' // Eager load work days untuk menghindari N+1 problem
-                ])
+                User::query()
+                    ->when(
+                        Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan') || Auth::user()->hasRole('Kasi Kesejahteraan'),
+                        fn($q) => $q->where('id', '!=', 1), // super_admin & kaur umum dapat melihat semua user kecuali id=1
+                        fn($q) => $q->where('id', Auth::id()) // user biasa hanya dapat melihat data dirinya sendiri
+                    )
+                    ->with([
+                        'rekapAbsensiPegawai' => function ($query) use ($startDate, $endDate) {
+                            $query->whereBetween('date', [$startDate, $endDate]);
+                        },
+                        'nagari.workDays' // Eager load work days untuk menghindari N+1 problem
+                    ])
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')
@@ -211,58 +211,58 @@ class AttendanceUser extends Page implements HasTable
                     ->icon(fn($state) => $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle'),
 
                 Tables\Columns\TextColumn::make('total_absent')
-                ->label('Total Alpha')
-                ->getStateUsing(function ($record) use ($startDate, $endDate) {
-                    $today = now();
+                    ->label('Total Alpha')
+                    ->getStateUsing(function ($record) use ($startDate, $endDate) {
+                        $today = now();
 
-                    // Tentukan batas tanggal untuk menghitung absensi
-                    if ($startDate->isSameMonth($today)) {
-                        $lastCountDate = $today->toDateString();
-                    } elseif ($startDate->lt($today)) {
-                        $lastCountDate = $endDate->toDateString();
-                    } else {
-                        return '-'; // Bulan yang akan datang, belum ada data absensi
-                    }
-
-                    // Buat daftar semua tanggal kerja (hari kerja saja, tidak termasuk weekend)
-                    $dates = [];
-                    $current = $startDate->copy();
-                    while ($current->toDateString() <= $lastCountDate) {
-                        if (!$current->isWeekend()) {
-                            $dates[] = $current->toDateString();
+                        // Tentukan batas tanggal untuk menghitung absensi
+                        if ($startDate->isSameMonth($today)) {
+                            $lastCountDate = $today->toDateString();
+                        } elseif ($startDate->lt($today)) {
+                            $lastCountDate = $endDate->toDateString();
+                        } else {
+                            return '-'; // Bulan yang akan datang, belum ada data absensi
                         }
-                        $current->addDay();
-                    }
 
-                    // Ambil daftar hari libur resmi pada bulan tersebut
-                    $rekap = new RekapAbsensiPegawai();
-                $holidays = $rekap->Holiday($startDate->month, $startDate->year);
+                        // Buat daftar semua tanggal kerja (hari kerja saja, tidak termasuk weekend)
+                        $dates = [];
+                        $current = $startDate->copy();
+                        while ($current->toDateString() <= $lastCountDate) {
+                            if (!$current->isWeekend()) {
+                                $dates[] = $current->toDateString();
+                            }
+                            $current->addDay();
+                        }
 
-                // Jika method Holiday() mengembalikan angka, ubah menjadi array kosong
-                if (!is_array($holidays)) {
-                    $holidays = [];
-                }
+                        // Ambil daftar hari libur resmi pada bulan tersebut
+                        $rekap = new RekapAbsensiPegawai();
+                        $holidays = $rekap->Holiday($startDate->month, $startDate->year);
 
-                // Keluarkan hari libur dari daftar tanggal kerja
-                $workingDays = collect($dates)->reject(fn($d) => in_array($d, $holidays));
+                        // Jika method Holiday() mengembalikan angka, ubah menjadi array kosong
+                        if (!is_array($holidays)) {
+                            $holidays = [];
+                        }
 
-                // Ambil semua tanggal absensi yang valid untuk user
-                $hadirDates = $record->rekapAbsensiPegawai
-                    ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])
-                    ->whereBetween('date', [$startDate->toDateString(), $lastCountDate])
-                    ->pluck('date')
-                    ->toArray();
+                        // Keluarkan hari libur dari daftar tanggal kerja
+                        $workingDays = collect($dates)->reject(fn($d) => in_array($d, $holidays));
 
-                // Hitung alpha = hari kerja - hari hadir
-                $alpha = $workingDays->reject(fn($d) => in_array($d, $hadirDates))->count();
+                        // Ambil semua tanggal absensi yang valid untuk user
+                        $hadirDates = $record->rekapAbsensiPegawai
+                            ->whereIn('status_absensi', ['Hadir', 'HDLD', 'HDDD', 'Sakit', 'Cuti', 'Izin'])
+                            ->whereBetween('date', [$startDate->toDateString(), $lastCountDate])
+                            ->pluck('date')
+                            ->toArray();
 
-                return $alpha;
-            })
-                ->color(fn($state) => is_numeric($state) && $state > 0 ? 'danger' : 'success')
-                ->icon(fn($state) => is_numeric($state) && $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                ->alignCenter(),
+                        // Hitung alpha = hari kerja - hari hadir
+                        $alpha = $workingDays->reject(fn($d) => in_array($d, $hadirDates))->count();
 
-            ...$dayColumns,
+                        return $alpha;
+                    })
+                    ->color(fn($state) => is_numeric($state) && $state > 0 ? 'danger' : 'success')
+                    ->icon(fn($state) => is_numeric($state) && $state > 0 ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->alignCenter(),
+
+                ...$dayColumns,
             ])->paginated(false)
             ->striped()
             ->defaultSort('created_at', 'desc')
@@ -356,7 +356,7 @@ class AttendanceUser extends Page implements HasTable
                 ->form(self::getMonthYearForm())
                 ->modalSubmitActionLabel('Preview PDF')
                 ->modalDescription('Pilih bulan dan tahun untuk preview PDF di browser')
-                ->visible(fn() => Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan')),
+                ->visible(fn() => Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan') || Auth::user()->hasRole('Kasi Kesejahteraan')),
 
             Action::make('download-pdf')
                 ->color('success')
@@ -380,7 +380,7 @@ class AttendanceUser extends Page implements HasTable
                 ->form(self::getMonthYearForm())
                 ->modalSubmitActionLabel('Download PDF')
                 ->modalDescription('Pilih bulan dan tahun untuk download PDF langsung')
-                ->visible(fn() => Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan')),
+                ->visible(fn() => Auth::user()->hasRole('super_admin') || Auth::user()->hasRole('Kaur Umum dan Perencanan') || Auth::user()->hasRole('Kasi Kesejahteraan')),
 
         ];
     }

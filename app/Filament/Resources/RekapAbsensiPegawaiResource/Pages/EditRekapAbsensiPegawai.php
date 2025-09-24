@@ -16,4 +16,10 @@ class EditRekapAbsensiPegawai extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function getRedirectUrl(): string
+    {
+        // redirect ke list setelah create
+        return $this->getResource()::getUrl('index');
+    }
 }

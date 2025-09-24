@@ -25,4 +25,9 @@ class EditTvInformasi extends EditRecord
 
         return $data;;
     }
+    protected function getRedirectUrl(): string
+    {
+        // redirect ke list setelah create
+        return $this->getResource()::getUrl('index');
+    }
 }

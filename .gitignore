@@ -26,6 +26,7 @@ yarn-error.log
 frankenphp
 frankenphp-worker.php
 
-**/caddy
-frankenphp
-frankenphp-worker.php
+# Laravel Sail
+docker-compose.yml
+docker-compose.override.yml
+.dockerignore

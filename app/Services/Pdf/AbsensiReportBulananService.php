@@ -67,7 +67,7 @@ class AbsensiReportBulananService
                     ->where('nagari_id', $nagariId)
                     ->orderBy('date');
             }
-        ])->get()->except(1);
+        ])->get()->except([1,2]);
 
         // Buat mapping AbsensiWebPegawai berdasarkan ID untuk lookup cepat
         $absensiWebMap = [];

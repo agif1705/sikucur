@@ -2,17 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\TvGaleriResource\Pages;
-use App\Filament\Resources\TvGaleriResource\RelationManagers;
-use App\Models\TvGaleri;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\TvGaleri;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Section;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\TvGaleriResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\TvGaleriResource\RelationManagers;
 
 class TvGaleriResource extends Resource
 {
@@ -34,7 +36,16 @@ class TvGaleriResource extends Resource
                     Forms\Components\FileUpload::make('image')
                         ->label('Foto Dari galeri TV bisa banyak foto galery')
                         ->directory('galeri')
-                        ->image(),
+                        ->image()
+                        ->getUploadedFileNameForStorageUsing(function ($file): string {
+                            $date = now()->format('Ymd');
+                            $uuid = Str::uuid();
+                            $ext  = $file->getClientOriginalExtension(); // ambil extensi asli
+
+                            return "galeri-{$date}-{$uuid}.{$ext}";
+                        })->deleteUploadedFileUsing(function ($file) {
+                            Storage::disk('public')->delete($file);
+                        }),
 
                 ])
             ]);
@@ -52,17 +63,49 @@ class TvGaleriResource extends Resource
                     ->searchable(),
                 Tables\Columns\ImageColumn::make('image')
                     ->square(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable(),
 
-            ])
+            ])->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function ($record) {
+                        // hapus file dari storage
+                        if ($record->image) {
+                            Storage::disk('public')->delete($record->image);
+                        }
+
+                        // kalau field multiple JSON
+                        if (is_array($record->images ?? null)) {
+                            foreach ($record->images as $file) {
+                                Storage::disk('public')->delete($file);
+                            }
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function ($records) {
+                            foreach ($records as $record) {
+                                // Hapus single image
+                                if ($record->image) {
+                                    Storage::disk('public')->delete($record->image);
+                                }
+
+                                // Kalau field multiple JSON
+                                if (is_array($record->images ?? null)) {
+                                    foreach ($record->images as $file) {
+                                        Storage::disk('public')->delete($file);
+                                    }
+                                }
+                            }
+                        }),
                 ]),
             ]);
     }
