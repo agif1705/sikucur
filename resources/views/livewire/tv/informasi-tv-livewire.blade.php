@@ -305,13 +305,19 @@
                       @if ($item['absensi_by'] === 'Fingerprint')
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           Masuk :
-                          {{ $item['time_only'] }}
-                          <span
-                            class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
+                           @if ($item['jabatan'] === 'WaliNagari')
+                           <p class="fw-bold text-muted mb-0 fs-md text-start ">
+                             <span class="fw-bold text-success text-end fst-italic">Ada Kantor</span>
+                           </p>
+                            @else
+                            {{ $item['time_only'] }}
+                                <span
+                                class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
 
-                            {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
-                            <br>{{ $item['absensi_by'] }} - {{ $item['status'] }}
-                          </span>
+                                {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
+                                <br>{{ $item['absensi_by'] }} - {{ $item['status'] }}
+                                </span>
+                            @endif
                         </p>
                       @endif
                       @if ($item['absensi_by'] === 'web')
@@ -337,7 +343,7 @@
                               @default
                                 {{ $item['status'] }}
                             @endswitch
-                            : {{ $item['absensi_by'] }} - {{ $item['time_only'] }}
+                            : WhatsApp - {{ $item['time_only'] }}
                           </span>
                         </p>
                       @endif
@@ -369,7 +375,7 @@
                 <!-- Foto Wali -->
                 <div class="flex-shrink-0">
                   <img src="{{ asset('storage/wali_tv.png') }}" alt="Foto Wali Nagari"
-                    style="height: 15em; width: 10em; object-fit: contain;">
+                    style="height: 13em; width: 10em; object-fit: contain;">
                 </div>
 
                 <!-- Slogan dan Misi - Positioned over the photo -->
@@ -382,7 +388,7 @@
                     </h5>
                   </div>
                   <!-- Speech bubble tail -->
-                  <div class="position-absolute" style="left: -6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 6px solid rgba(13, 110, 253, 0.9);"></div>
+                  <div class="position-absolute" style="left: -6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 6px solid rgba(13, 253, 65, 0.9);"></div>
                 </div>
               </div>
             </div>

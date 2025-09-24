@@ -35,7 +35,9 @@ class ListYoutubeResource extends Resource
                         return empty($state)
                             ? 'Copy Paste URL dari YouTube Video kemudian simpan, ID YouTube akan terisi otomatis'
                             : null;
-                    })->hintColor(fn($state) => empty($state) ? 'danger' : 'gray')->afterStateUpdated(function ($state, callable $set) {
+                    })
+                    ->hintColor(fn($state) => empty($state) ? 'danger' : 'gray')
+                    ->afterStateUpdated(function ($state, callable $set) {
                         if ($state) {
                             // Ambil ID dari url YouTube
                             $videoId = null;

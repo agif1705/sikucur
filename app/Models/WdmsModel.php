@@ -63,52 +63,35 @@ class WdmsModel extends Model
                 ];
             })
             ->filter() // hapus null
+            ->groupBy('user_id') // group by user_id untuk mengatasi duplikasi
+            ->map(function ($userAbsensi) {
+                // Jika ada multiple absensi untuk user yang sama dalam 1 hari
+                // Prioritas: web > fingerprint > lainnya
+                $priority = [
+                    'web' => 1,
+                    'Fingerprint' => 2,
+                    'fingerprint' => 2, // case insensitive
+                ];
+
+                return $userAbsensi->sortBy(function ($item) use ($priority) {
+                    return $priority[$item['absensi_by']] ?? 999; // default priority rendah
+                })->first(); // ambil yang prioritas tertinggi (angka terkecil)
+            })
             ->values();
         // --- Ambil HADIR ---
-        $hadir = self::with(['user', 'user.nagari', 'user.jabatan'])
-            ->where('terminal_sn', $sn_fp)
-            ->whereDate('punch_time', now()->format('Y-m-d'))
-            ->whereTime('punch_time', '<=', '12:00')
-            ->get()
-            ->reject(fn($item) => $item->user?->id == 1 || !$item->user)
-            ->sortBy('punch_time')
-            ->groupBy(fn($item) => $item->emp_id . '-' . Carbon::parse($item->punch_time)->format('Y-m-d'))
-            ->map(function ($grouped) {
-                $item = $grouped->first();
-                return [
-                    'user_id'   => (int) $item->user->id,
-                    'jabatan'   => $item->user->jabatan?->name ?? 'Tidak Ada',
-                    'name'      => $item->user->name ?? 'Tanpa Nama',
-                    'slug'      => $item->user->slug ?? 'TanpaNama',
-                    'nagari_id' => $item->user->nagari_id,
-                    'time_only' => Carbon::parse($item->punch_time)->format('H:i'),
-                    'date_in'   => Carbon::parse($item->punch_time)->format('Y-m-d'),
-                    'sn_mesin'  => $item->terminal_sn,
-                    'is_late'   => Carbon::parse($item->punch_time)->format('H:i') > '08:00',
-                    'absensi_by' => 'Fingerprint',
-                    'status'    => 'Hadir',
-                    'image'     => $item->user->image ?? 'default-avatar.png',
-                ];
-            })
-            ->values()
-            ->unique('user_id');
-        // dd($hadir);
 
-        // dd($hadir);
+
         // --- Filter HADIR supaya user yang sudah IZIN tidak muncul ---
         $userIzinIds = $izin->pluck('user_id')->all();
-        $hadirFiltered = $hadir->reject(fn($x) => in_array($x['user_id'], $userIzinIds))->values();
 
         // --- Gabung IZIN + HADIR ---
-        $rekap = collect($izin)->merge($hadirFiltered)->values();
         // dd($rekap);
         // --- Ambil semua user aktif kecuali id 1 ---
         $users = User::with('nagari', 'jabatan')->where('id', '!=', 1)->get();
 
         // --- User yang tidak hadir ---
-        $rekapUserIds = $rekap->pluck('user_id')->all();
         $tidakHadir = $users
-            ->reject(fn($user) => in_array((int)$user->id, $rekapUserIds))
+            ->reject(fn($user) => in_array((int)$user->id, $userIzinIds))
             ->map(function ($item) {
                 return [
                     'user_id'   => (int)$item->id,
@@ -127,7 +110,7 @@ class WdmsModel extends Model
             });
 
         // --- Final merge ---
-        $rekapFinal = $rekap->merge($tidakHadir)->values();
+        $rekapFinal = collect($izin)->merge($tidakHadir)->values();
         // dd($rekapFinal);
         return $rekapFinal;
     }
