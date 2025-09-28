@@ -99,28 +99,43 @@ class WhatsAppController extends Controller
         if ($request->input('token') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
             $nagari = Nagari::with('users')->where('slug', 'sikucur')->first();
             $absensi = WdmsModel::getAbsensiMasuk($nagari->sn_fingerprint);
+            // dd($absensi);
             $tanggal = now()->toDateString();
             $baduo = " \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
-            $pesan = "📊 Laporan Absensi Hari Ini mak wali Asrul & Seketaris Fadil (Semangat Hari Ini: {$tanggal})\n\n";
+            $pesan = "📊 Laporan Absensi Hari Ini Pak wali & Pak Seketaris (Semangat Hari Ini: {$tanggal})\n\n";
             foreach ($absensi as $i => $item) {
-                $statusIcon = $item['status']
-                    ? ($item['is_late'] ? "⚠️ Terlambat" : "✅ HADIR")
-                    : "❌ TIDAK-HADIR";
+                $status = $item['status'];
+                if ($status === "Hadir") {
+                    $jam = $item['time_only'] ?? '-';
+                    $statusIcon = $item['is_late'] ? '⚠️ Terlambat' : '✅ HADIR';
+                } elseif ($status === "S" || $status === "I" || $status === "C" || $status === "HDLD" || $status === "HDDD") {
+                    $map = [
+                        'S'    => '🤒 SAKIT',
+                        'I'    => '📝 IZIN',
+                        'C'    => '🏖️ CUTI',
+                        'HDLD' => '🧳 DINAS LUAR',
+                        'HDDD' => '🏢 DINAS DALAM',
+                    ];
+                    $jam = '-';
+                    $statusIcon = $map[$status] ?? $status;
+                } else {
+                    // Tidak hadir
+                    $statusIcon = '❌ TIDAK HADIR';
+                }
 
-                $jam = $item['time_only'] ?? '-';
-
-                $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']}) - {$jam} {$statusIcon}\n";
+                $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']})"
+                    . " - Jam: {$jam} {$statusIcon}\n";
             }
             $state = self::getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
             $wa = new GowaService();
             if (!$state->original['state'] == null) {
+                // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
                 $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
                 $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
-                    $wali,
-                    $seketaris
+                    $result,
                 ]]);
             } else {
                 $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);

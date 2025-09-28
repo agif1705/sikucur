@@ -54,27 +54,27 @@ class AbsensiPdfController extends Controller
 
             // Cek apakah PDF sudah ada di storage (1 file per bulan-tahun-nagari)
             $storagePath = "public/absensi/{$filename}";
-            if (Storage::exists($storagePath)) {
-                Log::info('PDF found in storage, serving existing file', [
-                    'filename' => $filename,
-                    'file_size' => Storage::size($storagePath),
-                    'last_modified' => Storage::lastModified($storagePath)
-                ]);
+            // if (Storage::exists($storagePath)) {
+            //     Log::info('PDF found in storage, serving existing file', [
+            //         'filename' => $filename,
+            //         'file_size' => Storage::size($storagePath),
+            //         'last_modified' => Storage::lastModified($storagePath)
+            //     ]);
 
-                $pdfContent = Storage::get($storagePath);
+            //     $pdfContent = Storage::get($storagePath);
 
-                if ($shouldStream) {
-                    return response($pdfContent, 200, [
-                        'Content-Type' => 'application/pdf',
-                        'Content-Disposition' => 'inline; filename="' . $filename . '"'
-                    ]);
-                } else {
-                    return response($pdfContent, 200, [
-                        'Content-Type' => 'application/pdf',
-                        'Content-Disposition' => 'attachment; filename="' . $filename . '"'
-                    ]);
-                }
-            }
+            //     if ($shouldStream) {
+            //         return response($pdfContent, 200, [
+            //             'Content-Type' => 'application/pdf',
+            //             'Content-Disposition' => 'inline; filename="' . $filename . '"'
+            //         ]);
+            //     } else {
+            //         return response($pdfContent, 200, [
+            //             'Content-Type' => 'application/pdf',
+            //             'Content-Disposition' => 'attachment; filename="' . $filename . '"'
+            //         ]);
+            //     }
+            // }
 
             // Generate laporan baru
             $report = $service->generate($tahun, $bulan, $nagari_id);
@@ -102,7 +102,6 @@ class AbsensiPdfController extends Controller
             } else {
                 return $report['pdf']->download($filename);
             }
-
         } catch (\Exception $e) {
             Log::error('Error generating PDF report: ' . $e->getMessage());
 
