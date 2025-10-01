@@ -4,6 +4,7 @@ use App\Models\TvInformasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\WusapiController;
+use App\Http\Controllers\Api\MikrotikController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\RekapPegawaiController;
 
@@ -18,3 +19,5 @@ Route::post('/kehadiran/report/harian', [WhatsAppController::class, 'scheduleHar
 Route::post('/wuzapi/webhook', [WusapiController::class, 'webhook'])->name('wuzapi.webhook');
 Route::post('/rekap/fingerprint', [RekapPegawaiController::class, 'webhook'])->name('rekap.webhook.fingerprint');
 Route::post('/rekap/absensi/bulanan', [RekapPegawaiController::class, 'absensiBulanan'])->name('rekap.webhook.absensi.bulanan');
+Route::post('/hotspot/sikucur/login', [MikrotikController::class, 'index'])
+    ->name('mikrotik.hotspot.sikucur.login');

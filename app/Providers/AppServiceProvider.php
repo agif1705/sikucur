@@ -11,7 +11,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register MikrotikService as singleton
+        $this->app->singleton(\App\Services\MikrotikService::class);
+
+        // Register facade alias
+        $this->app->alias(\App\Facades\Mikrotik::class, 'Mikrotik');
     }
 
     /**

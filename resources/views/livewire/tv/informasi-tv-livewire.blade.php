@@ -235,10 +235,25 @@
 
     /* Speech bubble fade animation */
     @keyframes speechFade {
-      0% { opacity: 0; transform: translateX(-15%) scale(0.8); }
-      25% { opacity: 1; transform: translateX(-15%) scale(1); }
-      75% { opacity: 1; transform: translateX(-15%) scale(1); }
-      100% { opacity: 0; transform: translateX(-15%) scale(0.8); }
+      0% {
+        opacity: 0;
+        transform: translateX(-15%) scale(0.8);
+      }
+
+      25% {
+        opacity: 1;
+        transform: translateX(-15%) scale(1);
+      }
+
+      75% {
+        opacity: 1;
+        transform: translateX(-15%) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(-15%) scale(0.8);
+      }
     }
 
     .speech-bubble {
@@ -305,19 +320,19 @@
                       @if ($item['absensi_by'] === 'Fingerprint')
                         <p class="fw-bold text-muted mb-0 fs-md text-start ">
                           Masuk :
-                           @if ($item['jabatan'] === 'WaliNagari')
-                           <p class="fw-bold text-muted mb-0 fs-md text-start ">
-                             <span class="fw-bold text-success text-end fst-italic">Ada Kantor</span>
-                           </p>
-                            @else
+                          @if ($item['jabatan'] === 'WaliNagari')
+                            <p class="fw-bold text-muted mb-0 fs-md text-start ">
+                              <span class="fw-bold text-success text-end fst-italic">Ada Kantor</span>
+                            </p>
+                          @else
                             {{ $item['time_only'] }}
-                                <span
-                                class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
+                            <span
+                              class="fw-bold {{ $item['is_late'] ? 'text-danger' : 'text-success' }} text-end fst-italic">
 
-                                {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
-                                <br>{{ $item['absensi_by'] }} - {{ $item['status'] }}
-                                </span>
-                            @endif
+                              {{ $item['is_late'] ? 'Terlambat' : 'Ontime' }}
+                              <br>{{ $item['absensi_by'] }} - {{ $item['status'] }}
+                            </span>
+                          @endif
                         </p>
                       @endif
                       @if ($item['absensi_by'] === 'web')
@@ -379,16 +394,19 @@
                 </div>
 
                 <!-- Slogan dan Misi - Positioned over the photo -->
-                <div class="position-absolute speech-bubble" style="top: 20%; left: 8.5em; transform: translateX(-15%); min-width: 0; max-width: calc(100% - 9em); z-index: 10;">
+                <div class="position-absolute speech-bubble"
+                  style="top: 20%; left: 8.5em; transform: translateX(-15%); min-width: 0; max-width: calc(100% - 9em); z-index: 10;">
                   <div class="bg-opacity-90 p-1 rounded-2" style="backdrop-filter: blur(3px);">
                     <h4 class="fw-bold text-white mb-1">Sikucur Bangkit </h4>
                     <h5 class="fw-bold text-white mb-1"
-                        style="line-height: 1.0; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); word-wrap: break-word;">
+                      style="line-height: 1.0; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); word-wrap: break-word;">
                       "Melayani Dengan Hati, <br />Membangun Dengan Visi"
                     </h5>
                   </div>
                   <!-- Speech bubble tail -->
-                  <div class="position-absolute" style="left: -6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 6px solid rgba(13, 253, 65, 0.9);"></div>
+                  <div class="position-absolute"
+                    style="left: -6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 6px solid rgba(13, 253, 65, 0.9);">
+                  </div>
                 </div>
               </div>
             </div>
@@ -403,11 +421,16 @@
               <!-- Video Body -->
               <div class="card-body p-0 bg-dark flex-grow-1 d-flex">
                 <div class="w-100 h-100">
-                  <iframe
+                  {{-- <iframe
                     src="https://www.youtube.com/embed/{{ $videoId }}?playlist={{ $playlistStr }}&loop=1&autoplay=1&mute=0&rel=0&modestbranding=1"
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowfullscreen class="w-100 h-100">
+                  </iframe> --}}
+                  <iframe
+                    src="https://www.youtube.com/embed/{{ $videoId }}?playlist={{ $playlistStr }}&loop=1&autoplay=0&mute=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin={{ urlencode(config('app.url')) }}"
+                    frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write"
+                    referrerpolicy="origin-when-cross-origin" allowfullscreen class="w-100 h-100">
                   </iframe>
                 </div>
               </div>

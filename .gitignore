@@ -30,3 +30,4 @@ frankenphp-worker.php
 docker-compose.yml
 docker-compose.override.yml
 .dockerignore
+MIKROTIK_SERVICE_DOCS.md

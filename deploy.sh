@@ -18,7 +18,8 @@ echo "=== Deploy Laravel Release $NOW (branch: $BRANCH) ==="
 git clone -b $BRANCH --single-branch https://github.com/agif1705/sikucur.git $NEW_RELEASE
 cd $NEW_RELEASE
 
-# 2. Install dependencies
+# 2. Install dependencies\
+composer update
 composer install --no-dev --optimize-autoloader
 
 # 3. Copy .env lama

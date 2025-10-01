@@ -67,14 +67,6 @@ class WhatsAppController extends Controller
         return $this->apiResponse($result['success'], $result['message'], $result['data']);
     }
 
-    private function apiResponse($success, $message, $data)
-    {
-        return response()->json([
-            'success' => $success,
-            'message' => $message,
-            'data'    => $data
-        ], $success ? 200 : 400);
-    }
 
 
     function generateUniqueLink(int $length = 30): string

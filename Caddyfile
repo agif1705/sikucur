@@ -46,11 +46,9 @@ realtime.sikucur.com {
 gowas.sikucur.com {
     reverse_proxy gowa:3000
 }
-db-sekolah.sikucur.com {
-    reverse_proxy supabase-kong2:8000
+mikrotik-api.sikucur.com {
+    root * public
+    php_server
+    encode gzip
+    file_server
 }
-
-
-
-
-

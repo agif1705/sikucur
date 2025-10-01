@@ -30,10 +30,11 @@ class RekapPegawaiController extends Controller
 
         $date = Carbon::parse($data['punch_time'])->format('Y-m-d');
         $time_in = Carbon::parse($data['punch_time'])->format('H:i:s');
-        $is_late = Carbon::parse($data['punch_time'])->greaterThan(Carbon::createFromTime(8,0))? 'Terlambat' : 'Ontime';
+        $is_late = Carbon::parse($data['punch_time'])->greaterThan(Carbon::createFromTime(8, 0)) ? 'Terlambat' : 'Ontime';
+        $isLateInt = $is_late === 'Terlambat' ? 1 : 0;
 
         // Tentukan emp_id yang dipakai
-       $emp_id = !empty($data['emp_id']) ? intval($data['emp_id']) : intval($data['emp_code']);
+        $emp_id = !empty($data['emp_id']) ? intval($data['emp_id']) : intval($data['emp_code']);
 
 
         // Cari nagari dan user
@@ -49,13 +50,13 @@ class RekapPegawaiController extends Controller
             ->whereDate('date', $date)
             ->first();
 
-            if (!$absensi) {
-                // Absensi pertama (masuk)
-            $pesan_masuk = "Hai *" . $user->name . "* (Jabatan : " . $user->jabatan->name . ")" . ",\nKehadiran :  " . $is_late . "* anda telah hadir pada jam *" . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name ."* ,ini akan masuk ke WhatsApp Wali Nagari " . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n_Sent || via *Cv.Baduo Mitra Solustion*_";
+        if (!$absensi) {
+            // Absensi pertama (masuk)
+            $pesan_masuk = "Hai *" . $user->name . "* (Jabatan : " . $user->jabatan->name . ")" . ",\nKehadiran :  " . $is_late . "* anda telah hadir pada jam *" . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name . "* ,ini akan masuk ke WhatsApp Wali Nagari " . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n_Sent || via *Cv.Baduo Mitra Solustion*_";
             $absensi = RekapAbsensiPegawai::create([
                 'user_id'        => $user->id,
                 'nagari_id'      => $nagari_id,
-                'is_late'        => $is_late,
+                'is_late'        => $isLateInt,
                 'status_absensi' => 'Hadir',
                 'sn_mesin'       => $data['sn_mesin'],
                 'resource'       => 'Fingerprint',
@@ -67,12 +68,12 @@ class RekapPegawaiController extends Controller
                 $wa = new GowaService();
                 $result = $wa->sendText($user->no_hp, $pesan_masuk);
                 WhatsAppLog::create([
-                        'user_id' => $user->id,
-                        'phone'   => $user->no_hp,
-                        'message' => $pesan_masuk,
-                        'status'  => $result['code'] ?? false,
-                        'response' => $result,
-                    ]);
+                    'user_id' => $user->id,
+                    'phone'   => $user->no_hp,
+                    'message' => $pesan_masuk,
+                    'status'  => $result['code'] ?? false,
+                    'response' => $result,
+                ]);
             }
             return response()->json([
                 'message'      => $pesan_masuk,
@@ -131,7 +132,7 @@ class RekapPegawaiController extends Controller
             $fullPath = storage_path("app/{$storagePath}");
 
             // Ambil semua nagari beserta user + jabatan
-            $nagaris = Nagari::with(['users.jabatan' => function($query) {
+            $nagaris = Nagari::with(['users.jabatan' => function ($query) {
                 $query->whereNotNull('name');
             }])->whereHas('users')->get();
 
@@ -201,13 +202,13 @@ class RekapPegawaiController extends Controller
 
                     $jabatan = $user->jabatan->name ?? 'Tidak ada jabatan';
                     $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\\n\\n" .
-                             "Pegawai Nagari {$nagari->name}\\n\\n" .
-                             "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\\n\\n" .
-                             "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\\n" .
-                             "Laporan PDF dapat disimpan untuk dokumentasi.\\n\\n" .
-                             "_Note: Dikirim ke seluruh pegawai dan pimpinan_\\n\\n" .
-                             "Ketik: *info* untuk bantuan lebih lanjut.\\n\\n" .
-                             "_Sent via Cv.Baduo Mitra Solution_";
+                        "Pegawai Nagari {$nagari->name}\\n\\n" .
+                        "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\\n\\n" .
+                        "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\\n" .
+                        "Laporan PDF dapat disimpan untuk dokumentasi.\\n\\n" .
+                        "_Note: Dikirim ke seluruh pegawai dan pimpinan_\\n\\n" .
+                        "Ketik: *info* untuk bantuan lebih lanjut.\\n\\n" .
+                        "_Sent via Cv.Baduo Mitra Solution_";
 
                     try {
                         $gowa = new GowaService();
@@ -235,7 +236,6 @@ class RekapPegawaiController extends Controller
                             'status' => $result['code'] ?? false,
                             'response' => $result,
                         ]);
-
                     } catch (\Exception $e) {
                         Log::error('Failed to send WhatsApp', [
                             'user_id' => $user->id,
@@ -275,7 +275,6 @@ class RekapPegawaiController extends Controller
                 ],
                 'gowa_response' => $response
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error in absensiBulanan: ' . $e->getMessage(), [
                 'request_data' => $request->all(),

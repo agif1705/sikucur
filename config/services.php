@@ -17,8 +17,10 @@ return [
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
-    'fonnte' => [
-        'token' => "PxtEHX8hpxcHZcwrqcMq",
+    'mikrotik' => [
+        'url' => 'http://id-27.hostddns.us:30179',
+        'username' => 'agif',
+        'password' => 'agif1705@gmail.com',
 
     ],
 
