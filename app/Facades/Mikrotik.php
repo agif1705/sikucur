@@ -5,6 +5,7 @@ namespace App\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
+ * @method static \App\Services\MikrotikService setConfig(string $nagari, string $location)
  * @method static \RouterOS\Client getClient()
  * @method static array addHotspotUser(string $username, string $password, array $additionalParams = [])
  * @method static array removeHotspotUser(string $username)

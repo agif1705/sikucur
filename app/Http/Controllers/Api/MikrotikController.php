@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\HotspotSikucur;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Models\Nagari;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Services\MikrotikService;
@@ -31,9 +32,12 @@ class MikrotikController extends Controller
     /**
      * Handle hotspot user registration and authentication
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, string $nagari, string $location): JsonResponse
     {
         try {
+            // Set dynamic MikroTik config based on nagari and location
+            $this->mikrotikService->setConfig($nagari, $location);
+
             // Validate request data
             $validatedData = $this->validateRequest($request);
 
@@ -49,6 +53,7 @@ class MikrotikController extends Controller
 
             // Check existing hotspot access
             $existingHotspot = $this->getExistingHotspot($penduduk->id);
+
             // Check if user is blocked
             if ($existingHotspot && !$existingHotspot->status) {
                 return $this->buildErrorResponse(
@@ -57,10 +62,21 @@ class MikrotikController extends Controller
                     403
                 );
             }
+
+            // Check if user has valid access
             if ($this->hasValidAccess($existingHotspot)) {
                 return $this->buildSuccessResponse(
                     self::SUCCESS_MESSAGE,
                     $validatedData
+                );
+            }
+
+            // Check if user exists but expired
+            if ($existingHotspot && $existingHotspot->status && $existingHotspot->expired_at && $existingHotspot->expired_at->isPast()) {
+                return $this->buildErrorResponse(
+                    'Akses internet Anda telah berakhir. Silahkan daftar ulang untuk mendapatkan akses internet.',
+                    $validatedData,
+                    403
                 );
             }
 
@@ -73,6 +89,8 @@ class MikrotikController extends Controller
             ]);
         } catch (Exception $e) {
             Log::error('MikrotikController error: ' . $e->getMessage(), [
+                'nagari' => $nagari,
+                'location' => $location,
                 'request_data' => $request->all(),
                 'stack_trace' => $e->getTraceAsString()
             ]);

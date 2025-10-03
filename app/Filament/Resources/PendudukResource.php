@@ -28,7 +28,11 @@ class PendudukResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\TextInput::make('phone_mikrotik')
+                    ->label('Nomor Telepon')
+                    ->tel()
+                    ->required()
+                    ->maxLength(255),
             ]);
     }
 

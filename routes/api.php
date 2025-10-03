@@ -19,5 +19,5 @@ Route::post('/kehadiran/report/harian', [WhatsAppController::class, 'scheduleHar
 Route::post('/wuzapi/webhook', [WusapiController::class, 'webhook'])->name('wuzapi.webhook');
 Route::post('/rekap/fingerprint', [RekapPegawaiController::class, 'webhook'])->name('rekap.webhook.fingerprint');
 Route::post('/rekap/absensi/bulanan', [RekapPegawaiController::class, 'absensiBulanan'])->name('rekap.webhook.absensi.bulanan');
-Route::post('/hotspot/sikucur/login', [MikrotikController::class, 'index'])
+Route::post('/hotspot/{nagari}/{location}/login', [MikrotikController::class, 'index'])
     ->name('mikrotik.hotspot.sikucur.login');

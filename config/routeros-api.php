@@ -14,9 +14,9 @@ return [
      |
      */
 
-    'host' => '117.53.45.170', // Address of Mikrotik RouterOS
-    'user' => 'admin',        // Username
-    'pass' => 'agif1705@gmail.com',                 // Password
+    'host' => 'id-26.hostddns.us',
+    'user' => 'agif',
+    'pass' => 'agif1705@gmail.com',
     'port' => (int) 30668,
     'ssl' => false,
 

@@ -87,7 +87,7 @@ class FingerPrintController extends Controller
         $date = Carbon::now()->format('Y-m-d');
         $nagari = Nagari::all();
         foreach ($nagari as $item) {
-            $item->users = User::where('nagari_id', $item->id)
+            $item->user = User::where('nagari_id', $item->id)
                 ->where('aktif', true)
                 ->get()
                 ->map(function ($user) use ($date) {

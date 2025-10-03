@@ -23502,6 +23502,62 @@ namespace CCK\LaravelWahaSaloonSdk\Facades {
             }
     }
 
+namespace RouterOS\Laravel {
+    /**
+     */
+    class Facade {
+        /**
+         * Alias for \RouterOS::client() method
+         *
+         * @param array $params
+         * @return \RouterOS\Client
+         * @throws \RouterOS\Exceptions\ClientException
+         * @throws \RouterOS\Exceptions\ConfigException
+         * @throws \RouterOS\Exceptions\QueryException
+         * @deprecated
+         * @codeCoverageIgnore
+         * @static
+         */
+        public static function getClient($params = [])
+        {
+            /** @var \RouterOS\Laravel\Wrapper $instance */
+            return $instance->getClient($params);
+        }
+
+        /**
+         * Get configs of library
+         *
+         * @param array $params
+         * @return \RouterOS\Interfaces\ConfigInterface
+         * @throws \RouterOS\Exceptions\ConfigException
+         * @static
+         */
+        public static function config($params = [])
+        {
+            /** @var \RouterOS\Laravel\Wrapper $instance */
+            return $instance->config($params);
+        }
+
+        /**
+         * Instantiate client object
+         *
+         * @param array $params
+         * @param bool $autoConnect
+         * @return \RouterOS\Interfaces\ClientInterface
+         * @throws \RouterOS\Exceptions\ClientException
+         * @throws \RouterOS\Exceptions\ConfigException
+         * @throws \RouterOS\Exceptions\QueryException
+         * @static
+         */
+        public static function client($params = [], $autoConnect = true)
+        {
+            /** @var \RouterOS\Laravel\Wrapper $instance */
+            return $instance->client($params, $autoConnect);
+        }
+
+            }
+    }
+
 namespace Laravel\Octane\Facades {
     /**
      * @see \Laravel\Octane\Octane
@@ -32290,6 +32346,7 @@ namespace  {
     class Pdf extends \Barryvdh\DomPDF\Facade\Pdf {}
     class FilamentShield extends \BezhanSalleh\FilamentShield\Facades\FilamentShield {}
     class LaravelWahaSaloonSdk extends \CCK\LaravelWahaSaloonSdk\Facades\LaravelWahaSaloonSdk {}
+    class RouterOS extends \RouterOS\Laravel\Facade {}
     class Octane extends \Laravel\Octane\Facades\Octane {}
     class Livewire extends \Livewire\Livewire {}
 }

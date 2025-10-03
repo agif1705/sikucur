@@ -5,11 +5,30 @@ namespace App\Services;
 use Exception;
 use RouterOS\Query;
 use RouterOS\Client;
+use App\Models\MikrotikConfig;
 use Illuminate\Support\Facades\Log;
 
 class MikrotikService
 {
  private ?Client $client = null;
+ private ?MikrotikConfig $config = null;
+
+ /**
+  * Set dynamic config based on nagari and location
+  */
+ public function setConfig(string $nagari, string $location): self
+ {
+  $this->config = MikrotikConfig::getConfig($nagari, $location);
+
+  if (!$this->config) {
+   throw new Exception("MikroTik config not found for nagari: {$nagari}, location: {$location}");
+  }
+
+  // Reset client to force reconnection with new config
+  $this->client = null;
+
+  return $this;
+ }
 
  /**
   * Get MikroTik client instance
@@ -17,12 +36,13 @@ class MikrotikService
  public function getClient(): Client
  {
   if (!$this->client) {
+   // Use dynamic config if available, otherwise fallback to default config
    $this->client = new Client([
-    'host' => config('routeros-api.host'),
-    'user' => config('routeros-api.user'),
-    'pass' => config('routeros-api.pass'),
-    'port' => (int) config('routeros-api.port'),
-    'ssl'  => (bool) config('routeros-api.ssl'),
+    'host' => $this->config->host,
+    'user' => $this->config->user,
+    'pass' => $this->config->pass,
+    'port' => $this->config->port,
+    'ssl' => $this->config->ssl,
    ]);
   }
 
@@ -146,6 +166,9 @@ class MikrotikService
 
    $response = $this->getClient()->query($updateQuery)->read();
 
+   // Remove active sessions for this user
+   $this->removeActiveSession($username);
+
    Log::info('MikroTik user disabled successfully', [
     'username' => $username,
     'user_id' => $userId
@@ -160,6 +183,7 @@ class MikrotikService
    throw $e;
   }
  }
+
 
  /**
   * Enable user in MikroTik hotspot
@@ -266,6 +290,11 @@ class MikrotikService
 
    $response = $this->getClient()->query($updateQuery)->read();
 
+   // If disabling user, remove active sessions
+   if (!$enabled) {
+    $this->removeActiveSession($username);
+   }
+
    Log::info('MikroTik user status updated successfully', [
     'username' => $username,
     'user_id' => $userId,
@@ -280,6 +309,40 @@ class MikrotikService
     'error' => $e->getMessage()
    ]);
    throw $e;
+  }
+ }
+ private function removeActiveSession(string $username): void
+ {
+  try {
+   // Find active sessions for this user
+   $findActiveQuery = (new Query('/ip/hotspot/active/print'))
+    ->where('user', $username);
+
+   $activeSessions = $this->getClient()->query($findActiveQuery)->read();
+
+   if (!empty($activeSessions)) {
+    foreach ($activeSessions as $session) {
+     $sessionId = $session['.id'];
+
+     // Remove the active session
+     $removeQuery = (new Query('/ip/hotspot/active/remove'))
+      ->equal('.id', $sessionId);
+
+     $this->getClient()->query($removeQuery)->read();
+
+     Log::info('Active session removed for user', [
+      'username' => $username,
+      'session_id' => $sessionId
+     ]);
+    }
+   }
+  } catch (Exception $e) {
+   Log::warning('Failed to remove active session for user', [
+    'username' => $username,
+    'error' => $e->getMessage()
+   ]);
+   // Don't throw exception here, just log the warning
+   // User disable should still succeed even if session removal fails
   }
  }
 
