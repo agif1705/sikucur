@@ -32,6 +32,31 @@ class MikrotikService
   try {
    $client = $this->getClientWithConfig($config);
 
+   // First check if user already exists
+   $findQuery = (new Query('/ip/hotspot/user/print'))
+    ->where('name', $username);
+
+   $existingUsers = $client->query($findQuery)->read();
+
+   if (!empty($existingUsers)) {
+    // User already exists, return existing user info
+    Log::info('MikroTik user already exists, returning existing user', [
+     'config' => $config->nagari . '-' . $config->location,
+     'username' => $username,
+     'existing_user_id' => $existingUsers[0]['.id']
+    ]);
+
+    // Return in same format as add response for consistency
+    return [
+     'after' => [
+      'ret' => $existingUsers[0]['.id']
+     ],
+     'existing_user' => true,
+     'user_data' => $existingUsers[0]
+    ];
+   }
+
+   // User doesn't exist, create new user
    $query = (new Query('/ip/hotspot/user/add'))
     ->equal('name', $username)
     ->equal('password', $password);
