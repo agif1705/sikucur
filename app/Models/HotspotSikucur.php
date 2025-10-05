@@ -8,6 +8,7 @@ class HotspotSikucur extends Model
 {
     protected $fillable = [
         'penduduk_id',
+        'mikrotik_config_id',
         'ret_id',
         'phone_mikrotik',
         'mikrotik_id',
@@ -23,5 +24,9 @@ class HotspotSikucur extends Model
     public function penduduk()
     {
         return $this->belongsTo(Penduduk::class);
+    }
+    public function mikrotikConfig()
+    {
+        return $this->belongsTo(MikrotikConfig::class);
     }
 }

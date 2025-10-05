@@ -14,6 +14,7 @@ class MikrotikConfigSeeder extends Seeder
  {
   $configs = [
    [
+    'name' => 'Wilayah Sikucur',
     'nagari' => 'sikucur',
     'location' => 'kantor',
     'host' => 'id-26.hostddns.us',
@@ -24,16 +25,18 @@ class MikrotikConfigSeeder extends Seeder
     'is_active' => true,
    ],
    [
+    'name' => 'Pasar Basung',
     'nagari' => 'sikucur',
-    'location' => 'backup',
-    'host' => '192.168.1.2',
+    'location' => 'pasar Basung',
+    'host' => 'id-37.hostddns.us',
     'user' => 'admin',
-    'pass' => '',
-    'port' => 8728,
+    'pass' => 'agif1705@gmail.com',
+    'port' => 31084,
     'ssl' => false,
-    'is_active' => false,
+    'is_active' => true,
    ],
    [
+    'name' => 'Nagari Lain',
     'nagari' => 'other-nagari',
     'location' => 'main',
     'host' => '192.168.2.1',

@@ -5,9 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\HotspotSikucurResource\Pages;
 use App\Filament\Resources\HotspotSikucurResource\RelationManagers;
 use App\Models\HotspotSikucur;
+use App\Models\MikrotikConfig;
 use App\Models\Penduduk;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -71,15 +73,10 @@ class HotspotSikucurResource extends Resource
                             ->tel()
                             ->required()
                             ->maxLength(255),
-                        Forms\Components\TextInput::make('nik_display')
-                            ->label('NIK')->visibleOn('create')
-                            ->disabled()
-                            ->maxLength(16),
-                        Forms\Components\TextInput::make('ret_id')
-                            ->label('user ID Mikrotik')
-                            ->disabled()
-                            ->maxLength(255),
-
+                        Select::make('mikrotik_config_id')
+                            ->label('Pilih Profile')
+                            ->options(MikrotikConfig::all()->pluck('name', 'id'))
+                            ->required(),
                         Forms\Components\DateTimePicker::make('expired_at')->visibleOn('edit'),
                     ]),
                 Section::make('Status')
@@ -108,7 +105,9 @@ class HotspotSikucurResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone_mikrotik')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('mikrotik_id')
+                Tables\Columns\TextColumn::make('mikrotikConfig.name')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('ret_id')
                     ->searchable(),
                 Tables\Columns\IconColumn::make('status')
                     ->boolean()
@@ -121,10 +120,6 @@ class HotspotSikucurResource extends Resource
                     ->dateTime()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

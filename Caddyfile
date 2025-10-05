@@ -20,19 +20,12 @@ sikucur.com {
         }
     }
 }
-sekolah.sikucur.com {
-    root * /var/www/sekolah/public
-    php_server
-    encode gzip
-    file_server
-}
 dev.sikucur.com {
     root * /var/www/sikucur/public
     php_server
     encode gzip
     file_server
 }
-
 
 wea.sikucur.com {
     reverse_proxy waha:3000

@@ -10,51 +10,28 @@ use Illuminate\Support\Facades\Log;
 
 class MikrotikService
 {
- private ?Client $client = null;
- private ?MikrotikConfig $config = null;
-
  /**
-  * Set dynamic config based on nagari and location
+  * Get MikroTik client instance with specific config
   */
- public function setConfig(string $nagari, string $location): self
+ private function getClientWithConfig(MikrotikConfig $config): Client
  {
-  $this->config = MikrotikConfig::getConfig($nagari, $location);
-
-  if (!$this->config) {
-   throw new Exception("MikroTik config not found for nagari: {$nagari}, location: {$location}");
-  }
-
-  // Reset client to force reconnection with new config
-  $this->client = null;
-
-  return $this;
- }
-
- /**
-  * Get MikroTik client instance
-  */
- public function getClient(): Client
- {
-  if (!$this->client) {
-   // Use dynamic config if available, otherwise fallback to default config
-   $this->client = new Client([
-    'host' => $this->config->host,
-    'user' => $this->config->user,
-    'pass' => $this->config->pass,
-    'port' => $this->config->port,
-    'ssl' => $this->config->ssl,
-   ]);
-  }
-
-  return $this->client;
+  return new Client([
+   'host' => $config->host,
+   'user' => $config->user,
+   'pass' => $config->pass,
+   'port' => $config->port,
+   'ssl' => $config->ssl,
+  ]);
  }
 
  /**
   * Add user to MikroTik hotspot
   */
- public function addHotspotUser(string $username, string $password, array $additionalParams = []): array
+ public function addHotspotUser(MikrotikConfig $config, string $username, string $password, array $additionalParams = []): array
  {
   try {
+   $client = $this->getClientWithConfig($config);
+
    $query = (new Query('/ip/hotspot/user/add'))
     ->equal('name', $username)
     ->equal('password', $password);
@@ -64,9 +41,10 @@ class MikrotikService
     $query->equal($key, $value);
    }
 
-   $response = $this->getClient()->query($query)->read();
+   $response = $client->query($query)->read();
 
    Log::info('MikroTik user added successfully', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'response' => $response
    ]);
@@ -74,6 +52,7 @@ class MikrotikService
    return $response;
   } catch (Exception $e) {
    Log::error('Failed to add MikroTik user', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'error' => $e->getMessage()
    ]);
@@ -84,14 +63,16 @@ class MikrotikService
  /**
   * Remove user from MikroTik hotspot
   */
- public function removeHotspotUser(string $username): array
+ public function removeHotspotUser(MikrotikConfig $config, string $username): array
  {
   try {
+   $client = $this->getClientWithConfig($config);
+
    // First find the user ID
    $findQuery = (new Query('/ip/hotspot/user/print'))
     ->where('name', $username);
 
-   $users = $this->getClient()->query($findQuery)->read();
+   $users = $client->query($findQuery)->read();
 
    if (empty($users)) {
     throw new Exception("User '{$username}' not found in MikroTik");
@@ -103,9 +84,10 @@ class MikrotikService
    $removeQuery = (new Query('/ip/hotspot/user/remove'))
     ->equal('.id', $userId);
 
-   $response = $this->getClient()->query($removeQuery)->read();
+   $response = $client->query($removeQuery)->read();
 
    Log::info('MikroTik user removed successfully', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'user_id' => $userId
    ]);
@@ -113,70 +95,7 @@ class MikrotikService
    return $response;
   } catch (Exception $e) {
    Log::error('Failed to remove MikroTik user', [
-    'username' => $username,
-    'error' => $e->getMessage()
-   ]);
-   throw $e;
-  }
- }
-
- /**
-  * Get user details from MikroTik
-  */
- public function getHotspotUser(string $username): ?array
- {
-  try {
-   $query = (new Query('/ip/hotspot/user/print'))
-    ->where('name', $username);
-
-   $users = $this->getClient()->query($query)->read();
-
-   return !empty($users) ? $users[0] : null;
-  } catch (Exception $e) {
-   Log::error('Failed to get MikroTik user', [
-    'username' => $username,
-    'error' => $e->getMessage()
-   ]);
-   throw $e;
-  }
- }
-
- /**
-  * Disable user in MikroTik hotspot
-  */
- public function disableHotspotUser(string $username): array
- {
-  try {
-   // First find the user ID
-   $findQuery = (new Query('/ip/hotspot/user/print'))
-    ->where('name', $username);
-
-   $users = $this->getClient()->query($findQuery)->read();
-
-   if (empty($users)) {
-    throw new Exception("User '{$username}' not found in MikroTik");
-   }
-
-   $userId = $users[0]['.id'];
-
-   // Disable the user
-   $updateQuery = (new Query('/ip/hotspot/user/set'))
-    ->equal('.id', $userId)
-    ->equal('disabled', 'true');
-
-   $response = $this->getClient()->query($updateQuery)->read();
-
-   // Remove active sessions for this user
-   $this->removeActiveSession($username);
-
-   Log::info('MikroTik user disabled successfully', [
-    'username' => $username,
-    'user_id' => $userId
-   ]);
-
-   return $response;
-  } catch (Exception $e) {
-   Log::error('Failed to disable MikroTik user', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'error' => $e->getMessage()
    ]);
@@ -185,57 +104,20 @@ class MikrotikService
  }
 
 
- /**
-  * Enable user in MikroTik hotspot
-  */
- public function enableHotspotUser(string $username): array
- {
-  try {
-   // First find the user ID
-   $findQuery = (new Query('/ip/hotspot/user/print'))
-    ->where('name', $username);
-
-   $users = $this->getClient()->query($findQuery)->read();
-
-   if (empty($users)) {
-    throw new Exception("User '{$username}' not found in MikroTik");
-   }
-
-   $userId = $users[0]['.id'];
-
-   // Enable the user
-   $updateQuery = (new Query('/ip/hotspot/user/set'))
-    ->equal('.id', $userId)
-    ->equal('disabled', 'false');
-
-   $response = $this->getClient()->query($updateQuery)->read();
-
-   Log::info('MikroTik user enabled successfully', [
-    'username' => $username,
-    'user_id' => $userId
-   ]);
-
-   return $response;
-  } catch (Exception $e) {
-   Log::error('Failed to enable MikroTik user', [
-    'username' => $username,
-    'error' => $e->getMessage()
-   ]);
-   throw $e;
-  }
- }
 
  /**
   * Update user password in MikroTik
   */
- public function updateHotspotUserPassword(string $username, string $newPassword): array
+ public function updateHotspotUserPassword(MikrotikConfig $config, string $username, string $newPassword): array
  {
   try {
+   $client = $this->getClientWithConfig($config);
+
    // First find the user ID
    $findQuery = (new Query('/ip/hotspot/user/print'))
     ->where('name', $username);
 
-   $users = $this->getClient()->query($findQuery)->read();
+   $users = $client->query($findQuery)->read();
 
    if (empty($users)) {
     throw new Exception("User '{$username}' not found in MikroTik");
@@ -248,9 +130,10 @@ class MikrotikService
     ->equal('.id', $userId)
     ->equal('password', $newPassword);
 
-   $response = $this->getClient()->query($updateQuery)->read();
+   $response = $client->query($updateQuery)->read();
 
    Log::info('MikroTik user password updated successfully', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'user_id' => $userId
    ]);
@@ -258,6 +141,7 @@ class MikrotikService
    return $response;
   } catch (Exception $e) {
    Log::error('Failed to update MikroTik user password', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'error' => $e->getMessage()
    ]);
@@ -268,14 +152,16 @@ class MikrotikService
  /**
   * Enable/disable user in MikroTik
   */
- public function toggleHotspotUser(string $username, bool $enabled = true): array
+ public function toggleHotspotUser(MikrotikConfig $config, string $username, bool $enabled = true): array
  {
   try {
+   $client = $this->getClientWithConfig($config);
+
    // First find the user ID
    $findQuery = (new Query('/ip/hotspot/user/print'))
     ->where('name', $username);
 
-   $users = $this->getClient()->query($findQuery)->read();
+   $users = $client->query($findQuery)->read();
 
    if (empty($users)) {
     throw new Exception("User '{$username}' not found in MikroTik");
@@ -288,14 +174,15 @@ class MikrotikService
     ->equal('.id', $userId)
     ->equal('disabled', $enabled ? 'false' : 'true');
 
-   $response = $this->getClient()->query($updateQuery)->read();
+   $response = $client->query($updateQuery)->read();
 
    // If disabling user, remove active sessions
    if (!$enabled) {
-    $this->removeActiveSession($username);
+    $this->removeActiveSession($config, $username);
    }
 
    Log::info('MikroTik user status updated successfully', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'user_id' => $userId,
     'enabled' => $enabled
@@ -304,6 +191,7 @@ class MikrotikService
    return $response;
   } catch (Exception $e) {
    Log::error('Failed to toggle MikroTik user status', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'enabled' => $enabled,
     'error' => $e->getMessage()
@@ -311,14 +199,16 @@ class MikrotikService
    throw $e;
   }
  }
- private function removeActiveSession(string $username): void
+ private function removeActiveSession(MikrotikConfig $config, string $username): void
  {
   try {
+   $client = $this->getClientWithConfig($config);
+
    // Find active sessions for this user
    $findActiveQuery = (new Query('/ip/hotspot/active/print'))
     ->where('user', $username);
 
-   $activeSessions = $this->getClient()->query($findActiveQuery)->read();
+   $activeSessions = $client->query($findActiveQuery)->read();
 
    if (!empty($activeSessions)) {
     foreach ($activeSessions as $session) {
@@ -328,9 +218,10 @@ class MikrotikService
      $removeQuery = (new Query('/ip/hotspot/active/remove'))
       ->equal('.id', $sessionId);
 
-     $this->getClient()->query($removeQuery)->read();
+     $client->query($removeQuery)->read();
 
      Log::info('Active session removed for user', [
+      'config' => $config->nagari . '-' . $config->location,
       'username' => $username,
       'session_id' => $sessionId
      ]);
@@ -338,6 +229,7 @@ class MikrotikService
    }
   } catch (Exception $e) {
    Log::warning('Failed to remove active session for user', [
+    'config' => $config->nagari . '-' . $config->location,
     'username' => $username,
     'error' => $e->getMessage()
    ]);
@@ -349,16 +241,18 @@ class MikrotikService
  /**
   * Get all hotspot users
   */
- public function getAllHotspotUsers(): array
+ public function getAllHotspotUsers(MikrotikConfig $config): array
  {
   try {
+   $client = $this->getClientWithConfig($config);
    $query = new Query('/ip/hotspot/user/print');
 
-   $users = $this->getClient()->query($query)->read();
+   $users = $client->query($query)->read();
 
    return $users;
   } catch (Exception $e) {
    Log::error('Failed to get all MikroTik users', [
+    'config' => $config->nagari . '-' . $config->location,
     'error' => $e->getMessage()
    ]);
    throw $e;
@@ -368,16 +262,18 @@ class MikrotikService
  /**
   * Get active sessions
   */
- public function getActiveSessions(): array
+ public function getActiveSessions(MikrotikConfig $config): array
  {
   try {
+   $client = $this->getClientWithConfig($config);
    $query = new Query('/ip/hotspot/active/print');
 
-   $sessions = $this->getClient()->query($query)->read();
+   $sessions = $client->query($query)->read();
 
    return $sessions;
   } catch (Exception $e) {
    Log::error('Failed to get active sessions', [
+    'config' => $config->nagari . '-' . $config->location,
     'error' => $e->getMessage()
    ]);
    throw $e;
@@ -387,15 +283,17 @@ class MikrotikService
  /**
   * Check connection to MikroTik
   */
- public function testConnection(): bool
+ public function testConnection(MikrotikConfig $config): bool
  {
   try {
+   $client = $this->getClientWithConfig($config);
    $query = new Query('/system/identity/print');
-   $this->getClient()->query($query)->read();
+   $client->query($query)->read();
 
    return true;
   } catch (Exception $e) {
    Log::error('MikroTik connection test failed', [
+    'config' => $config->nagari . '-' . $config->location,
     'error' => $e->getMessage()
    ]);
    return false;

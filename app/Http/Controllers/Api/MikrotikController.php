@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\HotspotSikucur;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\Nagari;
+use App\Models\MikrotikConfig;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Services\MikrotikService;
@@ -20,6 +20,7 @@ class MikrotikController extends Controller
     private const CITIZEN_NOT_FOUND_MESSAGE = 'Anda bukan warga Nagari Sikucur. Jika ingin mengakses layanan internet silahkan daftar ke Kantor Nagari Sikucur.';
     private const MIKROTIK_ERROR_MESSAGE = 'Gagal menambahkan user ke sistem. Silahkan coba lagi.';
     private const BLOCKED_USER_MESSAGE = 'Akun internet Anda telah diblokir karena melanggar ketentuan penggunaan internet. Silahkan datang ke Kantor Nagari Sikucur untuk melakukan pemulihan akses.';
+    private const EXPIRED_USER_MESSAGE = 'Akses internet Anda telah berakhir. Silahkan daftar ulang di Kantor Nagari Sikucur untuk mendapatkan akses internet.';
 
 
     private MikrotikService $mikrotikService;
@@ -32,11 +33,30 @@ class MikrotikController extends Controller
     /**
      * Handle hotspot user registration and authentication
      */
-    public function index(Request $request, string $nagari, string $location): JsonResponse
+    public function index(Request $request, string $nagari = 'sikucur', string $location = 'main'): JsonResponse
     {
         try {
-            // Set dynamic MikroTik config based on nagari and location
-            $this->mikrotikService->setConfig($nagari, $location);
+            // Get MikroTik config based on nagari and location
+            $mikrotikConfig = MikrotikConfig::getConfig($nagari, $location);
+
+            if (!$mikrotikConfig) {
+                Log::warning('MikroTik config not found, trying to get default config', [
+                    'nagari' => $nagari,
+                    'location' => $location
+                ]);
+
+                // Try to get default sikucur-main config as fallback
+                $mikrotikConfig = MikrotikConfig::getConfig('sikucur', 'main');
+
+                if (!$mikrotikConfig) {
+                    // Try sikucur-kantor as second fallback
+                    $mikrotikConfig = MikrotikConfig::getConfig('sikucur', 'kantor');
+                }
+
+                if (!$mikrotikConfig) {
+                    throw new Exception('No MikroTik configuration found. Please contact administrator.');
+                }
+            }
 
             // Validate request data
             $validatedData = $this->validateRequest($request);
@@ -54,7 +74,7 @@ class MikrotikController extends Controller
             // Check existing hotspot access
             $existingHotspot = $this->getExistingHotspot($penduduk->id);
 
-            // Check if user is blocked
+            // Check if user is blocked (status = false)
             if ($existingHotspot && !$existingHotspot->status) {
                 return $this->buildErrorResponse(
                     self::BLOCKED_USER_MESSAGE,
@@ -63,7 +83,7 @@ class MikrotikController extends Controller
                 );
             }
 
-            // Check if user has valid access
+            // Check if user has valid access (status = true AND not expired)
             if ($this->hasValidAccess($existingHotspot)) {
                 return $this->buildSuccessResponse(
                     self::SUCCESS_MESSAGE,
@@ -74,14 +94,14 @@ class MikrotikController extends Controller
             // Check if user exists but expired
             if ($existingHotspot && $existingHotspot->status && $existingHotspot->expired_at && $existingHotspot->expired_at->isPast()) {
                 return $this->buildErrorResponse(
-                    'Akses internet Anda telah berakhir. Silahkan daftar ulang untuk mendapatkan akses internet.',
+                    self::EXPIRED_USER_MESSAGE,
                     $validatedData,
                     403
                 );
             }
 
             // Create new hotspot user
-            return $this->createHotspotUser($penduduk, $validatedData);
+            return $this->createHotspotUser($penduduk, $validatedData, $mikrotikConfig);
         } catch (ValidationException $e) {
             return $this->apiResponse(false, 'Data yang dikirim tidak valid.', [
                 'code' => 422,
@@ -89,13 +109,13 @@ class MikrotikController extends Controller
             ]);
         } catch (Exception $e) {
             Log::error('MikrotikController error: ' . $e->getMessage(), [
-                'nagari' => $nagari,
-                'location' => $location,
+                'nagari' => $nagari ?? 'unknown',
+                'location' => $location ?? 'unknown',
                 'request_data' => $request->all(),
                 'stack_trace' => $e->getTraceAsString()
             ]);
 
-            return $this->apiResponse(false,  self::MIKROTIK_ERROR_MESSAGE, [
+            return $this->apiResponse(false, self::MIKROTIK_ERROR_MESSAGE, [
                 'code' => 500,
             ]);
         }
@@ -107,7 +127,7 @@ class MikrotikController extends Controller
     private function validateRequest(Request $request): array
     {
         return $request->validate([
-            'nik' => 'required|string|min:16|max:16',
+            'nik' => 'required|string|size:16', // Exactly 16 characters
             'phone' => 'required|string|min:10|max:15',
         ]);
     }
@@ -129,7 +149,7 @@ class MikrotikController extends Controller
     }
 
     /**
-     * Check if citizen has valid access
+     * Check if citizen has valid access (status = true AND not expired)
      */
     private function hasValidAccess(?HotspotSikucur $hotspot): bool
     {
@@ -142,24 +162,32 @@ class MikrotikController extends Controller
     /**
      * Create new hotspot user in MikroTik and database
      */
-    private function createHotspotUser(Penduduk $penduduk, array $validatedData): JsonResponse
+    private function createHotspotUser(Penduduk $penduduk, array $validatedData, MikrotikConfig $mikrotikConfig): JsonResponse
     {
-        return DB::transaction(function () use ($penduduk, $validatedData) {
+        return DB::transaction(function () use ($penduduk, $validatedData, $mikrotikConfig) {
             try {
-                // Create user in MikroTik using service
+                // Create user in MikroTik using service with config
                 $mikrotikResponse = $this->mikrotikService->addHotspotUser(
+                    $mikrotikConfig,
                     $penduduk->nik,
                     $validatedData['phone']
                 );
 
+                // Validate MikroTik response
                 if (empty($mikrotikResponse) || !isset($mikrotikResponse['after']['ret'])) {
-                    throw new Exception('Failed to create user in MikroTik');
+                    throw new Exception('Failed to create user in MikroTik: Invalid response');
                 }
 
                 $mikrotikUserId = $mikrotikResponse['after']['ret'];
 
                 // Save to database
-                $this->saveHotspotRecord($penduduk->id, $mikrotikUserId, $validatedData['phone']);
+                $this->saveHotspotRecord($penduduk->id, $mikrotikUserId, $validatedData['phone'], $mikrotikConfig->id);
+
+                Log::info('Hotspot user created successfully', [
+                    'nik' => $penduduk->nik,
+                    'mikrotik_config' => $mikrotikConfig->nagari . '-' . $mikrotikConfig->location,
+                    'mikrotik_user_id' => $mikrotikUserId
+                ]);
 
                 return $this->buildSuccessResponse(
                     self::SUCCESS_MESSAGE,
@@ -167,21 +195,24 @@ class MikrotikController extends Controller
                     $mikrotikResponse
                 );
             } catch (Exception $e) {
-                Log::error('Failed to create hotspot user: ' . $e->getMessage());
+                Log::error('Failed to create hotspot user: ' . $e->getMessage(), [
+                    'nik' => $penduduk->nik,
+                    'mikrotik_config_id' => $mikrotikConfig->id,
+                    'error' => $e->getMessage()
+                ]);
                 throw $e;
             }
         });
     }
 
-
-
     /**
      * Save hotspot record to database
      */
-    private function saveHotspotRecord(int $pendudukId, string $mikrotikUserId, string $phone): HotspotSikucur
+    private function saveHotspotRecord(int $pendudukId, string $mikrotikUserId, string $phone, int $mikrotikConfigId): HotspotSikucur
     {
         return HotspotSikucur::create([
             'penduduk_id' => $pendudukId,
+            'mikrotik_config_id' => $mikrotikConfigId,
             'ret_id' => $mikrotikUserId,
             'phone_mikrotik' => $phone,
             'mikrotik_id' => $mikrotikUserId,

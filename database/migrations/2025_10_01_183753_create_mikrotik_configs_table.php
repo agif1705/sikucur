@@ -13,6 +13,7 @@ return new class extends Migration
  {
   Schema::create('mikrotik_configs', function (Blueprint $table) {
    $table->id();
+   $table->string('name')->nullable();
    $table->string('nagari')->index();
    $table->string('location')->index();
    $table->string('host');

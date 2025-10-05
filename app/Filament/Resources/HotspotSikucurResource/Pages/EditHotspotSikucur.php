@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HotspotSikucurResource\Pages;
 use Str;
 use Filament\Actions;
 use App\Facades\Mikrotik;
+use App\Models\MikrotikConfig;
 use Illuminate\Support\Facades\Log;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -15,8 +16,16 @@ class EditHotspotSikucur extends EditRecord
     protected static string $resource = HotspotSikucurResource::class;
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $userName = Str::of($data['nik']);
-        $addUserHotspot = Mikrotik::toggleHotspotUser($userName, $data['status']);
+        $config = MikrotikConfig::find($data['mikrotik_config_id']);
+        try {
+            $userName = Str::of($data['nik']);
+            Mikrotik::toggleHotspotUser($config, $userName, $data['status']);
+        } catch (\Exception $e) {
+            Log::error('Failed to toggle user status in MikroTik', [
+                'nik' => $data['nik'],
+                'error' => $e->getMessage()
+            ]);
+        }
         return $data;
     }
     protected function getRedirectUrl(): string
@@ -35,8 +44,10 @@ class EditHotspotSikucur extends EditRecord
                     $mikrotikSuccess = false;
 
                     try {
+                        $config = MikrotikConfig::find($record->mikrotik_config_id);
                         // Coba hapus dari MikroTik dulu
-                        Mikrotik::removeHotspotUser($record->penduduk->nik);
+                        $nik = $record->penduduk->nik;
+                        Mikrotik::removeHotspotUser($config, (string) $nik);
                         $mikrotikSuccess = true;
                         Log::info('User removed from MikroTik successfully', [
                             'nik' => $record->nik

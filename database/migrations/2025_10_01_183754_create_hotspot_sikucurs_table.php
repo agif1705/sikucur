@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('hotspot_sikucurs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('penduduk_id')->constrained()->onDelete('cascade');
+            $table->foreignId('penduduk_id')->constrained('penduduks')->onDelete('cascade');
+            $table->foreignId('mikrotik_config_id')->constrained('mikrotik_configs')->onDelete('cascade');
             $table->string('ret_id')->unique();
             $table->string('phone_mikrotik')->unique();
             $table->string('mikrotik_id')->unique();
