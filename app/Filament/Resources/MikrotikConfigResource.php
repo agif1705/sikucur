@@ -17,7 +17,7 @@ class MikrotikConfigResource extends Resource
 {
     protected static ?string $model = MikrotikConfig::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'gmdi-network-check-tt';
 
     public static function form(Form $form): Form
     {

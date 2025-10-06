@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HotspotSikucur extends Model
 {
@@ -21,11 +22,11 @@ class HotspotSikucur extends Model
         'expired_at' => 'datetime',
         'status' => 'boolean',
     ];
-    public function penduduk()
+    public function penduduk(): BelongsTo
     {
-        return $this->belongsTo(Penduduk::class);
+        return $this->belongsTo(Penduduk::class, 'penduduk_id');
     }
-    public function mikrotikConfig()
+    public function mikrotikConfig(): BelongsTo
     {
         return $this->belongsTo(MikrotikConfig::class);
     }

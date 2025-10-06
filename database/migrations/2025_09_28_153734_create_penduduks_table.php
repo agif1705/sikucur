@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('kk');
             $table->string('kepala_keluarga')->nullable();
             $table->string('no_hp')->nullable();
-
             $table->timestamps();
         });
     }

@@ -37,7 +37,7 @@ class WhatsAppController extends Controller
         $waId = Str::before($data['sender'], '@');
         // Cari user + command
         $user = User::with([
-            'nagari:id,name',
+            'nagari:id,name,slug',
             'nagari.whatsAppCommand' => fn($q) => $q->where('command', $chat)
         ])
             ->where('no_hp', $waId)

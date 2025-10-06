@@ -21,7 +21,7 @@ class HotspotSikucurResource extends Resource
 {
     protected static ?string $model = HotspotSikucur::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'gmdi-network-cell';
 
     public static function form(Form $form): Form
     {
