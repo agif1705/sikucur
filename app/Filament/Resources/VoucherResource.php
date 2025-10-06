@@ -51,8 +51,9 @@ class VoucherResource extends Resource
                 Tables\Columns\TextColumn::make('expires_at')
                     ->dateTime()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_by')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('createdBy.name')
+                    ->label('Created By')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

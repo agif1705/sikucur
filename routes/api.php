@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\WusapiController;
 use App\Http\Controllers\Api\MikrotikController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\RekapPegawaiController;
+use App\Http\Controllers\api\VoucherController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -21,3 +22,5 @@ Route::post('/rekap/fingerprint', [RekapPegawaiController::class, 'webhook'])->n
 Route::post('/rekap/absensi/bulanan', [RekapPegawaiController::class, 'absensiBulanan'])->name('rekap.webhook.absensi.bulanan');
 Route::post('/hotspot/{nagari}/{location}/login', [MikrotikController::class, 'index'])
     ->name('mikrotik.hotspot.sikucur.login');
+Route::post('/hotspot/{nagari}/{location}/login/voucher', [VoucherController::class, 'index'])
+    ->name('mikrotik.hotspot.sikucur.login.voucher');

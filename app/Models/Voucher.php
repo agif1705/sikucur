@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Voucher extends Model
 {
@@ -20,8 +21,11 @@ class Voucher extends Model
         'expires_at' => 'datetime',
         'active' => 'boolean',
     ];
-
-    public function mikrotikConfig()
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    public function mikrotikConfig(): BelongsTo
     {
         return $this->belongsTo(MikrotikConfig::class);
     }
