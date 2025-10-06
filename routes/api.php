@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\WusapiController;
 use App\Http\Controllers\Api\MikrotikController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\RekapPegawaiController;
-use App\Http\Controllers\api\VoucherController;
+use App\Http\Controllers\Api\VoucherController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();

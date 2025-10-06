@@ -67,9 +67,9 @@ class VoucherTamuHandler implements WhatsAppCommandHandler
                     }
 
                     $pesan = "✅ Voucher hotspot berhasil dibuat!\n\n";
-                    $pesan .= "🎫 Kode Voucher: *{$voucherCode}*\n";
                     $pesan .= "👤 Nama Pengguna: *{$name}*\n";
-                    $pesan .= "⏰ Masa Aktif: *23 Jam*\n";
+                    $pesan .= "🎫 Pin Voucher: *{$voucherCode}*\n";
+                    $pesan .= "⏰ Masa Aktif: *24 Jam*\n";
                     $pesan .= "📅 Berakhir: " . $expiresAt->format('d-m-Y H:i') . "\n\n";
                     $pesan .= "📶 Silakan gunakan voucher ini untuk mengakses jaringan hotspot Nagari Sikucur.\n\n";
                     $pesan .= "Terima kasih! 🙏";
