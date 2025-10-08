@@ -27,6 +27,8 @@ class PendudukResource extends Resource
     protected static ?string $model = Penduduk::class;
 
     protected static ?string $navigationIcon = 'gmdi-people-tt';
+    protected static ?string $navigationGroup = 'Data ';
+
 
     public static function form(Form $form): Form
     {

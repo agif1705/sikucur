@@ -50,7 +50,9 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Indigo,
                 'success' => Color::Emerald,
                 'warning' => Color::Orange,
-            ])->viteTheme('resources/css/filament/admin/theme.css')
+            ])
+            ->darkMode()
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -59,7 +61,8 @@ class AdminPanelProvider extends PanelProvider
             ])->sidebarCollapsibleOnDesktop()
             ->maxContentWidth('full')
             ->widgets([
-            RekapAbsensiPegawaiWidget::class,
+                RekapAbsensiPegawaiWidget::class,
+                \App\Filament\Widgets\BroadcastStatsWidget::class,
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
             ])

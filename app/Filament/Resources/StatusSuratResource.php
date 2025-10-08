@@ -89,7 +89,7 @@ class StatusSuratResource extends Resource
                 Tables\Columns\TextColumn::make('kode_status')
                     ->label('Kode')
                     ->badge()
-                    ->color(fn (StatusSurat $record) => $record->warna_status)
+                    ->color(fn(StatusSurat $record) => $record->warna_status)
                     ->searchable()
                     ->sortable(),
 

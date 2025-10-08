@@ -1,7 +1,56 @@
-@import "../../../../vendor/filament/filament/resources/css/base.css";
+@import '../../../../vendor/filament/filament/resources/css/base.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 @tailwind variants;
 
 @config 'tailwind.config.js';
+
+/* Custom Dark Mode Enhancements */
+.dark {
+  /* Smooth transitions for all elements */
+  * {
+    @apply transition-colors duration-200;
+  }
+
+  /* Custom WhatsApp Broadcast specific styles */
+  .broadcast-card {
+    @apply bg-gray-800 border-gray-700 shadow-lg shadow-gray-900/25;
+  }
+
+  .broadcast-stats {
+    @apply bg-gradient-to-r from-gray-800 to-gray-700;
+  }
+
+  /* Enhanced table styling for logs */
+  .fi-ta-table {
+    @apply bg-gray-900/50;
+  }
+
+  .fi-ta-row:hover {
+    @apply bg-gray-800/60;
+  }
+
+  /* Form styling improvements */
+  .fi-fo-field-wrp {
+    @apply bg-gray-800/50;
+  }
+
+  /* Modal improvements */
+  .fi-modal-content {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  /* Success/Error states with better contrast */
+  .fi-badge-success {
+    @apply bg-green-900/30 text-green-300 border-green-700;
+  }
+
+  .fi-badge-danger {
+    @apply bg-red-900/30 text-red-300 border-red-700;
+  }
+
+  .fi-badge-warning {
+    @apply bg-yellow-900/30 text-yellow-300 border-yellow-700;
+  }
+}
