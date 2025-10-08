@@ -208,13 +208,13 @@ class RekapPegawaiController extends Controller
 
                 foreach ($nagari->users as $user) {
                     $jabatan = $user->jabatan->name ?? 'Tidak ada jabatan';
-                    $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\\n\\n" .
-                        "Pegawai Nagari {$nagari->name}\\n\\n" .
-                        "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\\n\\n" .
-                        "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\\n" .
-                        "Laporan PDF dapat disimpan untuk dokumentasi.\\n\\n" .
-                        "_Note: Dikirim ke seluruh pegawai dan pimpinan_\\n\\n" .
-                        "Ketik: *info* untuk bantuan lebih lanjut.\\n\\n" .
+                    $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\n\n" .
+                        "Pegawai Nagari {$nagari->name}\n\n" .
+                        "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\n\n" .
+                        "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\n" .
+                        "Laporan PDF dapat disimpan untuk dokumentasi.\n" .
+                        "_Note: Dikirim ke seluruh pegawai dan pimpinan_\n\n" .
+                        "Ketik: *info* untuk bantuan lebih lanjut.\n\n" .
                         "_Sent via Cv.Baduo Mitra Solution_";
 
                     try {
