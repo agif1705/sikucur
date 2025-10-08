@@ -127,79 +127,86 @@ class RekapPegawaiController extends Controller
 
             $tahun = $data['tahun'];
             $bulan = $data['bulan'];
-            $filename = "absensi-pegawai-{$bulan}-{$tahun}.pdf";
-            $storagePath = "private/public/absensi/{$filename}";
-            $fullPath = storage_path("app/{$storagePath}");
 
-            // Ambil semua nagari beserta user + jabatan
-            $nagaris = Nagari::with(['users.jabatan' => function ($query) {
-                $query->whereNotNull('name');
-            }])->whereHas('users')->get();
+            // Ambil semua nagari beserta user + jabatan yang aktif dan punya no_hp
+            $nagaris = Nagari::with(['users' => function ($query) {
+                $query->where('aktif', true)
+                    ->whereNotNull('no_hp')
+                    ->whereRaw("CAST(no_hp AS TEXT) != ''")
+                    ->with('jabatan');
+            }])->whereHas('users', function ($query) {
+                $query->where('aktif', true)
+                    ->whereNotNull('no_hp')
+                    ->whereRaw("CAST(no_hp AS TEXT) != ''");
+            })->get();
 
             if ($nagaris->isEmpty()) {
                 return response()->json([
-                    'error' => 'Tidak ada nagari dengan pegawai yang ditemukan'
+                    'error' => 'Tidak ada nagari dengan pegawai aktif yang punya nomor HP'
                 ], 404);
             }
 
-            // Cek apakah file sudah ada
-            if (!Storage::exists($storagePath)) {
-                Log::info('Generating new PDF report', [
-                    'bulan' => $bulan,
-                    'tahun' => $tahun,
-                    'nagari_count' => $nagaris->count()
-                ]);
+            // Generate PDF untuk setiap nagari dan simpan
+            $pdfFiles = [];
+            foreach ($nagaris as $nagari) {
+                try {
+                    $report = $service->generate($tahun, $bulan, $nagari->id);
 
-                // Generate PDF untuk setiap nagari (ambil yang terakhir sebagai master)
-                $report = null;
-                foreach ($nagaris as $nagari) {
-                    try {
-                        $report = $service->generate($tahun, $bulan, $nagari->id);
-                        Log::info('Generated report for nagari', [
-                            'nagari_id' => $nagari->id,
-                            'nagari_name' => $nagari->name
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('Failed to generate report for nagari', [
-                            'nagari_id' => $nagari->id,
-                            'error' => $e->getMessage()
+                    if ($report && isset($report['pdf']) && isset($report['filename'])) {
+                        $filename = $report['filename'];
+                        $storagePath = $report['path'];
+                        $fullPath = storage_path("app/private/{$storagePath}");
+
+                        // Pastikan direktori ada
+                        $directory = dirname($fullPath);
+                        if (!is_dir($directory)) {
+                            mkdir($directory, 0755, true);
+                        }
+
+                        // Save PDF ke storage
+                        $pdfContent = $report['pdf']->output();
+                        Storage::put($storagePath, $pdfContent);
+
+                        $pdfFiles[] = [
+                            'nagari' => $nagari,
+                            'filename' => $filename,
+                            'storage_path' => $storagePath,
+                            'full_path' => $fullPath
+                        ];
+
+                        Log::info('PDF generated successfully', [
+                            'nagari' => $nagari->name,
+                            'filename' => $filename,
+                            'file_size' => strlen($pdfContent)
                         ]);
                     }
+                } catch (\Exception $e) {
+                    Log::error('Failed to generate report for nagari', [
+                        'nagari_id' => $nagari->id,
+                        'nagari_name' => $nagari->name,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
-
-                if (!$report) {
-                    return response()->json([
-                        'error' => 'Gagal membuat laporan PDF'
-                    ], 500);
-                }
-            } else {
-                Log::info('Using existing PDF file', ['path' => $fullPath]);
             }
 
-            // Verifikasi file exists
-            if (!Storage::exists($storagePath)) {
+            if (empty($pdfFiles)) {
                 return response()->json([
-                    'error' => 'File PDF tidak ditemukan setelah generate'
+                    'error' => 'Gagal membuat laporan PDF untuk semua nagari'
                 ], 500);
             }
 
-            // Kirim WhatsApp ke semua user
+            // Kirim WhatsApp ke semua user dengan PDF masing-masing nagari
             $response = [];
             $totalSent = 0;
             $totalFailed = 0;
 
-            foreach ($nagaris as $nagari) {
-                foreach ($nagari->users as $user) {
-                    if (!$user->aktif || !$user->no_hp) {
-                        Log::info('Skipping inactive user or user without phone', [
-                            'user_id' => $user->id,
-                            'name' => $user->name,
-                            'aktif' => $user->aktif,
-                            'has_phone' => !empty($user->no_hp)
-                        ]);
-                        continue;
-                    }
+            foreach ($pdfFiles as $pdfFile) {
+                $nagari = $pdfFile['nagari'];
+                $filename = $pdfFile['filename'];
+                $fullPath = $pdfFile['full_path'];
 
+                foreach ($nagari->users as $user) {
                     $jabatan = $user->jabatan->name ?? 'Tidak ada jabatan';
                     $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\\n\\n" .
                         "Pegawai Nagari {$nagari->name}\\n\\n" .
@@ -211,9 +218,15 @@ class RekapPegawaiController extends Controller
                         "_Sent via Cv.Baduo Mitra Solution_";
 
                     try {
+                        // Verifikasi file exists
+                        if (!file_exists($fullPath)) {
+                            throw new \Exception("File PDF tidak ditemukan: {$fullPath}");
+                        }
+
                         $gowa = new GowaService();
                         $result = $gowa->sendFile(
-                            phone: $user->no_hp,
+                            phone: $user->no_hp, // Kirim ke user asli
+                            // phone: "6281282779593", // Comment untuk production
                             path: $fullPath,
                             caption: $pesan
                         );
@@ -224,11 +237,12 @@ class RekapPegawaiController extends Controller
                             'phone' => $user->no_hp,
                             'nagari' => $nagari->name,
                             'status' => 'sent',
+                            'pdf_file' => $filename,
                             'response' => $result
                         ];
                         $totalSent++;
 
-                        // Log WhatsApp
+                        // Log WhatsApp success
                         WhatsAppLog::create([
                             'user_id' => $user->id,
                             'phone' => $user->no_hp,
@@ -237,23 +251,26 @@ class RekapPegawaiController extends Controller
                             'response' => $result,
                         ]);
                     } catch (\Exception $e) {
-                        Log::error('Failed to send WhatsApp', [
-                            'user_id' => $user->id,
-                            'phone' => $user->no_hp,
-                            'error' => $e->getMessage()
-                        ]);
-
                         $response[] = [
                             'user_id' => $user->id,
                             'name' => $user->name,
                             'phone' => $user->no_hp,
                             'nagari' => $nagari->name,
                             'status' => 'failed',
+                            'pdf_file' => $filename,
                             'error' => $e->getMessage()
                         ];
                         $totalFailed++;
-                    }
 
+                        // Log WhatsApp error
+                        WhatsAppLog::create([
+                            'user_id' => $user->id,
+                            'phone' => $user->no_hp,
+                            'message' => $pesan,
+                            'status' => false,
+                            'response' => ['error' => $e->getMessage()],
+                        ]);
+                    }
                     // Delay untuk avoid rate limiting
                     usleep(500000); // 0.5 second delay
                 }
@@ -262,18 +279,21 @@ class RekapPegawaiController extends Controller
             // Response API
             return response()->json([
                 'success' => true,
-                'file' => $filename,
-                'path' => $fullPath,
-                'storage_path' => $storagePath,
-                'file_size' => Storage::size($storagePath) . ' bytes',
-                'url' => Storage::url("public/absensi/{$filename}"),
+                'generated_files' => array_map(function ($file) {
+                    return [
+                        'nagari' => $file['nagari']->name,
+                        'filename' => $file['filename'],
+                        'file_size' => file_exists($file['full_path']) ? filesize($file['full_path']) . ' bytes' : 'File not found',
+                        'url' => Storage::url($file['storage_path'])
+                    ];
+                }, $pdfFiles),
                 'summary' => [
-                    'total_nagari' => $nagaris->count(),
+                    'total_nagari' => count($pdfFiles),
                     'total_users' => $nagaris->sum(fn($n) => $n->users->count()),
                     'total_sent' => $totalSent,
                     'total_failed' => $totalFailed
                 ],
-                'gowa_response' => $response
+                'whatsapp_results' => $response
             ]);
         } catch (\Exception $e) {
             Log::error('Error in absensiBulanan: ' . $e->getMessage(), [

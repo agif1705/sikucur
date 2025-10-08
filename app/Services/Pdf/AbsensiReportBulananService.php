@@ -2,6 +2,7 @@
 
 namespace App\Services\Pdf;
 
+use App\Models\Nagari;
 use PDF;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -39,8 +40,8 @@ class AbsensiReportBulananService
             ->filter(function ($event) use ($bulan, $tahun) {
                 $eventDate = Carbon::parse($event['event_date']);
                 return $eventDate->month == $bulan &&
-                       $eventDate->year == $tahun &&
-                       !$eventDate->isWeekend();
+                    $eventDate->year == $tahun &&
+                    !$eventDate->isWeekend();
             })
             ->pluck('event_date', 'event_name')
             ->toArray();
@@ -67,7 +68,7 @@ class AbsensiReportBulananService
                     ->where('nagari_id', $nagariId)
                     ->orderBy('date');
             }
-        ])->get()->except([1,2]);
+        ])->get()->except([1, 2]);
 
         // Buat mapping AbsensiWebPegawai berdasarkan ID untuk lookup cepat
         $absensiWebMap = [];
@@ -149,7 +150,7 @@ class AbsensiReportBulananService
                     $total_hari_kerja++;
 
                     // Tentukan tampilan berdasarkan status_absensi
-                    $displayMasuk = match($statusAbsensi) {
+                    $displayMasuk = match ($statusAbsensi) {
                         'Hadir' => $masuk ?? 'H',
                         'HDLD' => 'HDLD',
                         'HDDD' => 'HDDD',
@@ -159,7 +160,7 @@ class AbsensiReportBulananService
                         default => 'A'
                     };
 
-                    $displayPulang = match($statusAbsensi) {
+                    $displayPulang = match ($statusAbsensi) {
                         'Hadir' => $pulang ?? '-',
                         'HDLD' => 'HDLD',
                         'HDDD' => 'HDDD',
@@ -221,7 +222,7 @@ class AbsensiReportBulananService
             'tahun'          => $tahun,
             'monthName'      => Carbon::create($tahun, $bulan, 1)->translatedFormat('F Y'),
         ])->setPaper('a4', 'landscape');
-        $nagari_name = Auth::user()->nagari->name;
+        $nagari_name = Nagari::find($nagariId)->name;
         $filename = "Laporan_Absensi_{$nagari_name}_{$bulan}_{$tahun}.pdf";
         $path = "public/absensi/{$filename}";
 
