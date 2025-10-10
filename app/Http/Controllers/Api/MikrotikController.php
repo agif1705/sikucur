@@ -71,6 +71,7 @@ class MikrotikController extends Controller
                 );
             }
 
+
             // Check existing hotspot access
             $existingHotspot = $this->getExistingHotspot($penduduk->id);
 
@@ -85,6 +86,7 @@ class MikrotikController extends Controller
 
             // Check if user has valid access (status = true AND not expired)
             if ($this->hasValidAccess($existingHotspot)) {
+                $penduduk->update(['no_hp' => $this->noHp($validatedData['phone'])]);
                 return $this->buildSuccessResponse(
                     self::SUCCESS_MESSAGE,
                     $validatedData
@@ -131,7 +133,10 @@ class MikrotikController extends Controller
             'phone' => 'required|string|min:10|max:15',
         ]);
     }
-
+    private function noHp($phone)
+    {
+        return preg_replace('/^0/', '62', $phone);
+    }
     /**
      * Find citizen by NIK
      */

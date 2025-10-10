@@ -98,7 +98,7 @@ class WhatsAppBroadcastService
       $result = $this->gowaService->sendText($recipient->no_hp, $personalMessage);
      }
 
-     if ($result['success'] ?? false) {
+     if ($result['code'] === "SUCCESS") {
       $this->logBroadcast($broadcast, $recipient, true, null, $result);
       $totalSent++;
      } else {
@@ -127,11 +127,6 @@ class WhatsAppBroadcastService
    $broadcast->update([
     'status' => 'failed',
     'completed_at' => now()
-   ]);
-
-   Log::error('Broadcast failed', [
-    'broadcast_id' => $broadcast->id,
-    'error' => $e->getMessage()
    ]);
 
    return false;

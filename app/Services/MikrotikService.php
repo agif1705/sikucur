@@ -97,12 +97,6 @@ class MikrotikService
    $existingUsers = $client->query($findQuery)->read();
 
    if (!empty($existingUsers)) {
-    Log::info('MikroTik voucher user already exists', [
-     'config' => $config->nagari . '-' . $config->location,
-     'username' => $username,
-     'existing_user_id' => $existingUsers[0]['.id']
-    ]);
-
     return [
      'after' => ['ret' => $existingUsers[0]['.id']],
      'existing_user' => true,

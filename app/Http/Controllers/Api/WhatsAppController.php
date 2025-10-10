@@ -90,8 +90,7 @@ class WhatsAppController extends Controller
 
         if ($request->input('token') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
             $nagari = Nagari::with('users')->where('slug', 'sikucur')->first();
-            $absensi = WdmsModel::getAbsensiMasuk($nagari->sn_fingerprint);
-            // dd($absensi);
+            $absensi = WdmsModel::getAbsensiMasukNoWaliNagari($nagari->sn_fingerprint);
             $tanggal = now()->toDateString();
             $baduo = " \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
             $pesan = "📊 Laporan Absensi Hari Ini Pak wali & Pak Seketaris (Semangat Hari Ini: {$tanggal})\n\n";
@@ -123,8 +122,8 @@ class WhatsAppController extends Controller
             $wa = new GowaService();
             if (!$state->original['state'] == null) {
                 // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
-                $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+                // $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                // $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
                     $result,
