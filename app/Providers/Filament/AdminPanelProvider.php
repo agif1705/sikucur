@@ -40,6 +40,9 @@ class AdminPanelProvider extends PanelProvider
             ->spa()
             ->spaUrlExceptions(fn(): array => [
                 url('/admin/absensi-dinas-luar-daerah'),
+                url('/admin/jenis-surats/create'),
+                url('/admin/jenis-surats/*/edit'),
+                url('/admin/permohonan-surats/create'),
             ])
             ->favicon(asset('logo/logo.png'))
             ->theme(asset('css/filament/admin/theme.css'))

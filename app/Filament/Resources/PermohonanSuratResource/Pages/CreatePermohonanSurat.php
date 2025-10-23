@@ -21,6 +21,7 @@ class CreatePermohonanSurat extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Set status default ke 'MSK' (Masuk)
+        dd($data);
         if (!isset($data['status_id'])) {
             $statusMasuk = StatusSurat::where('kode_status', 'MSK')->first();
             if ($statusMasuk) {

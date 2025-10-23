@@ -122,8 +122,8 @@ class WhatsAppController extends Controller
             $wa = new GowaService();
             if (!$state->original['state'] == null) {
                 // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
-                // $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
-                // $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+                $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
                     $result,

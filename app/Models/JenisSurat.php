@@ -11,31 +11,41 @@ class JenisSurat extends Model
 
     protected $fillable = [
         'nama_jenis',
+        'nama',
+        'kode',
+        'url_surat',
         'kode_surat',
-        'persyaratan',
-        'template_path',
-        'estimasi_hari',
-        'keterangan',
-        'is_active'
+        'lampiran',
+        'mandiri',
+        'template',
+        'template_desa',
+        'form_isian',
+        'kode_isian',
+        'orientasi',
+        'ukuran',
+        'syarat_surat',
+        'margin'
     ];
-
     protected $casts = [
-        'is_active' => 'boolean',
-        'estimasi_hari' => 'integer'
+        'kode_isian' => 'array', // Cast sebagai array
+        'estimasi_hari' => 'integer',
     ];
-
-    public function permohonanSurat(): HasMany
+    public function getDynamicFields()
     {
-        return $this->hasMany(PermohonanSurat::class);
+        return $this->kode_isian ?? [];
     }
+    public function renderTemplate($data = [])
+    {
+        $template = $this->template_path;
 
+        foreach ($data as $key => $value) {
+            $template = str_replace($key, $value, $template);
+        }
+
+        return $template;
+    }
     public function dokumenPersyaratan(): HasMany
     {
-        return $this->hasMany(DokumenPersyaratan::class);
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
+        return $this->hasMany(DokumenPersyaratan::class, 'jenis_surat_id');
     }
 }

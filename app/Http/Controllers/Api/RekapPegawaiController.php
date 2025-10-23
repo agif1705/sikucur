@@ -51,8 +51,17 @@ class RekapPegawaiController extends Controller
             ->first();
 
         if (!$absensi) {
-            // Absensi pertama (masuk)
-            $pesan_masuk = "Hai *" . $user->name . "* (Jabatan : " . $user->jabatan->name . ")" . ",\nKehadiran :  " . $is_late . "* anda telah hadir pada jam *" . carbon::parse($data['punch_time'])->format('H:i') . '* menggunakan fingerprint di *Nagari ' . $user->nagari->name . "* ,ini akan masuk ke WhatsApp Wali Nagari " . $user->nagari->name . " *Sebelum Jam: 10:05 Siang* terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut. \n \n_Sent || via *Cv.Baduo Mitra Solustion*_";
+            $jam = Carbon::parse($data['punch_time'])->format('H:i:s');
+            $statusEmoji = $is_late === 'Terlambat' ? '⏳' : '✅';
+            $pesan_masuk =
+                "👋 Hai *{$user->name}* (Jabatan: *{$user->jabatan->name}*)\n" .
+                "Kehadiran: {$statusEmoji} *{$is_late}*\n" .
+                "⏰ Jam: *{$jam}*\n" .
+                "📍 Lokasi: *Nagari {$user->nagari->name}*\n\n" .
+                "Pesan ini akan masuk ke WhatsApp Wali Nagari {$user->nagari->name} sebelum jam *10:05* (Siang). Terima kasih.\n" .
+                "ℹ️ Ketik: *info* untuk melihat perintah dan bantuan.\n\n" .
+                "_Sent || via *Cv.Baduo Mitra Solution*_";
+
             $absensi = RekapAbsensiPegawai::create([
                 'user_id'        => $user->id,
                 'nagari_id'      => $nagari_id,
@@ -91,25 +100,38 @@ class RekapPegawaiController extends Controller
                 $absensi->update([
                     'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
                 ]);
-                $pesan_pulang = "Hai *" . $user->name . "* , Anda telah melakukan absensi pulang pada jam *" .
-                    Carbon::parse($data['punch_time'])->format('H:i') . "* menggunakan fingerprint di *Nagari " . $user->nagari->name .
-                    "* ,terima kasih \n   ketik : *info* -> untuk melihat informasi perintah dan bantuan lebih lanjut.\n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
+
+                $jamPulang = Carbon::parse($data['punch_time'])->format('H:i');
+                $jamMasukCarbon = $absensi->time_in ? Carbon::parse($absensi->time_in) : null;
+                $durasiMenit = $jamMasukCarbon ? $jamMasukCarbon->diffInMinutes(Carbon::parse($data['punch_time'])) : null;
+                $durasiText = $durasiMenit !== null
+                    ? sprintf('%d jam %02d menit', intdiv($durasiMenit, 60), $durasiMenit % 60)
+                    : null;
+                $pesan_pulang = "👋 Hai *{$user->name}*,\n\n" .
+                    "✅ Absensi pulang berhasil\n" .
+                    "🕐 Waktu Pulang: *{$jamPulang}*\n" .
+                    "📍 Lokasi: Nagari {$user->nagari->name}\n" .
+                    "📱 Metode: Fingerprint\n\n" .
+                    "Terima kasih atas dedikasi Anda hari ini.\n\n" .
+                    "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
+                    "_Sent via Cv.Baduo Mitra Solution_";
                 if ($user->aktif) {
                     $wa = new GowaService();
                     $result = $wa->sendText($user->no_hp, $pesan_pulang);
                     WhatsAppLog::create([
-                        'user_id' => $user->id,
-                        'phone'   => $user->no_hp,
-                        'message' => $pesan_pulang,
-                        'status'  => $result['code'] ?? false,
+                        'user_id'  => $user->id,
+                        'phone'    => $user->no_hp,
+                        'message'  => $pesan_pulang,
+                        'status'   => $result['code'] ?? false,
                         'response' => $result,
                     ]);
                 }
+
                 return response()->json([
                     'message'      => $pesan_pulang,
-                    'phone'       => $user->no_hp,
+                    'phone'        => $user->no_hp,
                     'user_id'      => $user->emp_code,
-                    'time_out'     => Carbon::parse($data['punch_time'])->format('H:i'),
+                    'time_out'     => $jamPulang,
                     'date'         => Carbon::parse($data['punch_time'])->format('Y-m-d'),
                     'wa_response'  => $result ?? null,
                     'absensi_type' => 'OUT',

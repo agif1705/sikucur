@@ -21,7 +21,12 @@ return new class extends Migration
             $table->string('tempat_lahir');
             $table->date('tanggal_lahir');
             $table->string('korong');
+            $table->string('negara')->default('Indonesia')->nullable();
+            $table->string('agama')->default('Islam')->nullable();
+            $table->string('status_kawin')->default('belum kawin')->nullable();
+            $table->string('pekerjaan')->default('wiraswata')->nullable();
             $table->string('kk');
+            $table->string('nama_kk')->nullable();
             $table->string('kepala_keluarga')->nullable();
             $table->string('no_hp')->nullable();
             $table->timestamps();

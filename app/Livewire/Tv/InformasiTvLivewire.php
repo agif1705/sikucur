@@ -22,35 +22,12 @@ use App\Models\RekapAbsensiPegawai;
 
 class InformasiTvLivewire extends Component
 {
-    /**
-     * Tanggal hari ini
-     */
     public $now;
-
-    /**
-     * Data users yang absen hari ini
-     */
     public $users;
-
-    /**
-     * Data TV informasi dan galeri
-     */
     public $tv, $galeri;
-
-    /**
-     * Serial number fingerprint, logo nagari, tanggal TV, data, playlist
-     */
     public $sn_fp, $logo, $tvNow, $datas, $playlistStr;
-
-    /**
-     * ID video YouTube default
-     */
     public $videoId;
 
-    /**
-     * Event listener untuk update data fingerprint
-     * Menangani absensi masuk dan pulang pegawai
-     */
     #[On('fingerprint-updated')]
     public function updateData($mesin, $data)
     {
@@ -178,15 +155,15 @@ class InformasiTvLivewire extends Component
     {
         $jabatan = $user->jabatan->name ?? 'Tidak ada jabatan';
         $nagariName = $user->nagari->name ?? 'Unknown';
-
-        return "Hai *{$user->name}* (Jabatan: {$jabatan}),\n\n" .
-            "✅ Status Kehadiran: *{$statusKehadiran}*\n" .
+        $statusEmoji = $statusKehadiran === 'Terlambat' ? '⏳' : '✅';
+        return "👋-Hai *{$user->name}* (Jabatan: {$jabatan}),\n\n" .
+            "✅ Status Kehadiran: {$statusEmoji} *{$statusKehadiran}*\n" .
             "🕐 Waktu Absen: *{$punchTime->format('H:i')}*\n" .
             "📍 Lokasi: Nagari {$nagariName}\n" .
             "📱 Metode: Fingerprint\n\n" .
             "Data ini akan dikirim ke WhatsApp Wali Nagari {$nagariName} sebelum jam 10:05.\n\n" .
-            "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
-            "_Sent via Cv.Baduo Mitra Solution_";
+            "ℹ️ Ketik: *info* untuk melihat perintah dan bantuan.\n\n" .
+            "_Sent || via *Cv.Baduo Mitra Solution*_";
     }
 
     /**
@@ -196,7 +173,7 @@ class InformasiTvLivewire extends Component
     {
         $nagariName = $user->nagari->name ?? 'Unknown';
 
-        return "Hai *{$user->name}*,\n\n" .
+        return "👋-Hai *{$user->name}*,\n\n" .
             "✅ Absensi pulang berhasil\n" .
             "🕐 Waktu Pulang: *{$punchTime->format('H:i')}*\n" .
             "📍 Lokasi: Nagari {$nagariName}\n" .

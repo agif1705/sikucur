@@ -7,74 +7,149 @@ use Filament\Tables;
 use Filament\Forms\Form;
 use App\Models\JenisSurat;
 use Filament\Tables\Table;
+use App\Models\MetaJenisSurat;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Split;
 use Filament\Forms\Components\Section;
+use FilamentTiptapEditor\TiptapEditor;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\ViewField;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Forms\Components\Placeholder;
+use FilamentTiptapEditor\Enums\TiptapOutput;
+use Filament\Infolists\Components\KeyValueEntry;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\JenisSuratResource\Pages;
+use App\Filament\Resources\JenisSuratResource\RelationManagers;
 
 class JenisSuratResource extends Resource
 {
     protected static ?string $model = JenisSurat::class;
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?string $navigationLabel = 'Jenis Surat';
-    protected static ?string $navigationGroup = 'Master Data Surat';
-    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Informasi Dasar')
-                    ->schema([
-                        Grid::make(2)
-                            ->schema([
-                                Forms\Components\TextInput::make('nama_jenis')
-                                    ->label('Nama Jenis Surat')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->placeholder('Contoh: Surat Keterangan Domisili'),
+                Split::make([
+                    Section::make('📋 Petunjuk Template')
+                        ->schema([
+                            KeyValue::make('meta_placeholder')
+                                ->label('Daftar Placeholder')
+                                ->keyLabel('Placeholder')
+                                ->valueLabel('Deskripsi')
+                                ->formatStateUsing(function ($state) {
+                                    return $state ?: \App\Models\MetaJenisSurat::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('category')
+                                        ->orderBy('name')
+                                        ->pluck('description', 'name')
+                                        ->toArray();
+                                })
+                                ->dehydrated(false)
+                                ->addable(false)
+                                ->deletable(false)
+                                ->editableKeys(false)
+                                ->editableValues(false)
+                                ->columnSpanFull()
+                                ->helperText('💡 Salin placeholder dan gunakan dalam template')
+                        ])
+                        ->description('Daftar placeholder yang dapat digunakan')
+                        ->collapsible()
+                        ->persistCollapsed()
+                        ->grow(false),
 
-                                Forms\Components\TextInput::make('kode_surat')
-                                    ->label('Kode Surat')
+                    Section::make('✏️ Editor Template')
+                        ->schema([
+                            Forms\Components\TextInput::make('nama_jenis')
+                                ->label('Nama Jenis Surat')
+                                ->required()
+                                ->maxLength(255)
+                                ->placeholder('Contoh: Surat Keterangan Domisili'),
+
+                            Forms\Components\TextInput::make('kode_surat')
+                                ->label('Kode Surat')
+                                ->required()
+                                ->maxLength(20)
+                                ->placeholder('Contoh: SKD')
+                                ->helperText('Kode untuk identifikasi surat'),
+
+                            TiptapEditor::make('template')
+                                ->dehydrated(true)
+                                ->label('Template Surat')
+                                ->required()
+                                ->columnSpanFull()
+                                ->output(TiptapOutput::Html)
+                                ->profile('full')
+                                ->tools([
+                                    'heading',
+                                    'bullet-list',
+                                    'ordered-list',
+                                    'checked-list',
+                                    'blockquote',
+                                    'hr',
+                                    'bold',
+                                    'italic',
+                                    'strike',
+                                    'underline',
+                                    'superscript',
+                                    'subscript',
+                                    'align-left',
+                                    'align-center',
+                                    'align-right',
+                                    'align-justify',
+                                    'link',
+                                    'media',
+                                    'table',
+                                    'grid',
+                                    'grid-builder',
+                                    'undo',
+                                    'redo',
+                                    'source',
+                                ])
+                                ->placeholder('Masukkan template surat di sini...')
+                                ->helperText('Gunakan placeholder dari panel kiri untuk data dinamis'),
+                        ])
+                        ->grow(),
+                ])->from('md')->columnSpanFull(),
+
+                Section::make('⚙️ Pengaturan Surat')
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                Forms\Components\TextInput::make('estimasi_hari')
+                                    ->label('Estimasi Penyelesaian')
                                     ->required()
-                                    ->maxLength(10)
-                                    ->unique(ignoreRecord: true)
-                                    ->placeholder('Contoh: SKD')
-                                    ->alphaDash(),
+                                    ->numeric()
+                                    ->default(3)
+                                    ->suffix('hari')
+                                    ->minValue(1)
+                                    ->helperText('Estimasi waktu penyelesaian surat'),
+
+                                Forms\Components\Toggle::make('mandiri')
+                                    ->label('Surat Mandiri')
+                                    ->helperText('Dapat diajukan tanpa verifikasi')
+                                    ->default(false),
+
+                                Forms\Components\Toggle::make('is_active')
+                                    ->label('Status Aktif')
+                                    ->default(true)
+                                    ->required(),
                             ]),
 
-                        Forms\Components\TextInput::make('estimasi_hari')
-                            ->label('Estimasi Hari Penyelesaian')
-                            ->required()
-                            ->numeric()
-                            ->default(3)
-                            ->minValue(1)
-                            ->maxValue(30)
-                            ->suffix('hari'),
-
-                        Forms\Components\Toggle::make('is_active')
-                            ->label('Status Aktif')
-                            ->default(true)
-                            ->helperText('Aktifkan/nonaktifkan jenis surat ini'),
-                    ]),
-
-                Section::make('Detail Surat')
-                    ->schema([
                         Forms\Components\Textarea::make('persyaratan')
-                            ->label('Persyaratan Umum')
+                            ->label('Persyaratan')
                             ->rows(3)
-                            ->placeholder('Contoh: KTP, KK, Pas Foto 3x4')
-                            ->helperText('Daftar persyaratan secara umum'),
+                            ->columnSpanFull()
+                            ->placeholder('Tuliskan persyaratan yang diperlukan untuk mengajukan surat ini'),
 
                         Forms\Components\Textarea::make('keterangan')
                             ->label('Keterangan')
                             ->rows(3)
+                            ->columnSpanFull()
                             ->placeholder('Keterangan tambahan tentang jenis surat ini'),
-
-                        Forms\Components\TextInput::make('template_path')
-                            ->label('Path Template')
-                            ->placeholder('templates/surat/domisili.blade.php')
-                            ->helperText('Path ke file template surat (opsional)'),
                     ]),
             ]);
     }
@@ -83,68 +158,44 @@ class JenisSuratResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('kode_surat')
-                    ->label('Kode')
-                    ->badge()
-                    ->color('primary')
-                    ->searchable()
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('nama_jenis')
-                    ->label('Nama Jenis Surat')
-                    ->searchable()
-                    ->sortable()
-                    ->wrap(),
-
-                Tables\Columns\TextColumn::make('estimasi_hari')
-                    ->label('Estimasi')
-                    ->suffix(' hari')
-                    ->alignCenter()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('dokumenPersyaratan_count')
-                    ->label('Dokumen')
-                    ->counts('dokumenPersyaratan')
-                    ->badge()
-                    ->color('info')
-                    ->alignCenter(),
-
-                Tables\Columns\TextColumn::make('permohonanSurat_count')
-                    ->label('Total Permohonan')
-                    ->counts('permohonanSurat')
-                    ->badge()
-                    ->color('success')
-                    ->alignCenter(),
-
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Status')
+                    ->searchable(),
+                Tables\Columns\IconColumn::make('mandiri')
                     ->boolean()
+                    ->label('Mandiri')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('kode_surat')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('estimasi_hari')
+                    ->numeric()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Dibuat')
-                    ->dateTime('d M Y H:i')
+                    ->dateTime()
                     ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Status Aktif')
-                    ->placeholder('Semua Status')
-                    ->trueLabel('Aktif')
-                    ->falseLabel('Tidak Aktif'),
+                //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('nama_jenis');
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
     }
 
     public static function getPages(): array
@@ -152,13 +203,7 @@ class JenisSuratResource extends Resource
         return [
             'index' => Pages\ListJenisSurats::route('/'),
             'create' => Pages\CreateJenisSurat::route('/create'),
-            'view' => Pages\ViewJenisSurat::route('/{record}'),
             'edit' => Pages\EditJenisSurat::route('/{record}/edit'),
         ];
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('is_active', true)->count();
     }
 }
