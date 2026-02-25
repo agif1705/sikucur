@@ -20,7 +20,7 @@ class GowaService
     /**
      * Kirim file (PDF, Excel, dsb) via Gowa API
      */
-    public function sendFile(string $phone, string $path, string $caption = '', bool $isForwarded = false, int $duration = 3600)
+    public function sendFile(string $phone, string $path, string $caption = '', bool $isForwarded = false, int $duration = 86400)
     {
         if (!file_exists($path)) {
             throw new \Exception("File {$path} tidak ditemukan");
@@ -37,7 +37,7 @@ class GowaService
 
         return $response->json();
     }
-    public function sendText(string $phone, string $message, bool $isForwarded = false, int $duration = 3600)
+    public function sendText(string $phone, string $message, bool $isForwarded = false, int $duration = 86400)
     {
         $response = Http::withBasicAuth($this->username, $this->password)
             ->post($this->baseUrl . '/send/message', [
@@ -52,7 +52,7 @@ class GowaService
     /**
      * Kirim gambar via Gowa API
      */
-    public function sendImage(string $phone, string $imagePath, string $caption = '', bool $isForwarded = false, int $duration = 3600)
+    public function sendImage(string $phone, string $imagePath, string $caption = '', bool $isForwarded = false, int $duration = 86400)
     {
         if (!file_exists($imagePath)) {
             throw new \Exception("File gambar {$imagePath} tidak ditemukan");

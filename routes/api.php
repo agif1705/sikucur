@@ -3,11 +3,19 @@
 use App\Models\TvInformasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WusapiController;
 use App\Http\Controllers\Api\MikrotikController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\RekapPegawaiController;
 use App\Http\Controllers\Api\VoucherController;
+
+// Authentication Routes
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+});
 
 Route::get('/user', function (Request $request) {
     return $request->user();

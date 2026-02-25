@@ -33,12 +33,10 @@ class bersihkan extends Command
         $this->call('queue:restart');
         $this->call('view:clear');
         $this->call('view:cache');
-        $this->call('optimize'); // Hanya untuk Laravel < 11 (karena di Laravel 11+ dihapus)
-        $this->call('filament:optimize'); // Hanya untuk Laravel < 11 (karena di Laravel 11+ dihapus)
-        $this->call('filament:optimize-clear'); // Hanya untuk Laravel < 11 (karena di Laravel 11+ dihapus)
-
-        // Optional: Bisa juga menjalankan optimize
-
+        $this->call('optimize');
+        $this->call('filament:optimize');
+        $this->call('filament:optimize-clear');
+        $this->call('event:cache');
         $this->info('Aplikasi berhasil di-clear dan di-cache!');
     }
 }

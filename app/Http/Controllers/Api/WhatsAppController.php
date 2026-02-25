@@ -67,8 +67,6 @@ class WhatsAppController extends Controller
         return $this->apiResponse($result['success'], $result['message'], $result['data']);
     }
 
-
-
     function generateUniqueLink(int $length = 30): string
     {
         do {
@@ -111,6 +109,7 @@ class WhatsAppController extends Controller
                     $statusIcon = $map[$status] ?? $status;
                 } else {
                     // Tidak hadir
+                    $jam = '-';
                     $statusIcon = '❌ TIDAK HADIR';
                 }
 
