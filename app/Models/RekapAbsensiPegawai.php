@@ -39,6 +39,23 @@ class RekapAbsensiPegawai extends Model
     {
         return $query->where('is_late', true);
     }
+    public static function getWorkingDaysThisMonth($month, $year)
+    {
+        $today = Carbon::today();
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
+        $end = $today; // Batasi hingga hari ini
+
+        $totalWorkingDays = 0;
+
+        while ($start <= $end) {
+            if (!$start->isWeekend()) {
+                $totalWorkingDays++;
+            }
+            $start->addDay();
+        }
+
+        return $totalWorkingDays;
+    }
     public function Holiday($bulan, $tahun)
     {
         $holiday_api = Cache::remember('national_holidays_' . $tahun . '_' . $bulan, now()->addDay(), function () {
@@ -65,8 +82,8 @@ class RekapAbsensiPegawai extends Model
                 $eventDate = Carbon::parse($event['event_date']);
                 return $eventDate->month == $bulan &&
                     $eventDate->year == $tahun &&
-                $eventDate->toDateString() <= $today &&   // hanya libur sampai hari ini
-                !$eventDate->isWeekend();
+                    $eventDate->toDateString() <= $today &&   // hanya libur sampai hari ini
+                    !$eventDate->isWeekend();
             })
             ->pluck('event_date', 'event_name');
 
