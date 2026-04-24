@@ -2,13 +2,14 @@
 
 namespace App\Handlers;
 
-use App\Models\Voucher;
 use App\Contracts\WhatsAppCommandHandler;
 use App\Facades\Mikrotik;
 use App\Models\HotspotSikucur;
 use App\Models\MikrotikConfig;
-use Illuminate\Support\Facades\Log;
+use App\Models\Voucher;
 use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class VoucherTamuHandler implements WhatsAppCommandHandler
 {
@@ -28,7 +29,7 @@ class VoucherTamuHandler implements WhatsAppCommandHandler
 
         if ($user->roles()->first()->name === 'super_admin' || $user->roles()->first()->name === 'WaliNagari') {
             try {
-                return \DB::transaction(function () use ($user, $config, $dataSender) {
+                return DB::transaction(function () use ($user, $config, $dataSender) {
                     $voucherCode = $this->generateUniqueVoucherCode();
                     $name = "tamu-" . strtoupper(bin2hex(random_bytes(2)));
                     $expiresAt = now()->addHours(23)->setMinutes(0)->setSeconds(0);

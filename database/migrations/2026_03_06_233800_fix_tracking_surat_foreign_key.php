@@ -11,9 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Table was previously dropped when fixing the broken FK.
+        // Recreate it with the correct FK pointing to permohonan_surats.
+        Schema::dropIfExists('tracking_surat');
+
         Schema::create('tracking_surat', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('permohonan_id')->constrained('permohonan_surats');
+            $table->foreignId('permohonan_id')
+                ->constrained('permohonan_surats')
+                ->cascadeOnDelete();
             $table->foreignId('status_lama_id')->nullable()->constrained('status_surat');
             $table->foreignId('status_baru_id')->constrained('status_surat');
             $table->foreignId('petugas_id')->constrained('users');

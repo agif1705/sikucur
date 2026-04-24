@@ -3,10 +3,7 @@
 namespace App\Filament\Resources;
 
 use Filament\Forms;
-use App\Models\User;
 use Filament\Tables;
-use App\Models\Nagari;
-use Filament\Forms\Get;
 use App\Models\Penduduk;
 use Filament\Forms\Form;
 use App\Models\JenisSurat;
@@ -22,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Section;
 use FilamentTiptapEditor\TiptapEditor;
+use Illuminate\Support\HtmlString;
 use Illuminate\Database\Eloquent\Builder;
 use FilamentTiptapEditor\Enums\TiptapOutput;
 use App\Filament\Resources\PermohonanSuratResource\Pages;
@@ -146,48 +144,52 @@ class PermohonanSuratResource extends Resource
                                 ->live()
                                 ->helperText('Pilih jenis surat yang akan diajukan'),
 
-                            // Hidden fields untuk menyimpan data dynamic
-                            Forms\Components\Hidden::make('dynamic_fields_data')
-                                ->dehydrated(false),
-
-                            Forms\Components\Hidden::make('form_data')
-                                ->dehydrated(true)
-                                ->default(function ($get) {
-                                    return [];
-                                }),
-                        ])->columns(2),
-                    Wizard\Step::make('tanda Tangan Berkas')
-                        ->schema([
                             Forms\Components\Select::make('TandaTangan')
                                 ->label('Yang Bertanda Tangan')
                                 ->searchable()
-                                ->options(
-                                    \App\Models\User::all()->except(1)->mapWithKeys(function ($user) {
-                                        return [
-                                            $user->id => "{$user->name} | {$user->jabatan->name}",
-                                        ];
-                                    })
-                                )->afterStateUpdated(function ($state, callable $set, $get) {
+                                ->options(static::getPejabatOptions())
+                                ->afterStateUpdated(function ($state, callable $set, $get) {
                                     if (!$state) {
-                                        // Kosongkan nilai pejabat dan refresh preview
                                         $set('PejabatTandaTangan_nama', null);
                                         $set('PejabatTandaTangan_jabatan', null);
                                         static::updateTemplateWithFormData('', $set, $get);
                                         return;
                                     }
 
-                                    $PejabatTandaTangan = \App\Models\User::find($state);
-                                    if ($PejabatTandaTangan) {
-                                        // Auto isi field pejabat penanda tangan
-                                        $set('PejabatTandaTangan_nama', $PejabatTandaTangan->name);
-                                        $set('PejabatTandaTangan_jabatan', $PejabatTandaTangan->jabatan->name);
+                                    $pejabat = \App\Models\User::with('jabatan')->find($state);
+                                    if ($pejabat) {
+                                        $set('PejabatTandaTangan_nama', $pejabat->name);
+                                        $set('PejabatTandaTangan_jabatan', $pejabat->jabatan?->name ?? '');
                                     }
 
-                                    // Paksa refresh template preview ketika tanda tangan berubah
                                     static::updateTemplateWithFormData('', $set, $get);
                                 })
-                                ->reactive(),
-                        ]),
+                                ->live(),
+
+                            // Hidden fields pejabat (diisi via afterStateUpdated)
+                            Forms\Components\Hidden::make('PejabatTandaTangan_nama'),
+                            Forms\Components\Hidden::make('PejabatTandaTangan_jabatan'),
+                            // Hidden fields untuk menyimpan data dynamic
+                            Forms\Components\Hidden::make('dynamic_fields_data')
+                                ->dehydrated(false),
+
+                            Forms\Components\Hidden::make('form_data')
+                                ->dehydrated(true)
+                                ->default([]),
+
+                            // Hidden fields untuk data pemohon (diisi via afterStateUpdated)
+                            Forms\Components\Hidden::make('pemohon_nik'),
+                            Forms\Components\Hidden::make('pemohon_nama'),
+                            Forms\Components\Hidden::make('pemohon_alamat'),
+                            Forms\Components\Hidden::make('pemohon_telepon'),
+                            Forms\Components\Hidden::make('pemohon_agama'),
+                            Forms\Components\Hidden::make('pemohon_jk'),
+                            Forms\Components\Hidden::make('pemohon_tempat_lahir'),
+                            Forms\Components\Hidden::make('pemohon_tanggal_lahir'),
+                            Forms\Components\Hidden::make('pemohon_judul_surat'),
+                            Forms\Components\Hidden::make('tanggal_estimasi_selesai'),
+                        ])->columns(2),
+
                     Wizard\Step::make('Isian Surat & Template')
                         ->schema([
                             Section::make('Form Isian Tambahan')
@@ -213,9 +215,8 @@ class PermohonanSuratResource extends Resource
                                                             ->placeholder($field['deskripsi'])
                                                             ->required($field['required'] == '1')
                                                             ->helperText("Kode: {$field['kode']}")
-                                                            ->live()
+                                                            ->lazy()
                                                             ->afterStateUpdated(function ($state, $set, $get) {
-                                                                // Update template setiap field berubah
                                                                 static::updateTemplateWithFormData('', $set, $get);
                                                             });
                                                         break;
@@ -227,7 +228,7 @@ class PermohonanSuratResource extends Resource
                                                             ->required($field['required'] == '1')
                                                             ->rows(3)
                                                             ->helperText("Kode: {$field['kode']}")
-                                                            ->live()
+                                                            ->lazy()
                                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                                 static::updateTemplateWithFormData('', $set, $get);
                                                             });
@@ -240,7 +241,7 @@ class PermohonanSuratResource extends Resource
                                                             ->numeric()
                                                             ->required($field['required'] == '1')
                                                             ->helperText("Kode: {$field['kode']}")
-                                                            ->live()
+                                                            ->lazy()
                                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                                 static::updateTemplateWithFormData('', $set, $get);
                                                             });
@@ -253,7 +254,7 @@ class PermohonanSuratResource extends Resource
                                                             ->email()
                                                             ->required($field['required'] == '1')
                                                             ->helperText("Kode: {$field['kode']}")
-                                                            ->live()
+                                                            ->lazy()
                                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                                 static::updateTemplateWithFormData('', $set, $get);
                                                             });
@@ -264,7 +265,7 @@ class PermohonanSuratResource extends Resource
                                                             ->label($field['nama'])
                                                             ->required($field['required'] == '1')
                                                             ->helperText("Kode: {$field['kode']} - {$field['deskripsi']}")
-                                                            ->live()
+                                                            ->lazy()
                                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                                 static::updateTemplateWithFormData('', $set, $get);
                                                             });
@@ -288,7 +289,7 @@ class PermohonanSuratResource extends Resource
                                                             ->live()
                                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                                 static::updateTemplateWithFormData('', $set, $get);
-                                                            });
+                                                            }); // select tetap live karena tidak ada lazy untuk select
                                                         break;
                                                 }
                                             }
@@ -327,15 +328,52 @@ class PermohonanSuratResource extends Resource
                                         ->placeholder('Template akan muncul otomatis ketika jenis surat dipilih...')
                                         ->helperText('Template otomatis terisi dari jenis surat. Data akan terupdate saat form diisi.')
                                         ->disabled(fn($get) => !$get('jenis_surat_id'))
-                                        ->visible(fn($get) => $get('jenis_surat_id')) // Hanya muncul jika jenis surat dipilih
-                                        ->dehydrated(true)
-                                        ->reactive(), // Tambahkan reactive
+                                        ->visible(fn($get) => $get('jenis_surat_id'))
+                                        ->dehydrated(true),
                                 ])
                                 ->visible(fn($get) => $get('jenis_surat_id')),
                         ]),
                     Wizard\Step::make('Selesai')
                         ->schema([
-                            // ...
+                            Section::make('✅ Ringkasan Permohonan')
+                                ->description('Pastikan data berikut sudah benar sebelum menyimpan')
+                                ->schema([
+                                    Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\Placeholder::make('summary_pemohon')
+                                                ->label('Pemohon')
+                                                ->content(fn($get) => ($get('pemohon_nama') ?: '-') . ' (' . ($get('pemohon_nik') ?: '-') . ')'),
+
+                                            Forms\Components\Placeholder::make('summary_jenis_surat')
+                                                ->label('Jenis Surat')
+                                                ->content(fn($get) => $get('pemohon_judul_surat') ?: '-'),
+
+                                            Forms\Components\Placeholder::make('summary_alamat')
+                                                ->label('Alamat')
+                                                ->content(fn($get) => $get('pemohon_alamat') ?: '-'),
+
+                                            Forms\Components\Placeholder::make('summary_estimasi')
+                                                ->label('Estimasi Selesai')
+                                                ->content(fn($get) => $get('tanggal_estimasi_selesai')
+                                                    ? \Carbon\Carbon::parse($get('tanggal_estimasi_selesai'))->translatedFormat('d F Y')
+                                                    : '-'),
+
+                                            Forms\Components\Placeholder::make('summary_pejabat')
+                                                ->label('Pejabat Penanda Tangan')
+                                                ->content(fn($get) => $get('PejabatTandaTangan_nama')
+                                                    ? $get('PejabatTandaTangan_nama') . ' (' . $get('PejabatTandaTangan_jabatan') . ')'
+                                                    : '-'),
+                                        ]),
+                                ]),
+                            // Hidden fields yang dibutuhkan database
+                            Forms\Components\Hidden::make('nagari_id')
+                                ->default(fn() => Auth::user()?->nagari_id),
+
+                            Forms\Components\Hidden::make('status_id')
+                                ->default(fn() => \App\Models\StatusSurat::where('kode_status', 'MASUK')->value('id')),
+
+                            Forms\Components\Hidden::make('tanggal_permohonan')
+                                ->default(fn() => now()->toDateTimeString()),
                         ]),
                 ])->columnSpanFull(),
 
@@ -465,7 +503,20 @@ class PermohonanSuratResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('viewPdf')
+                    ->label('Lihat PDF')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn(PermohonanSurat $record) => route('surat.permohonan.pdf', $record))
+                    ->openUrlInNewTab(),
+
+                Tables\Actions\Action::make('downloadPdf')
+                    ->label('Unduh')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->url(fn(PermohonanSurat $record) => route('surat.permohonan.download', $record))
+                    ->openUrlInNewTab(),
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('updateStatus')
                     ->label('Update Status')
@@ -516,6 +567,23 @@ class PermohonanSuratResource extends Resource
     {
         return 'warning';
     }
+    protected static function getPejabatOptions(): array
+    {
+        static $cache = null;
+        if ($cache === null) {
+            $cache = \App\Models\User::query()
+                ->where('id', '<>', 1)
+                ->with('jabatan')
+                ->get()
+                ->mapWithKeys(function ($user) {
+                    $jabatan = $user->jabatan?->name ?? 'Tanpa Jabatan';
+                    return [$user->id => "{$user->name} | {$jabatan}"];
+                })
+                ->all();
+        }
+        return $cache;
+    }
+
     protected static function updateTemplateWithFormData($template, $set, $get)
     {
         $formData = $get('form_data') ?: [];

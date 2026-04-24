@@ -1,4 +1,4 @@
-<div class="vh-100 d-flex flex-column">
+<div class="vh-100 d-flex flex-column" wire:poll.60m="heartbeat">
   <div x-data="absensiModal" x-init="initModal">
     <!-- Modal -->
     <div class="modal fade" id="absensiModal" tabindex="-1" aria-labelledby="absensiModalLabel" aria-hidden="true"
@@ -106,6 +106,20 @@
             }
           });
         }
+      });
+    </script>
+
+    <script>
+      document.addEventListener('livewire:init', () => {
+        Livewire.hook('request', ({ fail }) => {
+          fail(({ status, preventDefault }) => {
+            if (status === 419) {
+              // Hindari popup "Page Expired" berulang pada layar TV.
+              preventDefault();
+              window.location.reload();
+            }
+          });
+        });
       });
     </script>
   @endpush

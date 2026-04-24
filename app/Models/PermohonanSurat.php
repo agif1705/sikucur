@@ -100,11 +100,15 @@ class PermohonanSurat extends Model
      */
     public static function getNomorSuratLengkapAttribute($jenisSuratId)
     {
+        if (!$jenisSuratId) return '-';
+
         $surat = JenisSurat::find($jenisSuratId);
+        if (!$surat) return '-';
+
         $nomorUrut = str_pad(static::generateNomorUrut($jenisSuratId, now()), 3, '0', STR_PAD_LEFT);
         $prefix = 'NS';
-        $kodeSurat = $surat->kode_surat;
-        $kode = $surat->kode;
+        $kodeSurat = $surat->kode_surat ?? '-';
+        $kode = $surat->kode ?? '-';
 
         $tahun = now()->year;
         $bulan = now()->month;

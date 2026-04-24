@@ -129,27 +129,10 @@ class JenisSuratResource extends Resource
                                     ->helperText('Estimasi waktu penyelesaian surat'),
 
                                 Forms\Components\Toggle::make('mandiri')
-                                    ->label('Surat Mandiri')
-                                    ->helperText('Dapat diajukan tanpa verifikasi')
+                                    ->label('Whatsapp Mandiri')
+                                    ->helperText('Dapat diajukan langsung oleh masyarakat Melalui WhatsApps')
                                     ->default(false),
-
-                                Forms\Components\Toggle::make('is_active')
-                                    ->label('Status Aktif')
-                                    ->default(true)
-                                    ->required(),
                             ]),
-
-                        Forms\Components\Textarea::make('persyaratan')
-                            ->label('Persyaratan')
-                            ->rows(3)
-                            ->columnSpanFull()
-                            ->placeholder('Tuliskan persyaratan yang diperlukan untuk mengajukan surat ini'),
-
-                        Forms\Components\Textarea::make('keterangan')
-                            ->label('Keterangan')
-                            ->rows(3)
-                            ->columnSpanFull()
-                            ->placeholder('Keterangan tambahan tentang jenis surat ini'),
                     ]),
             ]);
     }

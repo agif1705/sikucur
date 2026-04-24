@@ -29,7 +29,7 @@ class StatusSuratSeeder extends Seeder
             ],
             [
                 'nama_status' => 'Proses Pembuatan',
-                'kode_status' => 'PROSES',
+                'kode_status' => 'PROSE',
                 'warna_status' => 'info',
                 'deskripsi' => 'Sedang dalam proses pembuatan surat',
                 'urutan' => 3
@@ -43,7 +43,7 @@ class StatusSuratSeeder extends Seeder
             ],
             [
                 'nama_status' => 'Selesai',
-                'kode_status' => 'SELESAI',
+                'kode_status' => 'SELES',
                 'warna_status' => 'success',
                 'deskripsi' => 'Surat sudah selesai dan siap diambil',
                 'urutan' => 5

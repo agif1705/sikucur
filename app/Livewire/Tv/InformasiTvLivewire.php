@@ -34,7 +34,8 @@ class InformasiTvLivewire extends Component
         try {
             // Validasi data input
             if (!isset($data['emp_id']) && !isset($data['emp_code'])) {
-                return response()->json(['message' => 'Employee ID tidak ditemukan'], 400);
+                Log::warning('Fingerprint payload tidak memiliki emp_id/emp_code', ['payload' => $data]);
+                return;
             }
 
             // Ambil employee ID
@@ -42,7 +43,8 @@ class InformasiTvLivewire extends Component
 
             // Validasi punch_time
             if (!isset($data['punch_time'])) {
-                return response()->json(['message' => 'Waktu absensi tidak valid'], 400);
+                Log::warning('Fingerprint payload tidak memiliki punch_time', ['payload' => $data]);
+                return;
             }
 
             $punchTime = Carbon::parse($data['punch_time']);
@@ -56,7 +58,8 @@ class InformasiTvLivewire extends Component
             // Cari nagari berdasarkan serial number mesin
             $nagari = Nagari::where('sn_fingerprint', $data['terminal_sn'])->first();
             if (!$nagari) {
-                return response()->json(['message' => 'Mesin fingerprint tidak ditemukan'], 404);
+                Log::warning('Mesin fingerprint tidak ditemukan', ['terminal_sn' => $data['terminal_sn'] ?? null]);
+                return;
             }
 
             // Cari user berdasarkan employee ID dan nagari
@@ -66,7 +69,8 @@ class InformasiTvLivewire extends Component
                 ->first();
 
             if (!$user) {
-                return response()->json(['message' => 'Pegawai tidak ditemukan'], 404);
+                Log::warning('Pegawai fingerprint tidak ditemukan', ['emp_id' => $emp_id, 'nagari_id' => $nagari->id]);
+                return;
             }
 
             // Cek apakah sudah absen hari ini
@@ -98,7 +102,7 @@ class InformasiTvLivewire extends Component
         } catch (\Exception $e) {
             // Log error jika diperlukan
             Log::error('Error processing fingerprint data: ' . $e->getMessage());
-            return response()->json(['message' => 'Terjadi kesalahan saat memproses absensi'], 500);
+            return;
         }
     }
 
@@ -211,16 +215,32 @@ class InformasiTvLivewire extends Component
     #[On('rekap-absensi-updated')]
     public function rekapAbsensiUpdated($data)
     {
-        $user = User::whereId($data['user_id'])->first();
+        // Payload bisa dikirim langsung atau dibungkus di key "data" dari JS.
+        $payload = $data['data'] ?? $data;
+
+        if (!isset($payload['user_id'])) {
+            Log::warning('Payload rekap-absensi-updated tidak valid', ['payload' => $data]);
+            return;
+        }
+
+        $user = User::whereId($payload['user_id'])->first();
         if ($user) {
-            $statusKehadiran = $data['is_late'] ? 'Terlambat' : 'Tepat Waktu';
+            $statusKehadiran = !empty($payload['is_late']) ? 'Terlambat' : 'Tepat Waktu';
             $this->dispatch(
                 'absenBerhasil',
                 nama: $user->name,
-                jam: $data['time_in'],
+                jam: $payload['time_in'] ?? '-',
                 status: $statusKehadiran
             );
         }
+    }
+
+    /**
+     * Menjaga sesi Livewire tetap aktif di halaman TV yang berjalan lama.
+     */
+    public function heartbeat(): void
+    {
+        // no-op
     }
 
     /**

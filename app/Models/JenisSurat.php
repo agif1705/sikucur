@@ -9,9 +9,10 @@ class JenisSurat extends Model
 {
     protected $table = 'jenis_surat';
 
+
+
     protected $fillable = [
         'nama_jenis',
-        'nama',
         'kode',
         'url_surat',
         'kode_surat',
