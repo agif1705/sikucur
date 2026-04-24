@@ -5,6 +5,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 class PermohonanSurat extends Model
@@ -79,6 +81,30 @@ class PermohonanSurat extends Model
     public function pejabatTandaTangan()
     {
         return $this->belongsTo(User::class, 'TandaTangan');
+    }
+
+    public function trackingSurat(): HasMany
+    {
+        return $this->hasMany(TrackingSurat::class, 'permohonan_id');
+    }
+
+    public function uploadDokumen(): HasMany
+    {
+        return $this->hasMany(UploadDokumen::class, 'permohonan_id');
+    }
+
+    public function suratGenerated(): HasOne
+    {
+        return $this->hasOne(SuratGenerated::class, 'permohonan_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (PermohonanSurat $permohonan): void {
+            $permohonan->trackingSurat()->delete();
+            $permohonan->uploadDokumen()->delete();
+            $permohonan->suratGenerated()->delete();
+        });
     }
 
     public static function generateNomorUrut($jenisSuratId, $tanggal)
