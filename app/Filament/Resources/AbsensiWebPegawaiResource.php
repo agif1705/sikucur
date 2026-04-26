@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Resources\Resource;
@@ -20,12 +20,12 @@ class AbsensiWebPegawaiResource extends Resource
 {
     protected static ?string $model = AbsensiWebPegawai::class;
 
-    protected static ?string $navigationIcon = 'gmdi-whatsapp-o';
-    protected static ?string $navigationGroup = 'Absensi';
+    protected static string | \BackedEnum | null $navigationIcon = 'gmdi-whatsapp-o';
+    protected static string | \UnitEnum | null $navigationGroup = 'Absensi';
     protected static ?string $heade = 'Absensi';
     protected static ?string $navigationLabel = 'Rekap Absensi WhatsApp';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -80,11 +80,11 @@ class AbsensiWebPegawaiResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -105,3 +105,4 @@ class AbsensiWebPegawaiResource extends Resource
         ];
     }
 }
+

@@ -1,10 +1,9 @@
-@import '../../../../vendor/filament/filament/resources/css/base.css';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-@tailwind variants;
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
 
-@config 'tailwind.config.js';
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Custom Dark Mode Enhancements */
 .dark {

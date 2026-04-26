@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('surat_generated', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('permohonan_id')->constrained('permohonan_surat');
+            $table->foreignId('permohonan_id')
+                ->constrained('permohonan_surats')
+                ->cascadeOnDelete();
             $table->string('nomor_surat')->unique();
             $table->string('file_path');
             $table->string('qr_code_path')->nullable();

@@ -8,7 +8,7 @@ use Filament\Tables;
 use App\Models\Nagari;
 use App\Models\Jabatan;
 use App\Models\Penduduk;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use App\Models\WhatsAppBroadcast;
@@ -24,7 +24,7 @@ class WhatsAppBroadcastResource extends Resource
 {
     protected static ?string $model = WhatsAppBroadcast::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
     protected static ?string $navigationLabel = 'WhatsApp Broadcast';
 
@@ -32,9 +32,9 @@ class WhatsAppBroadcastResource extends Resource
 
     protected static ?string $pluralModelLabel = 'WhatsApp Broadcasts';
 
-    protected static ?string $navigationGroup = 'Broadcast & Notifikasi';
+    protected static string | \UnitEnum | null $navigationGroup = 'Broadcast & Notifikasi';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -297,7 +297,7 @@ class WhatsAppBroadcastResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\Action::make('send')
+                \Filament\Actions\Action::make('send')
                     ->label('Kirim')
                     ->icon('heroicon-m-paper-airplane')
                     ->color('success')
@@ -322,22 +322,22 @@ class WhatsAppBroadcastResource extends Resource
                         }
                     }),
 
-                Tables\Actions\Action::make('view_logs')
+                \Filament\Actions\Action::make('view_logs')
                     ->label('Lihat Log')
                     ->icon('heroicon-m-eye')
                     ->color('info')
                     ->url(fn(WhatsAppBroadcast $record): string =>
                     static::getUrl('logs', ['record' => $record])),
 
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->visible(fn(WhatsAppBroadcast $record): bool => $record->status === 'draft'),
 
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\DeleteAction::make()
                     ->visible(fn(WhatsAppBroadcast $record): bool => $record->status === 'draft'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()
                         ->visible(fn() => true),
                 ]),
             ])
@@ -361,3 +361,4 @@ class WhatsAppBroadcastResource extends Resource
         ];
     }
 }
+

@@ -3,35 +3,27 @@
 namespace App\Filament\Resources;
 
 use Filament\Forms;
-use App\Models\User;
 use Filament\Tables;
 use App\Models\Nagari;
-use Filament\Forms\Form;
-use App\Models\WdmsModel;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
-use Illuminate\Support\Carbon;
 use Filament\Resources\Resource;
 use App\Models\RekapAbsensiPegawai;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Filters\Filter;
+use Filament\Actions\Action;
 use Illuminate\Support\Facades\Auth;
-use Filament\Notifications\Notification;
-use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use App\Services\SinkronFingerprintService;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\RekapAbsensiPegawaiResource\Pages;
-use App\Filament\Resources\RekapAbsensiPegawaiResource\RelationManagers;
 
 class RekapAbsensiPegawaiResource extends Resource
 {
     protected static ?string $model = RekapAbsensiPegawai::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user';
-    protected static ?string $navigationGroup = 'Absensi';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-user';
+    protected static string | \UnitEnum | null $navigationGroup = 'Absensi';
     protected static ?string $navigationLabel = 'Rekap Absensi Bulanan';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -110,18 +102,18 @@ class RekapAbsensiPegawaiResource extends Resource
             ->filters([
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ])->headerActions([
                 Action::make('create')
                     ->label('Sinkron FingerPrint Bulan ' . now()->format('F Y'))
-                    ->action(fn(User $user) => static::sinkronFingerPrint($user))
+                    ->action(fn() => static::sinkronFingerPrint())
                     ->button()
                     ->icon('heroicon-o-plus')
                     ->visible(fn() => Auth::user()->hasRole('super_admin')),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -141,11 +133,15 @@ class RekapAbsensiPegawaiResource extends Resource
             // 'edit' => Pages\EditRekapAbsensiPegawai::route('/{record}/edit'),
         ];
     }
-    public static function sinkronFingerPrint(User $user)
+    public static function sinkronFingerPrint(): void
     {
-        $month = Carbon::now()->month;
+        $user = Auth::user();
 
-        $nagari = $user->with('nagari')->first()->nagari;
-        $sinkron = SinkronFingerprintService::sinkronFingerPrint(Nagari::find($nagari->id));
+        if (! $user?->nagari) {
+            return;
+        }
+
+        SinkronFingerprintService::sinkronFingerPrint(Nagari::find($user->nagari->id));
     }
 }
+

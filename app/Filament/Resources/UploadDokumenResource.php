@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use App\Models\UploadDokumen;
 use Filament\Resources\Resource;
@@ -17,12 +17,12 @@ use App\Filament\Resources\UploadDokumenResource\Pages;
 class UploadDokumenResource extends Resource
 {
     protected static ?string $model = UploadDokumen::class;
-    protected static ?string $navigationIcon = 'heroicon-o-cloud-arrow-up';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cloud-arrow-up';
     protected static ?string $navigationLabel = 'Upload Dokumen';
-    protected static ?string $navigationGroup = 'Manajemen Surat';
+    protected static string | \UnitEnum | null $navigationGroup = 'Manajemen Surat';
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -159,9 +159,9 @@ class UploadDokumenResource extends Resource
                     ->searchable(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                \Filament\Actions\ViewAction::make(),
 
-                Tables\Actions\Action::make('verify')
+                \Filament\Actions\Action::make('verify')
                     ->label('Verifikasi')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -181,19 +181,19 @@ class UploadDokumenResource extends Resource
                         ]);
                     }),
 
-                Tables\Actions\Action::make('download')
+                \Filament\Actions\Action::make('download')
                     ->label('Download')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('primary')
                     ->url(fn (UploadDokumen $record) => $record->file_url)
                     ->openUrlInNewTab(),
 
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('verify_bulk')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\BulkAction::make('verify_bulk')
                         ->label('Verifikasi Massal')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
@@ -212,7 +212,7 @@ class UploadDokumenResource extends Resource
                                 ]);
                             }
                         }),
-                    Tables\Actions\DeleteBulkAction::make(),
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -238,3 +238,4 @@ class UploadDokumenResource extends Resource
         return 'warning';
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Pages\Page;
 use App\Models\MetaJenisSurat;
 use Filament\Forms\Components\Section;
@@ -16,10 +16,10 @@ class MetaJenisSuratPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Meta Template Surat';
     protected static ?string $title = 'Meta Template Surat';
-    protected static string $view = 'filament.pages.meta-jenis-surat-page';
+    protected string $view = 'filament.pages.meta-jenis-surat-page';
 
     public ?array $data = [];
 
@@ -30,11 +30,11 @@ class MetaJenisSuratPage extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([
-                Section::make('📋 Meta Data Template Surat')
+                Section::make('Meta Data Template Surat')
                     ->description('Kelola placeholder yang dapat digunakan dalam template surat. Tambah, edit, atau hapus placeholder sesuai kebutuhan.')
                     ->schema([
                         KeyValue::make('meta')
@@ -42,12 +42,12 @@ class MetaJenisSuratPage extends Page implements HasForms
                             ->keyLabel('Placeholder (contoh: [NAma])')
                             ->valueLabel('Deskripsi')
                             ->reorderable()
-                            ->addActionLabel('➕ Tambah Placeholder')
+                            ->addActionLabel('Tambah Placeholder')
                             ->columnSpanFull()
-                            ->helperText('💡 Gunakan format [NamaPlaceholder] untuk placeholder. Contoh: [NAma], [Nik], [Alamat_lengkaP]'),
+                            ->helperText('Gunakan format [NamaPlaceholder] untuk placeholder. Contoh: [NAma], [Nik], [Alamat_lengkaP]'),
                     ]),
 
-                Section::make('🎨 Contoh Penggunaan')
+                Section::make('Contoh Penggunaan')
                     ->description('Berikut contoh cara menggunakan placeholder dalam template surat')
                     ->collapsible()
                     ->collapsed()
@@ -57,7 +57,7 @@ class MetaJenisSuratPage extends Page implements HasForms
                             ->content(new \Illuminate\Support\HtmlString('
                                 <div class="space-y-4">
                                     <div class=" p-4 rounded border ">
-                                        <h4 class="font-semibold text-sm mb-2">📄 Contoh Template:</h4>
+                                        <h4 class="font-semibold text-sm mb-2">Contoh Template:</h4>
                                         <pre class="text-xs p-3 rounded border overflow-x-auto"><code>Yang bertanda tangan di bawah ini [JaBatan] [NaMa_desa],
 dengan ini menerangkan bahwa:
 
@@ -76,7 +76,7 @@ NIP. [Nip_pejabat]</code></pre>
                                     </div>
 
                                     <div class="bg-blue-50 p-4 rounded border border-blue-200">
-                                        <h4 class="font-semibold text-sm text-blue-800 mb-2">💡 Tips Penggunaan:</h4>
+                                        <h4 class="font-semibold text-sm text-blue-800 mb-2">Tips Penggunaan:</h4>
                                         <ul class="text-xs text-blue-700 space-y-1 list-disc list-inside">
                                             <li>Placeholder harus diapit dengan kurung siku <code class="bg-blue-100 px-1 rounded">[...]</code></li>
                                             <li>Gunakan huruf besar/kecil yang konsisten</li>
@@ -101,7 +101,7 @@ NIP. [Nip_pejabat]</code></pre>
 
             if (empty($data['meta'])) {
                 Notification::make()
-                    ->title('⚠️ Peringatan')
+                    ->title('Peringatan')
                     ->body('Tidak ada data meta untuk disimpan.')
                     ->warning()
                     ->send();
@@ -112,13 +112,13 @@ NIP. [Nip_pejabat]</code></pre>
             MetaJenisSurat::syncMeta($data['meta']);
 
             Notification::make()
-                ->title('✅ Berhasil!')
+                ->title('Berhasil')
                 ->body('Meta template surat berhasil disimpan.')
                 ->success()
                 ->send();
         } catch (\Exception $e) {
             Notification::make()
-                ->title('❌ Error')
+                ->title('Error')
                 ->body('Gagal menyimpan meta: ' . $e->getMessage())
                 ->danger()
                 ->send();
@@ -164,7 +164,7 @@ NIP. [Nip_pejabat]</code></pre>
         ]);
 
         Notification::make()
-            ->title('✅ Berhasil!')
+            ->title('Berhasil')
             ->body('Meta telah direset ke default.')
             ->success()
             ->send();
@@ -186,7 +186,7 @@ NIP. [Nip_pejabat]</code></pre>
                 ->action('resetToDefault'),
 
             Action::make('save')
-                ->label('💾 Simpan Meta')
+                ->label('Simpan Meta')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->action('save'),

@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\TvGaleri;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Resources\Resource;
@@ -20,11 +20,11 @@ class TvGaleriResource extends Resource
 {
     protected static ?string $model = TvGaleri::class;
 
-    protected static ?string $navigationGroup = 'Tv Informasi';
+    protected static string | \UnitEnum | null $navigationGroup = 'Tv Informasi';
     protected static ?string $navigationLabel = 'Galeri TV';
-    protected static ?string $navigationIcon = 'heroicon-o-tv';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-tv';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -72,8 +72,8 @@ class TvGaleriResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make()
                     ->before(function ($record) {
                         // hapus file dari storage
                         if ($record->image) {
@@ -89,8 +89,8 @@ class TvGaleriResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make()
                         ->before(function ($records) {
                             foreach ($records as $record) {
                                 // Hapus single image
@@ -126,3 +126,4 @@ class TvGaleriResource extends Resource
         ];
     }
 }
+

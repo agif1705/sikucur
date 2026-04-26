@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Models\Nagari;
 use Livewire\Component;
 use App\Models\WdmsModel;
-use App\Models\ListYoutube;
+use App\Models\VideoTv;
 use App\Models\WhatsAppLog;
 use Livewire\Attributes\On;
 use App\Services\GowaService;
@@ -25,8 +25,8 @@ class InformasiTvLivewire extends Component
     public $now;
     public $users;
     public $tv, $galeri;
-    public $sn_fp, $logo, $tvNow, $datas, $playlistStr;
-    public $videoId;
+    public $sn_fp, $logo, $tvNow, $datas;
+    public array $uploadedVideos = [];
 
     #[On('fingerprint-updated')]
     public function updateData($mesin, $data)
@@ -236,14 +236,6 @@ class InformasiTvLivewire extends Component
     }
 
     /**
-     * Menjaga sesi Livewire tetap aktif di halaman TV yang berjalan lama.
-     */
-    public function heartbeat(): void
-    {
-        // no-op
-    }
-
-    /**
      * Event listener untuk penghapusan data fingerprint
      */
     #[On('fingerprint-deleted')]
@@ -286,8 +278,7 @@ class InformasiTvLivewire extends Component
             $this->tv = $nagari->TvInformasi;
             //ambil data galeri paling terakhir
             $this->galeri = $nagari->galeri->sortByDesc('created_at')->values();
-            // Ambil playlist YouTube dengan optimasi query
-            $this->setupYouTubePlaylist($nagari->id);
+            $this->setupUploadedVideos($nagari->id);
 
             // Ambil data absensi hari ini
             $this->users = WdmsModel::getAbsensiMasuk($this->sn_fp);
@@ -298,24 +289,21 @@ class InformasiTvLivewire extends Component
     }
 
     /**
-     * Setup playlist YouTube untuk nagari
+     * Setup playlist video lokal yang diupload dari Filament.
      */
-    private function setupYouTubePlaylist($nagariId)
+    private function setupUploadedVideos($nagariId): void
     {
-        try {
-            $youtubeList = ListYoutube::where('nagari_id', $nagariId)
-                ->select('id_youtube', 'created_at')
-                ->get()->sortByDesc('created_at');
-            $this->videoId = $youtubeList->first()->id_youtube;
-            if ($youtubeList->isNotEmpty()) {
-                $this->playlistStr = $youtubeList->pluck('id_youtube')->implode(',');
-            } else {
-                // Default playlist jika tidak ada
-                $this->playlistStr = $this->videoId;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error setting up YouTube playlist: ' . $e->getMessage());
-            $this->playlistStr = $this->videoId;
-        }
+        $this->uploadedVideos = VideoTv::query()
+            ->where('nagari_id', $nagariId)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn(VideoTv $video): array => [
+                'title' => $video->title,
+                'url' => asset('storage/' . ltrim($video->file_path, '/')),
+            ])
+            ->values()
+            ->all();
     }
 }

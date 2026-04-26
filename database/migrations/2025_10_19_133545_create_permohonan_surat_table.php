@@ -68,6 +68,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('permohonan_surat');
+        Schema::dropIfExists('permohonan_surats');
     }
 };

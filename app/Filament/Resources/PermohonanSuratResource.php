@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Penduduk;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use App\Models\JenisSurat;
 use Filament\Tables\Table;
 use App\Models\StatusSurat;
@@ -15,24 +15,23 @@ use Illuminate\Support\Carbon;
 use App\Models\PermohonanSurat;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\RichEditor;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Section;
-use FilamentTiptapEditor\TiptapEditor;
 use Illuminate\Support\HtmlString;
 use Illuminate\Database\Eloquent\Builder;
-use FilamentTiptapEditor\Enums\TiptapOutput;
 use App\Filament\Resources\PermohonanSuratResource\Pages;
 
 class PermohonanSuratResource extends Resource
 {
     protected static ?string $model = PermohonanSurat::class;
-    protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate';
     protected static ?string $navigationLabel = 'Permohonan Surat';
-    protected static ?string $navigationGroup = 'Manajemen Surat';
+    protected static string | \UnitEnum | null $navigationGroup = 'Manajemen Surat';
     protected static ?int $navigationSort = 1;
     public $kecamatan = "V Koto";
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -305,26 +304,9 @@ class PermohonanSuratResource extends Resource
                         ->schema([
                             Section::make('Template Surat')
                                 ->schema([
-                                    TiptapEditor::make('pemohon_template')
+                                    RichEditor::make('pemohon_template')
                                         ->label('Template Surat')
                                         ->columnSpanFull()
-                                        ->output(TiptapOutput::Html)
-                                        ->profile('full')
-                                        ->tools([
-                                            'heading',
-                                            'bullet-list',
-                                            'ordered-list',
-                                            'bold',
-                                            'italic',
-                                            'strike',
-                                            'underline',
-                                            'align-left',
-                                            'align-center',
-                                            'align-right',
-                                            'align-justify',
-                                            'table',
-                                            'source',
-                                        ])
                                         ->placeholder('Template akan muncul otomatis ketika jenis surat dipilih...')
                                         ->helperText('Template otomatis terisi dari jenis surat. Data akan terupdate saat form diisi.')
                                         ->disabled(fn($get) => !$get('jenis_surat_id'))
@@ -503,22 +485,22 @@ class PermohonanSuratResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('viewPdf')
+                \Filament\Actions\Action::make('viewPdf')
                     ->label('Lihat PDF')
                     ->icon('heroicon-o-eye')
                     ->color('info')
                     ->url(fn(PermohonanSurat $record) => route('surat.permohonan.pdf', $record))
                     ->openUrlInNewTab(),
 
-                Tables\Actions\Action::make('downloadPdf')
+                \Filament\Actions\Action::make('downloadPdf')
                     ->label('Unduh')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
                     ->url(fn(PermohonanSurat $record) => route('surat.permohonan.download', $record))
                     ->openUrlInNewTab(),
 
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('updateStatus')
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('updateStatus')
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -539,8 +521,8 @@ class PermohonanSuratResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('tanggal_permohonan', 'desc');
@@ -681,3 +663,4 @@ class PermohonanSuratResource extends Resource
         return $originalTemplate;
     }
 }
+

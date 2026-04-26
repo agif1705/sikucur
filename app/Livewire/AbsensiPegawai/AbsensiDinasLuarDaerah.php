@@ -4,12 +4,12 @@ namespace App\Livewire\AbsensiPegawai;
 
 use Livewire\Component;
 use App\Models\Presensi;
-use Filament\Forms\Form;
 use App\Models\Attendance;
 use App\Models\JadwalUser;
 use Illuminate\Contracts\View\View;
 use function Laravel\Prompts\select;
 use Illuminate\Support\Facades\Auth;
+use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 
 use Filament\Forms\Contracts\HasForms;
@@ -28,7 +28,7 @@ class AbsensiDinasLuarDaerah extends Component implements HasForms
     {
         $this->form->fill();
     }
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([

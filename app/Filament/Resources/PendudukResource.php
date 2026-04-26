@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Penduduk;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use App\Models\MikrotikConfig;
 use Filament\Resources\Resource;
@@ -14,23 +14,17 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Section;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use App\Filament\Imports\ProductImporter;
-use Filament\Tables\Actions\ImportAction;
-use Illuminate\Database\Eloquent\Builder;
-use App\Filament\Imports\PendudukImporter;
 use App\Filament\Resources\PendudukResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\PendudukResource\RelationManagers;
 
 class PendudukResource extends Resource
 {
     protected static ?string $model = Penduduk::class;
 
-    protected static ?string $navigationIcon = 'gmdi-people-tt';
-    protected static ?string $navigationGroup = 'Data ';
+    protected static string | \BackedEnum | null $navigationIcon = 'gmdi-people-tt';
+    protected static string | \UnitEnum | null $navigationGroup = 'Data ';
 
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -142,18 +136,19 @@ class PendudukResource extends Resource
                     ->placeholder('Belum terdaftar')
                     ->badge()
                     ->color('success'),
-                TextColumn::make('tanggal_lahir')->searchable(),
-                TextColumn::make('tanggal_lahir')->searchable(),
+                TextColumn::make('tanggal_lahir')
+                    ->date()
+                    ->searchable(),
             ])->defaultSort('updated_at', 'desc')
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -174,3 +169,4 @@ class PendudukResource extends Resource
         ];
     }
 }
+

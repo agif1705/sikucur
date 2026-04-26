@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('tracking_surat', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('permohonan_id')->constrained('permohonan_surats');
+            $table->foreignId('permohonan_id')
+                ->constrained('permohonan_surats')
+                ->cascadeOnDelete();
             $table->foreignId('status_lama_id')->nullable()->constrained('status_surat');
             $table->foreignId('status_baru_id')->constrained('status_surat');
             $table->foreignId('petugas_id')->constrained('users');

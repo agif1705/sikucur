@@ -6,7 +6,7 @@ use App\Filament\Resources\DokumenPersyaratanResource\Pages;
 use App\Models\DokumenPersyaratan;
 use App\Models\JenisSurat;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,12 +16,12 @@ use Filament\Forms\Components\Grid;
 class DokumenPersyaratanResource extends Resource
 {
     protected static ?string $model = DokumenPersyaratan::class;
-    protected static ?string $navigationIcon = 'heroicon-o-document-check';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-check';
     protected static ?string $navigationLabel = 'Dokumen Persyaratan';
-    protected static ?string $navigationGroup = 'Master Data Surat';
+    protected static string | \UnitEnum | null $navigationGroup = 'Master Data Surat';
     protected static ?int $navigationSort = 3;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -136,14 +136,14 @@ class DokumenPersyaratanResource extends Resource
             ])
             ->actions([
 
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
 
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('jenis_surat_id')
@@ -160,3 +160,4 @@ class DokumenPersyaratanResource extends Resource
         ];
     }
 }
+

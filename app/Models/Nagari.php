@@ -66,6 +66,10 @@ class Nagari extends Model
     {
         return $this->hasMany(TvGaleri::class)->latest();
     }
+    public function videoTvs()
+    {
+        return $this->hasMany(VideoTv::class);
+    }
     public function suratKepala()
     {
         return $this->hasOne(SuratKepala::class);

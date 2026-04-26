@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\StatusSuratResource\Pages;
 use App\Models\StatusSurat;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,12 +15,12 @@ use Filament\Forms\Components\Grid;
 class StatusSuratResource extends Resource
 {
     protected static ?string $model = StatusSurat::class;
-    protected static ?string $navigationIcon = 'heroicon-o-flag';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-flag';
     protected static ?string $navigationLabel = 'Status Surat';
-    protected static ?string $navigationGroup = 'Master Data Surat';
+    protected static string | \UnitEnum | null $navigationGroup = 'Master Data Surat';
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -118,13 +118,13 @@ class StatusSuratResource extends Resource
             ])
             ->defaultSort('urutan')
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -139,3 +139,4 @@ class StatusSuratResource extends Resource
         ];
     }
 }
+

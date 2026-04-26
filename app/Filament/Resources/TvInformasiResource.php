@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use App\Models\TvInformasi;
 use Filament\Resources\Resource;
@@ -20,11 +20,11 @@ class TvInformasiResource extends Resource
 {
     protected static ?string $model = TvInformasi::class;
 
-    protected static ?string $navigationGroup = 'Tv Informasi';
+    protected static string | \UnitEnum | null $navigationGroup = 'Tv Informasi';
     protected static ?string $navigationLabel = 'Data Tv Informasi';
-    protected static ?string $navigationIcon = 'heroicon-c-tv';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-c-tv';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -107,11 +107,11 @@ class TvInformasiResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -132,3 +132,4 @@ class TvInformasiResource extends Resource
         ];
     }
 }
+

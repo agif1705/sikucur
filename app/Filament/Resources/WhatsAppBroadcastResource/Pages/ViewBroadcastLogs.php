@@ -17,7 +17,7 @@ class ViewBroadcastLogs extends Page implements HasTable
 
  protected static string $resource = WhatsAppBroadcastResource::class;
 
- protected static string $view = 'filament.resources.whats-app-broadcast-resource.pages.view-broadcast-logs';
+ protected string $view = 'filament.resources.whats-app-broadcast-resource.pages.view-broadcast-logs';
 
  public WhatsAppBroadcast $record;
 
@@ -127,8 +127,9 @@ class ViewBroadcastLogs extends Page implements HasTable
    default => $this->record->target_type
   };
 
-  $attachment = $this->record->attachment_name ? ' (📎 ' . $this->record->attachment_name . ')' : '';
-
+  $attachment = $this->record->attachment_name
+   ? ' (Lampiran: ' . $this->record->attachment_name . ')'
+   : '';
   return 'Log Broadcast: ' . $this->record->title . $attachment . ' - Target: ' . $targetType;
  }
 
@@ -150,3 +151,4 @@ class ViewBroadcastLogs extends Page implements HasTable
   ];
  }
 }
+

@@ -26,9 +26,9 @@ class AttendanceUser extends Page implements HasTable
     use InteractsWithTable;
     use HasPageShield;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static string $view = 'filament.pages.attendance-user';
-    protected static ?string $navigationGroup = 'Absensi';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected string $view = 'filament.pages.attendance-user';
+    protected static string | \UnitEnum | null $navigationGroup = 'Absensi';
     protected static ?string $navigationLabel = 'Absensi Bulanan';
 
     /**

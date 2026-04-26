@@ -4,20 +4,19 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Tables;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use App\Models\JenisSurat;
 use Filament\Tables\Table;
 use App\Models\MetaJenisSurat;
 use Filament\Resources\Resource;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Split;
 use Filament\Forms\Components\Section;
-use FilamentTiptapEditor\TiptapEditor;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\ViewField;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Placeholder;
-use FilamentTiptapEditor\Enums\TiptapOutput;
 use Filament\Infolists\Components\KeyValueEntry;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\JenisSuratResource\Pages;
@@ -27,9 +26,9 @@ class JenisSuratResource extends Resource
 {
     protected static ?string $model = JenisSurat::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -76,39 +75,11 @@ class JenisSuratResource extends Resource
                                 ->placeholder('Contoh: SKD')
                                 ->helperText('Kode untuk identifikasi surat'),
 
-                            TiptapEditor::make('template')
+                            RichEditor::make('template')
                                 ->dehydrated(true)
                                 ->label('Template Surat')
                                 ->required()
                                 ->columnSpanFull()
-                                ->output(TiptapOutput::Html)
-                                ->profile('full')
-                                ->tools([
-                                    'heading',
-                                    'bullet-list',
-                                    'ordered-list',
-                                    'checked-list',
-                                    'blockquote',
-                                    'hr',
-                                    'bold',
-                                    'italic',
-                                    'strike',
-                                    'underline',
-                                    'superscript',
-                                    'subscript',
-                                    'align-left',
-                                    'align-center',
-                                    'align-right',
-                                    'align-justify',
-                                    'link',
-                                    'media',
-                                    'table',
-                                    'grid',
-                                    'grid-builder',
-                                    'undo',
-                                    'redo',
-                                    'source',
-                                ])
                                 ->placeholder('Masukkan template surat di sini...')
                                 ->helperText('Gunakan placeholder dari panel kiri untuk data dinamis'),
                         ])
@@ -165,11 +136,11 @@ class JenisSuratResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                \Filament\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -190,3 +161,4 @@ class JenisSuratResource extends Resource
         ];
     }
 }
+

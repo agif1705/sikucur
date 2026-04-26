@@ -16,6 +16,7 @@ use Livewire\Attributes\Layout;
 use App\Models\AbsensiWebPegawai;
 use App\Models\RekapAbsensiPegawai;
 use Illuminate\Support\Facades\Auth;
+use Filament\Schemas\Schema;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Components\Textarea;
@@ -65,7 +66,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
         $this->remainingSeconds = max(0, $this->expiresAt - now()->timestamp);
     }
 
-    public function form(Forms\Form $form): Forms\Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([

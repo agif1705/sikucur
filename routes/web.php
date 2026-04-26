@@ -16,9 +16,9 @@ use App\Http\Controllers\Surat\SuratPdfController;
 use App\Http\Controllers\Surat\PdfSuratPeringatanController;
 
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
+Route::get('/info', function () {
+    phpinfo();
+});
 // Route::get('/', HomePageLivewire::class)->name('home');
 Route::get('/', function () {
     return redirect('/admin');

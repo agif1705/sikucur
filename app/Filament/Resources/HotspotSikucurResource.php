@@ -10,7 +10,7 @@ use App\Models\Penduduk;
 use Filament\Forms;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -21,11 +21,11 @@ class HotspotSikucurResource extends Resource
 {
     protected static ?string $model = HotspotSikucur::class;
 
-    protected static ?string $navigationIcon = 'gmdi-network-cell';
-    protected static ?string $navigationGroup = 'Hotspot Sikucur';
+    protected static string | \BackedEnum | null $navigationIcon = 'gmdi-network-cell';
+    protected static string | \UnitEnum | null $navigationGroup = 'Hotspot Sikucur';
 
 
-    public static function form(Form $form): Form
+    public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -130,11 +130,11 @@ class HotspotSikucurResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make()->label('Modify'),
+                \Filament\Actions\EditAction::make()->label('Modify'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -155,3 +155,4 @@ class HotspotSikucurResource extends Resource
         ];
     }
 }
+

@@ -4,10 +4,8 @@ namespace App\Filament\Pages;
 
 use App\Models\Coments;
 use Filament\Tables;
-
 use Filament\Pages\Page;
 use Filament\Tables\Table;
-use Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
 
@@ -15,10 +13,10 @@ class ComentsPage extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = 'Pengaturan Pegawai';
-    protected static string $view = 'filament.pages.coments-page';
+    protected static string | \UnitEnum | null $navigationGroup = 'Pengaturan Pegawai';
+    protected string $view = 'filament.pages.coments-page';
     protected static ?string $navigationLabel = 'Kritik dan Saran';
     protected static ?string $title = 'Kritik dan Saran Masyarakat';
 

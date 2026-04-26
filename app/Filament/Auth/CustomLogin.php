@@ -5,7 +5,7 @@ namespace App\Filament\Auth;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Validation\ValidationException;
-use Filament\Pages\Auth\Login;
+use Filament\Auth\Pages\Login;
 
 class CustomLogin extends Login
 {
@@ -37,10 +37,17 @@ class CustomLogin extends Login
     }
     protected function getCredentialsFromFormData(array $data): array
     {
-        $loginTipe = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $login = $data['login'] ?? $data['email'] ?? null;
+
+        if (blank($login)) {
+            $this->throwFailureValidationException();
+        }
+
+        $loginTipe = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
         return [
-            $loginTipe => $data['login'],
-            'password' => $data['password'],
+            $loginTipe => $login,
+            'password' => $data['password'] ?? '',
         ];
     }
     protected function throwFailureValidationException(): never

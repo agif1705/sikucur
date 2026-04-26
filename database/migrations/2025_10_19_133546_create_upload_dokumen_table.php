@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('upload_dokumen', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('permohonan_id')->constrained('permohonan_surat');
+            $table->foreignId('permohonan_id')
+                ->constrained('permohonan_surats')
+                ->cascadeOnDelete();
             $table->foreignId('dokumen_persyaratan_id')->constrained('dokumen_persyaratan');
 
             // File Info

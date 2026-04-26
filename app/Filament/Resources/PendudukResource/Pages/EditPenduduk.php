@@ -36,27 +36,34 @@ class EditPenduduk extends EditRecord
                 ->action(function () {
                     $record = $this->getRecord();
                     $mikrotikSuccess = false;
-                    dd($record->mikrotik_config_id);
+                    $hotspot = $record->hotspotSikucur;
 
                     try {
-                        $config = MikrotikConfig::find($record->mikrotik_config_id);
-                        // Coba hapus dari MikroTik dulu
-                        $nik = $record->penduduk->nik;
-                        Mikrotik::removeHotspotUser($config, (string) $nik);
-                        $mikrotikSuccess = true;
+                        if ($hotspot?->mikrotik_config_id) {
+                            $config = MikrotikConfig::find($hotspot->mikrotik_config_id);
+
+                            if ($config) {
+                                Mikrotik::removeHotspotUser($config, (string) $record->nik);
+                                $mikrotikSuccess = true;
+                            }
+                        }
+
                         Log::info('User removed from MikroTik successfully', [
-                            'nik' => $record->nik
+                            'nik' => $record->nik,
                         ]);
                     } catch (\Exception $e) {
                         Log::error('Failed to remove from MikroTik', [
                             'nik' => $record->nik,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ]);
                     }
                     try {
-                        // Hapus dari database
+                        if ($hotspot) {
+                            $hotspot->delete();
+                        }
+
                         $record->delete();
-                        // Notifikasi berdasarkan hasil
+
                         if ($mikrotikSuccess) {
                             Notification::make()
                                 ->title('Berhasil Dihapus')
@@ -86,7 +93,6 @@ class EditPenduduk extends EditRecord
     }
     protected function getRedirectUrl(): string
     {
-        // redirect ke list setelah create
         return $this->getResource()::getUrl('index');
     }
 }
