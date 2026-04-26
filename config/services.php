@@ -46,4 +46,10 @@ return [
         'password' => 'nagari-sikucur',
     ],
 
+    'supabase' => [
+        'url' => env('SUPABASE_URL', 'https://realtime.sikucur.com'),
+        'anon_key' => env('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzU1NjIyODAwLCJleHAiOjE5MTMzODkyMDB9.mDUDIN37Evdb7-Rf-0DzN_JT2smCnnxR9EAyRyJZiF8'),
+        'channel' => env('SUPABASE_REALTIME_CHANNEL', 'realtime_absensi_tv'),
+    ],
+
 ];

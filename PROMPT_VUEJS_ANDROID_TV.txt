@@ -1,0 +1,132 @@
+PROMPT: Vue.js Android TV Web App (Clone Informasi TV Sikucur + Realtime Supabase)
+
+Buat aplikasi Vue.js (Vite + TypeScript) untuk Android TV (mode browser/kiosk) yang meniru tampilan dan perilaku halaman Informasi TV Sikucur semirip mungkin.
+
+Stack wajib:
+- Vue 3 + Vite + TypeScript
+- Pinia untuk state management
+- Vue Router (jika diperlukan)
+- API client: native fetch atau axios
+- Video player HTML5 native (tanpa YouTube)
+- Supabase Realtime: @supabase/supabase-js
+
+Target perangkat:
+- Android TV fullscreen landscape 1920x1080
+- Optimasi performa untuk layar menyala 24/7
+- UI stabil, tidak flicker, tidak memory leak
+
+UI Layout utama (rasio 2:8:2):
+1) Navbar atas
+- Background kuning
+- Kiri: logo nagari
+- Tengah: teks instansi 3 baris
+- Kanan: label TV Informasi + gambar bupati
+
+2) Kolom kiri (Absensi)
+- Header: E-Absensi + tanggal hari ini
+- List pegawai: foto, nama, jabatan, status
+- Mapping status:
+  - Fingerprint: tampil jam + Ontime/Terlambat
+  - web: HDDD=Dinas Dalam Daerah, HDLD=Dinas Luar Daerah, S=Sakit, I=Izin, C=Cuti
+  - null: Tidak Masuk
+- Bawah panel: maskot/foto wali + bubble slogan animasi fade in/out
+- Auto-scroll list naik turun halus terus-menerus
+
+3) Kolom tengah (Video)
+- Header marquee nama TV
+- Body: playlist video lokal aktif
+- Jika kosong tampil teks: Belum ada video aktif
+- Footer marquee running text + logo PPID di kanan bawah
+
+4) Kolom kanan
+- Gambar BAMUS di atas
+- Carousel galeri auto slide tiap 4 detik
+- Bawah: placeholder CCTV dengan teks Coming soon CCTV Area Public
+
+Sumber data dari Laravel API:
+- Base URL dari env VITE_API_BASE_URL
+- Endpoint yang WAJIB dipakai:
+  - GET /api/tv/{slug}
+  - GET /api/tv/{slug}/absensi-hari-ini
+  - GET /api/tv/{slug}/videos
+  - GET /api/tv/{slug}/gallery
+  - GET /api/tv/{slug}/realtime
+
+Realtime Supabase (tanpa polling):
+- Ambil konfigurasi realtime dari endpoint GET /api/tv/{slug}/realtime
+- Jangan hardcode supabase url, anon key, channel, events
+- Subscribe events sesuai konfigurasi dari backend
+- Saat event masuk:
+  - Debounce 300ms
+  - Refresh absensi dari GET /api/tv/{slug}/absensi-hari-ini
+  - Update Pinia store
+- Jika event video/galeri nanti ditambahkan backend, siapkan hook refresh videos/gallery
+
+Konfigurasi env minimum:
+- VITE_API_BASE_URL
+- VITE_TV_SLUG
+
+Arsitektur folder yang diminta:
+- src/main.ts
+- src/App.vue
+- src/router/index.ts (optional)
+- src/stores/tvStore.ts
+- src/services/tvApi.ts
+- src/services/realtimeSupabase.ts
+- src/composables/useAutoScroll.ts
+- src/components/tv/NavbarPanel.vue
+- src/components/tv/AbsensiPanel.vue
+- src/components/tv/VideoPanel.vue
+- src/components/tv/RightPanel.vue
+- src/components/tv/AbsensiCard.vue
+- src/components/tv/GalleryCarousel.vue
+- src/views/TvInformasiView.vue
+
+Ketentuan performa:
+- Gunakan virtualized list jika data absensi besar
+- Hindari deep watch tidak perlu
+- Gunakan computed/memoized transform untuk mapping status
+- Batasi re-render komponen besar dengan pemecahan komponen yang jelas
+- Unsubscribe Supabase channel saat unmount
+- Reconnect strategy saat disconnected (backoff 1s, 2s, 4s, max 30s)
+
+Contoh pseudo-code service realtime:
+
+import { createClient } from '@supabase/supabase-js';
+
+export async function connectRealtime(slug: string, onChange: () => void) {
+  const cfg = await fetch(`/api/tv/${slug}/realtime`).then(r => r.json());
+  const realtime = cfg.data;
+
+  const supabase = createClient(realtime.url, realtime.anon_key);
+  const channel = supabase.channel(realtime.channel || 'realtime_absensi_tv');
+
+  for (const evt of realtime.events) {
+    channel.on('postgres_changes', {
+      event: evt.event,
+      schema: evt.schema,
+      table: evt.table,
+    }, () => onChange());
+  }
+
+  channel.subscribe((status) => {
+    console.log('Realtime status:', status);
+  });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+Output yang harus kamu hasilkan:
+1. Full source code Vue.js siap jalan
+2. Halaman TV yang semirip mungkin dengan versi web lama
+3. Integrasi API service + Pinia store
+4. Integrasi realtime Supabase dari endpoint konfigurasi backend
+5. File .env.example
+6. Instruksi run dev, build, dan mode kiosk Android TV browser
+
+Catatan penting:
+- Jangan gunakan YouTube player.
+- Jangan gunakan polling periodik untuk absensi.
+- Realtime wajib dari Supabase, data final tetap disinkronkan lewat API Laravel.

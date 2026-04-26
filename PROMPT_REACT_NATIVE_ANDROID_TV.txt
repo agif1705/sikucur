@@ -1,0 +1,122 @@
+PROMPT: React Native Android TV (Clone Informasi TV Sikucur + Realtime Supabase)
+
+Buat aplikasi React Native khusus Android TV yang meniru tampilan dan perilaku halaman Informasi TV Sikucur secara semirip mungkin.
+
+Stack wajib:
+- React Native (TypeScript)
+- React Navigation (jika diperlukan)
+- Zustand atau Redux Toolkit untuk state
+- react-native-video untuk player video lokal
+- websocket/realtime Supabase (gunakan @supabase/supabase-js)
+
+Target layar:
+- 1920x1080 landscape, fullscreen, kiosk style
+- Optimasi performa untuk layar menyala 24/7
+- Hindari memory leak dan re-render berlebihan
+
+UI Layout utama (rasio kolom 2:8:2):
+1) Navbar atas
+- Background kuning
+- Kiri: logo nagari
+- Tengah: teks instansi 3 baris
+- Kanan: label TV Informasi + gambar bupati
+
+2) Kolom kiri (Absensi)
+- Header: E-Absensi + tanggal hari ini
+- List pegawai: foto, nama, jabatan, status
+- Mapping status:
+  - Fingerprint: tampil jam + Ontime/Terlambat
+  - web: HDDD=DinDin, HDLD=DinLuar, S=Sakit, I=Izin, C=Cuti
+  - null: Tidak Masuk
+- Bagian bawah: maskot/foto wali + bubble slogan animasi fade in/out
+- Auto-scroll list naik turun halus terus-menerus
+
+3) Kolom tengah (Video)
+- Header marquee nama TV
+- Body: player playlist video lokal aktif
+- Jika kosong tampil teks: Belum ada video aktif
+- Footer marquee running text + logo PPID kecil kanan bawah
+
+4) Kolom kanan
+- Gambar BAMUS di atas
+- Carousel galeri auto slide tiap 4 detik
+- Bagian bawah placeholder CCTV: "Coming soon CCTV Area Public"
+
+Data dan API:
+- Ambil data awal dari backend Laravel (buat service API terpisah)
+- Endpoint minimum:
+  - GET /api/tv/{slug}
+  - GET /api/tv/{slug}/absensi-hari-ini
+  - GET /api/tv/{slug}/videos
+  - GET /api/tv/{slug}/gallery
+
+Realtime Supabase (tanpa polling):
+- Buat file service: src/services/realtimeSupabase.ts
+- Subscribe channel:
+  1. public.iclock_transaction -> event INSERT, DELETE
+  2. public.laravel_rekap_absensi_pegawais -> event INSERT, UPDATE, DELETE
+- Saat event masuk:
+  - Debounce 300ms
+  - Panggil refresh absensi dari API backend
+  - Update state global
+
+Konfigurasi env:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- TV_SLUG
+- API_BASE_URL
+
+Contoh implementasi realtime (TypeScript pseudo-code):
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
+export function startAbsensiRealtime(onChanged: () => void) {
+  const channel = supabase.channel('realtime_absensi_tv');
+
+  channel.on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'iclock_transaction',
+  }, onChanged);
+
+  channel.on('postgres_changes', {
+    event: 'DELETE',
+    schema: 'public',
+    table: 'iclock_transaction',
+  }, onChanged);
+
+  channel.on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'laravel_rekap_absensi_pegawais',
+  }, onChanged);
+
+  channel.subscribe((status) => {
+    console.log('Supabase channel status:', status);
+  });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+Ketentuan performa:
+- Gunakan FlatList untuk absensi
+- memo/useMemo/useCallback untuk cegah render berulang
+- Pisahkan komponen besar per panel
+- Unsubscribe channel saat app unmount
+- Reconnect strategy jika disconnected (backoff 1s, 2s, 4s, max 30s)
+
+Output yang harus kamu hasilkan:
+1. Struktur folder project lengkap
+2. Semua file utama (App.tsx, screen TV, komponen panel)
+3. API service + realtime service
+4. State management store
+5. Style/theme yang mirip halaman web asli
+6. Instruksi build APK Android TV release
+
+Catatan:
+- Jangan gunakan YouTube player. Hanya video lokal upload.
+- Jangan gunakan polling periodik. Realtime harus dari Supabase.

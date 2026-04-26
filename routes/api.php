@@ -1,10 +1,10 @@
 <?php
 
-use App\Models\TvInformasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WusapiController;
+use App\Http\Controllers\Api\TvAndroidController;
 use App\Http\Controllers\Api\MikrotikController;
 use App\Http\Controllers\Api\WhatsAppController;
 use App\Http\Controllers\Api\RekapPegawaiController;
@@ -33,3 +33,11 @@ Route::post('/hotspot/{nagari}/{location}/login', [MikrotikController::class, 'i
     ->name('mikrotik.hotspot.sikucur.login');
 Route::post('/hotspot/{nagari}/{location}/login/voucher', [VoucherController::class, 'index'])
     ->name('mikrotik.hotspot.sikucur.login.voucher');
+
+Route::prefix('tv/{slug}')->group(function () {
+    Route::get('/', [TvAndroidController::class, 'index']);
+    Route::get('/absensi-hari-ini', [TvAndroidController::class, 'absensiHariIni']);
+    Route::get('/videos', [TvAndroidController::class, 'videos']);
+    Route::get('/gallery', [TvAndroidController::class, 'gallery']);
+    Route::get('/realtime', [TvAndroidController::class, 'realtimeConfig']);
+});
