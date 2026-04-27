@@ -28,6 +28,9 @@ Route::get('kritik', KritikPageLivewire::class)->name('kritik');
 Route::get('agenda', AgendaPageLivewire::class)->name('agenda');
 
 Route::get('/tv/{sn}', InformasiTvLivewire::class)->name('tvinformasi');
+Route::get('/tv-android/{slug}', function (string $slug) {
+    return view('livewire.tv.TvAndroid', ['slug' => $slug]);
+})->name('tvinformasi.android');
 Route::get('/pdf/absensi/{bulan}/{tahun}', [AbsensiPdfController::class, 'index'])->name('absensipdf');
 Route::get('/surat/peringatan/pegawai', [PdfSuratPeringatanController::class, 'index'])->name('Surat.peringatan.pdf');
 
