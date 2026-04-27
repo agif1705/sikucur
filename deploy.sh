@@ -44,9 +44,8 @@ fi
 git clone -b $BRANCH --single-branch https://github.com/agif1705/sikucur.git $NEW_RELEASE
 cd $NEW_RELEASE
 
-# 2. Install dependencies
-composer update
-composer install --no-dev --optimize-autoloader
+# 2. Install PHP dependencies dari composer.lock
+composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
 # 3. Copy .env lama dengan validasi
 echo "Mencari file .env..."
@@ -84,7 +83,24 @@ fi
 echo "Running migrations..."
 php artisan migrate --force || echo "⚠ Migration gagal atau tidak ada perubahan"
 
-# 7. Cache ulang
+# 7. Build frontend (Vite + Tailwind)
+if [ -f package.json ]; then
+    echo "Building frontend assets..."
+
+    if [ -f package-lock.json ]; then
+        npm ci --include=dev
+    else
+        npm install --include=dev
+    fi
+
+    npm run build
+    npm run filament:build
+
+    # Node modules hanya dibutuhkan saat build, bukan runtime Laravel.
+    npm prune --omit=dev || true
+fi
+
+# 8. Cache ulang
 echo "Clearing caches..."
 php artisan config:clear || true
 php artisan route:clear || true
@@ -95,14 +111,8 @@ echo "Building caches..."
 php artisan config:cache || echo "⚠ Config cache gagal"
 php artisan route:cache || echo "⚠ Route cache gagal"
 php artisan view:cache || echo "⚠ View cache gagal"
+php artisan filament:cache-components || echo "⚠ Filament cache gagal"
 php artisan app:bersihkan || echo "⚠ app:bersihkan gagal"
-
-# 8. Build frontend (Vite)
-if [ -f package.json ]; then
-    echo "Building frontend assets..."
-    npm install --omit=dev
-    npm run build
-fi
 
 # 9. Update symlink current ke release terbaru
 echo "Mengalihkan aplikasi ke release baru..."
@@ -145,8 +155,6 @@ echo "Release baru: $NOW (branch: $BRANCH)"
 echo "Lokasi: $NEW_RELEASE"
 echo "Symlink aktif: $APP_DIR/current -> $(readlink -f $APP_DIR/current)"
 echo "Release yang tersimpan: $(ls -1t $RELEASES_DIR | wc -l) release"
-
-
 
 
 
