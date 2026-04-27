@@ -2,29 +2,34 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use App\Models\Nagari;
-use App\Models\Jabatan;
-use App\Models\Penduduk;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use App\Models\WhatsAppBroadcast;
-use Illuminate\Support\Facades\Auth;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
-use App\Services\WhatsAppBroadcastService;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\WhatsAppBroadcastResource\Pages;
-use App\Filament\Resources\WhatsAppBroadcastResource\RelationManagers;
+use App\Models\Jabatan;
+use App\Models\Nagari;
+use App\Models\Penduduk;
+use App\Models\User;
+use App\Models\WhatsAppBroadcast;
+use App\Services\WhatsAppBroadcastService;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class WhatsAppBroadcastResource extends Resource
 {
     protected static ?string $model = WhatsAppBroadcast::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
     protected static ?string $navigationLabel = 'WhatsApp Broadcast';
 
@@ -32,13 +37,13 @@ class WhatsAppBroadcastResource extends Resource
 
     protected static ?string $pluralModelLabel = 'WhatsApp Broadcasts';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Broadcast & Notifikasi';
+    protected static string|\UnitEnum|null $navigationGroup = 'Broadcast & Notifikasi';
 
     public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Broadcast')
+                Section::make('Informasi Broadcast')
                     ->schema([
                         Forms\Components\TextInput::make('title')
                             ->label('Judul Broadcast')
@@ -50,10 +55,10 @@ class WhatsAppBroadcastResource extends Resource
                             ->label('Pesan')
                             ->required()
                             ->rows(6)
-                            ->placeholder('Masukkan pesan broadcast...' . "\n\n" .
-                                'Template yang bisa digunakan:' . "\n" .
-                                '{name} atau {nama} - Nama pegawai/warga' . "\n" .
-                                '{jabatan} - Jabatan pegawai' . "\n" .
+                            ->placeholder('Masukkan pesan broadcast...'."\n\n".
+                                'Template yang bisa digunakan:'."\n".
+                                '{name} atau {nama} - Nama pegawai/warga'."\n".
+                                '{jabatan} - Jabatan pegawai'."\n".
                                 '{nagari} - Nama nagari')
                             ->helperText('Gunakan template {name}, {jabatan}, {nagari} untuk personalisasi pesan')
                             ->columnSpanFull(),
@@ -79,7 +84,7 @@ class WhatsAppBroadcastResource extends Resource
                                         $set('attachment_type', 'document');
                                     } elseif (in_array($mimeType, [
                                         'application/msword',
-                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                     ])) {
                                         $set('attachment_type', 'document');
                                     } else {
@@ -98,7 +103,7 @@ class WhatsAppBroadcastResource extends Resource
                         Forms\Components\Hidden::make('attachment_name'),
                     ]),
 
-                Forms\Components\Section::make('Target Penerima')
+                Section::make('Target Penerima')
                     ->schema([
                         Forms\Components\Select::make('target_type')
                             ->label('Kirim ke')
@@ -107,19 +112,19 @@ class WhatsAppBroadcastResource extends Resource
                                 'nagari' => 'Berdasarkan Nagari',
                                 'jabatan' => 'Berdasarkan Jabatan',
                                 'penduduk' => 'Semua Warga / Penduduk',
-                                'custom' => 'Pilih Manual'
+                                'custom' => 'Pilih Manual',
                             ])
                             ->required()
                             ->default('all')
                             ->live()
-                            ->afterStateUpdated(fn(Forms\Set $set) => $set('target_ids', [])),
+                            ->afterStateUpdated(fn (Set $set) => $set('target_ids', [])),
 
                         Forms\Components\Select::make('target_ids')
                             ->label('Pilih Target')
                             ->multiple()
                             ->searchable()
                             ->preload()
-                            ->options(function (Forms\Get $get) {
+                            ->options(function (Get $get) {
                                 return match ($get('target_type')) {
                                     'nagari' => Nagari::pluck('name', 'id')->toArray(),
                                     'jabatan' => Jabatan::pluck('name', 'id')->toArray(),
@@ -129,15 +134,15 @@ class WhatsAppBroadcastResource extends Resource
                                         ->with(['nagari', 'jabatan'])
                                         ->get()
                                         ->mapWithKeys(function ($user) {
-                                            return [$user->id => $user->name . ' (' . ($user->jabatan->name ?? 'Tidak ada jabatan') . ') - ' . ($user->nagari->name ?? 'Tidak ada nagari')];
+                                            return [$user->id => $user->name.' ('.($user->jabatan->name ?? 'Tidak ada jabatan').') - '.($user->nagari->name ?? 'Tidak ada nagari')];
                                         })
                                         ->toArray(),
                                     default => []
                                 };
                             })
-                            ->visible(fn(Forms\Get $get) => in_array($get('target_type'), ['nagari', 'jabatan', 'custom']))
-                            ->required(fn(Forms\Get $get) => in_array($get('target_type'), ['nagari', 'jabatan', 'custom']))
-                            ->helperText(function (Forms\Get $get) {
+                            ->visible(fn (Get $get) => in_array($get('target_type'), ['nagari', 'jabatan', 'custom']))
+                            ->required(fn (Get $get) => in_array($get('target_type'), ['nagari', 'jabatan', 'custom']))
+                            ->helperText(function (Get $get) {
                                 return match ($get('target_type')) {
                                     'nagari' => 'Pilih nagari yang akan menerima broadcast',
                                     'jabatan' => 'Pilih jabatan yang akan menerima broadcast',
@@ -153,13 +158,14 @@ class WhatsAppBroadcastResource extends Resource
                                     ->where('no_hp', '!=', '')
                                     ->where('no_hp', '!=', '0')
                                     ->count();
+
                                 return "Akan dikirim ke semua warga/penduduk yang memiliki nomor HP (Total: {$count} orang)";
                             })
-                            ->visible(fn(Forms\Get $get) => $get('target_type') === 'penduduk'),
+                            ->visible(fn (Get $get) => $get('target_type') === 'penduduk'),
                     ]),
 
                 Forms\Components\Hidden::make('sender_id')
-                    ->default(fn() => Auth::id()),
+                    ->default(fn () => Auth::id()),
 
                 Forms\Components\Hidden::make('status')
                     ->default('draft'),
@@ -183,7 +189,7 @@ class WhatsAppBroadcastResource extends Resource
                 Tables\Columns\IconColumn::make('has_attachment')
                     ->label('Lampiran')
                     ->boolean()
-                    ->state(fn(WhatsAppBroadcast $record): bool => !empty($record->attachment_path))
+                    ->state(fn (WhatsAppBroadcast $record): bool => ! empty($record->attachment_path))
                     ->trueIcon('heroicon-o-paper-clip')
                     ->falseIcon('heroicon-o-minus')
                     ->trueColor('success')
@@ -192,7 +198,7 @@ class WhatsAppBroadcastResource extends Resource
                 Tables\Columns\TextColumn::make('target_type')
                     ->label('Target')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'all' => 'success',
                         'nagari' => 'info',
                         'jabatan' => 'warning',
@@ -200,7 +206,7 @@ class WhatsAppBroadcastResource extends Resource
                         'custom' => 'gray',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'all' => 'Semua',
                         'nagari' => 'Nagari',
                         'jabatan' => 'Jabatan',
@@ -230,7 +236,7 @@ class WhatsAppBroadcastResource extends Resource
                     ->label('Tingkat Keberhasilan')
                     ->state(function (WhatsAppBroadcast $record): string {
                         return $record->total_recipients > 0
-                            ? round(($record->total_sent / $record->total_recipients) * 100, 1) . '%'
+                            ? round(($record->total_sent / $record->total_recipients) * 100, 1).'%'
                             : '0%';
                     })
                     ->badge()
@@ -238,6 +244,7 @@ class WhatsAppBroadcastResource extends Resource
                         $rate = $record->total_recipients > 0
                             ? ($record->total_sent / $record->total_recipients) * 100
                             : 0;
+
                         return match (true) {
                             $rate >= 90 => 'success',
                             $rate >= 70 => 'warning',
@@ -249,14 +256,14 @@ class WhatsAppBroadcastResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'draft' => 'gray',
                         'sending' => 'warning',
                         'completed' => 'success',
                         'failed' => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'draft' => 'Draft',
                         'sending' => 'Mengirim',
                         'completed' => 'Selesai',
@@ -297,11 +304,11 @@ class WhatsAppBroadcastResource extends Resource
                     ]),
             ])
             ->actions([
-                \Filament\Actions\Action::make('send')
+                Action::make('send')
                     ->label('Kirim')
                     ->icon('heroicon-m-paper-airplane')
                     ->color('success')
-                    ->visible(fn(WhatsAppBroadcast $record): bool => $record->status === 'draft')
+                    ->visible(fn (WhatsAppBroadcast $record): bool => $record->status === 'draft')
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Broadcast')
                     ->modalDescription('Apakah Anda yakin ingin mengirim broadcast ini? Setelah dikirim, broadcast tidak bisa dibatalkan.')
@@ -322,23 +329,22 @@ class WhatsAppBroadcastResource extends Resource
                         }
                     }),
 
-                \Filament\Actions\Action::make('view_logs')
+                Action::make('view_logs')
                     ->label('Lihat Log')
                     ->icon('heroicon-m-eye')
                     ->color('info')
-                    ->url(fn(WhatsAppBroadcast $record): string =>
-                    static::getUrl('logs', ['record' => $record])),
+                    ->url(fn (WhatsAppBroadcast $record): string => static::getUrl('logs', ['record' => $record])),
 
-                \Filament\Actions\EditAction::make()
-                    ->visible(fn(WhatsAppBroadcast $record): bool => $record->status === 'draft'),
+                EditAction::make()
+                    ->visible(fn (WhatsAppBroadcast $record): bool => $record->status === 'draft'),
 
-                \Filament\Actions\DeleteAction::make()
-                    ->visible(fn(WhatsAppBroadcast $record): bool => $record->status === 'draft'),
+                DeleteAction::make()
+                    ->visible(fn (WhatsAppBroadcast $record): bool => $record->status === 'draft'),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make()
-                        ->visible(fn() => true),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->visible(fn () => true),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -361,4 +367,3 @@ class WhatsAppBroadcastResource extends Resource
         ];
     }
 }
-

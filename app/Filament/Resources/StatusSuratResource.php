@@ -4,20 +4,29 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\StatusSuratResource\Pages;
 use App\Models\StatusSurat;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Grid;
 
 class StatusSuratResource extends Resource
 {
     protected static ?string $model = StatusSurat::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-flag';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-flag';
+
     protected static ?string $navigationLabel = 'Status Surat';
-    protected static string | \UnitEnum | null $navigationGroup = 'Master Data Surat';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Master Data Surat';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $form): Schema
@@ -40,7 +49,8 @@ class StatusSuratResource extends Resource
                                     ->maxLength(5)
                                     ->unique(ignoreRecord: true)
                                     ->placeholder('Contoh: MASUK')
-                                    ->uppercase(),
+                                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? str($state)->upper()->toString() : null)
+                                    ->extraInputAttributes(['style' => 'text-transform: uppercase']),
                             ]),
 
                         Grid::make(2)
@@ -89,7 +99,7 @@ class StatusSuratResource extends Resource
                 Tables\Columns\TextColumn::make('kode_status')
                     ->label('Kode')
                     ->badge()
-                    ->color(fn(StatusSurat $record) => $record->warna_status)
+                    ->color(fn (StatusSurat $record) => $record->warna_status)
                     ->searchable()
                     ->sortable(),
 
@@ -118,13 +128,13 @@ class StatusSuratResource extends Resource
             ])
             ->defaultSort('urutan')
             ->actions([
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -139,4 +149,3 @@ class StatusSuratResource extends Resource
         ];
     }
 }
-

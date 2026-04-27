@@ -2,24 +2,35 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
-use App\Models\UploadDokumen;
-use Filament\Resources\Resource;
-use Filament\Forms\Components\Grid;
-use Illuminate\Support\Facades\Auth;
-use Filament\Forms\Components\Section;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\UploadDokumenResource\Pages;
+use App\Models\UploadDokumen;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class UploadDokumenResource extends Resource
 {
     protected static ?string $model = UploadDokumen::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cloud-arrow-up';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cloud-arrow-up';
+
     protected static ?string $navigationLabel = 'Upload Dokumen';
-    protected static string | \UnitEnum | null $navigationGroup = 'Manajemen Surat';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Manajemen Surat';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $form): Schema
@@ -67,22 +78,22 @@ class UploadDokumenResource extends Resource
                             ->relationship('verifiedBy', 'name')
                             ->searchable()
                             ->preload()
-                            ->visible(fn (Forms\Get $get) => $get('is_verified')),
+                            ->visible(fn (Get $get) => $get('is_verified')),
 
                         Forms\Components\DateTimePicker::make('verified_at')
                             ->label('Tanggal Verifikasi')
                             ->default(now())
-                            ->visible(fn (Forms\Get $get) => $get('is_verified')),
+                            ->visible(fn (Get $get) => $get('is_verified')),
 
                         Forms\Components\Textarea::make('catatan_verifikasi')
                             ->label('Catatan Verifikasi')
                             ->rows(3)
-                            ->visible(fn (Forms\Get $get) => $get('is_verified')),
+                            ->visible(fn (Get $get) => $get('is_verified')),
 
                         Forms\Components\Textarea::make('catatan_ditolak')
                             ->label('Catatan Penolakan')
                             ->rows(3)
-                            ->visible(fn (Forms\Get $get) => $get('is_verified') === false),
+                            ->visible(fn (Get $get) => $get('is_verified') === false),
                     ]),
             ]);
     }
@@ -159,13 +170,13 @@ class UploadDokumenResource extends Resource
                     ->searchable(),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
+                ViewAction::make(),
 
-                \Filament\Actions\Action::make('verify')
+                Action::make('verify')
                     ->label('Verifikasi')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn (UploadDokumen $record) => !$record->is_verified)
+                    ->visible(fn (UploadDokumen $record) => ! $record->is_verified)
                     ->form([
                         Forms\Components\Textarea::make('catatan_verifikasi')
                             ->label('Catatan Verifikasi')
@@ -181,19 +192,19 @@ class UploadDokumenResource extends Resource
                         ]);
                     }),
 
-                \Filament\Actions\Action::make('download')
+                Action::make('download')
                     ->label('Download')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('primary')
                     ->url(fn (UploadDokumen $record) => $record->file_url)
                     ->openUrlInNewTab(),
 
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\BulkAction::make('verify_bulk')
+                BulkActionGroup::make([
+                    BulkAction::make('verify_bulk')
                         ->label('Verifikasi Massal')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
@@ -212,7 +223,7 @@ class UploadDokumenResource extends Resource
                                 ]);
                             }
                         }),
-                    \Filament\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -238,4 +249,3 @@ class UploadDokumenResource extends Resource
         return 'warning';
     }
 }
-

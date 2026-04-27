@@ -2,37 +2,33 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use Filament\Schemas\Schema;
-use App\Models\JenisSurat;
-use Filament\Tables\Table;
-use App\Models\MetaJenisSurat;
-use Filament\Resources\Resource;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\Split;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\ViewField;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Forms\Components\Placeholder;
-use Filament\Infolists\Components\KeyValueEntry;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\JenisSuratResource\Pages;
-use App\Filament\Resources\JenisSuratResource\RelationManagers;
+use App\Models\JenisSurat;
+use App\Models\MetaJenisSurat;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\RichEditor;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
 
 class JenisSuratResource extends Resource
 {
     protected static ?string $model = JenisSurat::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
-                Split::make([
+                Grid::make(2)->schema([
                     Section::make('📋 Petunjuk Template')
                         ->schema([
                             KeyValue::make('meta_placeholder')
@@ -40,7 +36,7 @@ class JenisSuratResource extends Resource
                                 ->keyLabel('Placeholder')
                                 ->valueLabel('Deskripsi')
                                 ->formatStateUsing(function ($state) {
-                                    return $state ?: \App\Models\MetaJenisSurat::query()
+                                    return $state ?: MetaJenisSurat::query()
                                         ->where('is_active', true)
                                         ->orderBy('category')
                                         ->orderBy('name')
@@ -53,7 +49,7 @@ class JenisSuratResource extends Resource
                                 ->editableKeys(false)
                                 ->editableValues(false)
                                 ->columnSpanFull()
-                                ->helperText('💡 Salin placeholder dan gunakan dalam template')
+                                ->helperText('💡 Salin placeholder dan gunakan dalam template'),
                         ])
                         ->description('Daftar placeholder yang dapat digunakan')
                         ->collapsible()
@@ -84,7 +80,7 @@ class JenisSuratResource extends Resource
                                 ->helperText('Gunakan placeholder dari panel kiri untuk data dinamis'),
                         ])
                         ->grow(),
-                ])->from('md')->columnSpanFull(),
+                ])->columnSpanFull(),
 
                 Section::make('⚙️ Pengaturan Surat')
                     ->schema([
@@ -136,11 +132,11 @@ class JenisSuratResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -161,4 +157,3 @@ class JenisSuratResource extends Resource
         ];
     }
 }
-

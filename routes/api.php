@@ -1,14 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MikrotikController;
+use App\Http\Controllers\Api\RekapPegawaiController;
+use App\Http\Controllers\Api\TvAndroidController;
+use App\Http\Controllers\Api\VoucherController;
+use App\Http\Controllers\Api\WhatsAppController;
+use App\Http\Controllers\Api\WusapiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\WusapiController;
-use App\Http\Controllers\Api\TvAndroidController;
-use App\Http\Controllers\Api\MikrotikController;
-use App\Http\Controllers\Api\WhatsAppController;
-use App\Http\Controllers\Api\RekapPegawaiController;
-use App\Http\Controllers\Api\VoucherController;
 
 // Authentication Routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -40,4 +40,6 @@ Route::prefix('tv/{slug}')->group(function () {
     Route::get('/videos', [TvAndroidController::class, 'videos']);
     Route::get('/gallery', [TvAndroidController::class, 'gallery']);
     Route::get('/realtime', [TvAndroidController::class, 'realtimeConfig']);
+    Route::get('/mapTv', [TvAndroidController::class, 'mapTv']);
+    Route::get('/running-text', [TvAndroidController::class, 'runningText']);
 });

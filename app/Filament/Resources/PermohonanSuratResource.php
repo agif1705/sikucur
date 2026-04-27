@@ -2,35 +2,45 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Penduduk;
-use Filament\Schemas\Schema;
-use App\Models\JenisSurat;
-use Filament\Tables\Table;
-use App\Models\StatusSurat;
-use Illuminate\Support\Str;
-use Filament\Facades\Filament;
-use Illuminate\Support\Carbon;
-use App\Models\PermohonanSurat;
-use Filament\Resources\Resource;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\RichEditor;
-use Illuminate\Support\Facades\Auth;
-use Filament\Forms\Components\Wizard;
-use Filament\Forms\Components\Section;
-use Illuminate\Support\HtmlString;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\PermohonanSuratResource\Pages;
+use App\Models\JenisSurat;
+use App\Models\Penduduk;
+use App\Models\PermohonanSurat;
+use App\Models\StatusSurat;
+use App\Models\User;
+use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
+use Filament\Forms\Components\RichEditor;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Wizard;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class PermohonanSuratResource extends Resource
 {
     protected static ?string $model = PermohonanSurat::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-duplicate';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-duplicate';
+
     protected static ?string $navigationLabel = 'Permohonan Surat';
-    protected static string | \UnitEnum | null $navigationGroup = 'Manajemen Surat';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Manajemen Surat';
+
     protected static ?int $navigationSort = 1;
-    public $kecamatan = "V Koto";
+
+    public $kecamatan = 'V Koto';
+
     public static function form(Schema $form): Schema
     {
         return $form
@@ -43,12 +53,13 @@ class PermohonanSuratResource extends Resource
                                 ->searchable()
                                 ->preload(false)
                                 ->placeholder('Ketik minimal 3 karakter untuk mencari...')
-                                ->options(fn() => [])
+                                ->options(fn () => [])
                                 ->getSearchResultsUsing(function (string $search) {
                                     if (strlen($search) < 3) {
                                         return [];
                                     }
-                                    return \App\Models\Penduduk::query()
+
+                                    return Penduduk::query()
                                         ->where('nik', '<>', '')
                                         ->where(function ($query) use ($search) {
                                             $query->where('nik', 'like', "%{$search}%")
@@ -70,9 +81,11 @@ class PermohonanSuratResource extends Resource
                                         });
                                 })
                                 ->afterStateUpdated(function ($state, callable $set) {
-                                    if (!$state) return;
+                                    if (! $state) {
+                                        return;
+                                    }
 
-                                    $penduduk = \App\Models\Penduduk::find($state);
+                                    $penduduk = Penduduk::find($state);
                                     if ($penduduk) {
                                         // SIMPAN PENDUDUK_ID untuk relasi
                                         $set('penduduk_id', $penduduk->id);
@@ -148,14 +161,15 @@ class PermohonanSuratResource extends Resource
                                 ->searchable()
                                 ->options(static::getPejabatOptions())
                                 ->afterStateUpdated(function ($state, callable $set, $get) {
-                                    if (!$state) {
+                                    if (! $state) {
                                         $set('PejabatTandaTangan_nama', null);
                                         $set('PejabatTandaTangan_jabatan', null);
                                         static::updateTemplateWithFormData('', $set, $get);
+
                                         return;
                                     }
 
-                                    $pejabat = \App\Models\User::with('jabatan')->find($state);
+                                    $pejabat = User::with('jabatan')->find($state);
                                     if ($pejabat) {
                                         $set('PejabatTandaTangan_nama', $pejabat->name);
                                         $set('PejabatTandaTangan_jabatan', $pejabat->jabatan?->name ?? '');
@@ -196,10 +210,10 @@ class PermohonanSuratResource extends Resource
                                     Forms\Components\Placeholder::make('dynamic_form_info')
                                         ->label('')
                                         ->content('Isian tambahan akan muncul setelah memilih jenis surat')
-                                        ->visible(fn($get) => empty($get('dynamic_fields_data'))),
+                                        ->visible(fn ($get) => empty($get('dynamic_fields_data'))),
 
                                     // Container untuk dynamic fields
-                                    Forms\Components\Group::make()
+                                    Group::make()
                                         ->schema(function ($get) {
                                             $dynamicFields = $get('dynamic_fields_data') ?: [];
                                             $components = [];
@@ -273,7 +287,7 @@ class PermohonanSuratResource extends Resource
                                                     case 'select':
                                                         // Asumsi options ada di field atribut
                                                         $options = [];
-                                                        if (!empty($field['atribut'])) {
+                                                        if (! empty($field['atribut'])) {
                                                             $optionsData = json_decode($field['atribut'], true);
                                                             if (is_array($optionsData)) {
                                                                 $options = $optionsData;
@@ -295,10 +309,10 @@ class PermohonanSuratResource extends Resource
 
                                             return $components;
                                         })
-                                        ->visible(fn($get) => !empty($get('dynamic_fields_data')))
+                                        ->visible(fn ($get) => ! empty($get('dynamic_fields_data')))
                                         ->columns(2),
                                 ])
-                                ->visible(fn($get) => $get('jenis_surat_id')),
+                                ->visible(fn ($get) => $get('jenis_surat_id')),
                         ]),
                     Wizard\Step::make('Preview')
                         ->schema([
@@ -309,11 +323,11 @@ class PermohonanSuratResource extends Resource
                                         ->columnSpanFull()
                                         ->placeholder('Template akan muncul otomatis ketika jenis surat dipilih...')
                                         ->helperText('Template otomatis terisi dari jenis surat. Data akan terupdate saat form diisi.')
-                                        ->disabled(fn($get) => !$get('jenis_surat_id'))
-                                        ->visible(fn($get) => $get('jenis_surat_id'))
+                                        ->disabled(fn ($get) => ! $get('jenis_surat_id'))
+                                        ->visible(fn ($get) => $get('jenis_surat_id'))
                                         ->dehydrated(true),
                                 ])
-                                ->visible(fn($get) => $get('jenis_surat_id')),
+                                ->visible(fn ($get) => $get('jenis_surat_id')),
                         ]),
                     Wizard\Step::make('Selesai')
                         ->schema([
@@ -324,41 +338,40 @@ class PermohonanSuratResource extends Resource
                                         ->schema([
                                             Forms\Components\Placeholder::make('summary_pemohon')
                                                 ->label('Pemohon')
-                                                ->content(fn($get) => ($get('pemohon_nama') ?: '-') . ' (' . ($get('pemohon_nik') ?: '-') . ')'),
+                                                ->content(fn ($get) => ($get('pemohon_nama') ?: '-').' ('.($get('pemohon_nik') ?: '-').')'),
 
                                             Forms\Components\Placeholder::make('summary_jenis_surat')
                                                 ->label('Jenis Surat')
-                                                ->content(fn($get) => $get('pemohon_judul_surat') ?: '-'),
+                                                ->content(fn ($get) => $get('pemohon_judul_surat') ?: '-'),
 
                                             Forms\Components\Placeholder::make('summary_alamat')
                                                 ->label('Alamat')
-                                                ->content(fn($get) => $get('pemohon_alamat') ?: '-'),
+                                                ->content(fn ($get) => $get('pemohon_alamat') ?: '-'),
 
                                             Forms\Components\Placeholder::make('summary_estimasi')
                                                 ->label('Estimasi Selesai')
-                                                ->content(fn($get) => $get('tanggal_estimasi_selesai')
-                                                    ? \Carbon\Carbon::parse($get('tanggal_estimasi_selesai'))->translatedFormat('d F Y')
+                                                ->content(fn ($get) => $get('tanggal_estimasi_selesai')
+                                                    ? Carbon::parse($get('tanggal_estimasi_selesai'))->translatedFormat('d F Y')
                                                     : '-'),
 
                                             Forms\Components\Placeholder::make('summary_pejabat')
                                                 ->label('Pejabat Penanda Tangan')
-                                                ->content(fn($get) => $get('PejabatTandaTangan_nama')
-                                                    ? $get('PejabatTandaTangan_nama') . ' (' . $get('PejabatTandaTangan_jabatan') . ')'
+                                                ->content(fn ($get) => $get('PejabatTandaTangan_nama')
+                                                    ? $get('PejabatTandaTangan_nama').' ('.$get('PejabatTandaTangan_jabatan').')'
                                                     : '-'),
                                         ]),
                                 ]),
                             // Hidden fields yang dibutuhkan database
                             Forms\Components\Hidden::make('nagari_id')
-                                ->default(fn() => Auth::user()?->nagari_id),
+                                ->default(fn () => Auth::user()?->nagari_id),
 
                             Forms\Components\Hidden::make('status_id')
-                                ->default(fn() => \App\Models\StatusSurat::where('kode_status', 'MASUK')->value('id')),
+                                ->default(fn () => StatusSurat::where('kode_status', 'MASUK')->value('id')),
 
                             Forms\Components\Hidden::make('tanggal_permohonan')
-                                ->default(fn() => now()->toDateTimeString()),
+                                ->default(fn () => now()->toDateTimeString()),
                         ]),
                 ])->columnSpanFull(),
-
 
                 // Section::make('Detail Permohonan')
                 //     ->schema([
@@ -422,7 +435,7 @@ class PermohonanSuratResource extends Resource
                 Tables\Columns\TextColumn::make('status.nama_status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn(PermohonanSurat $record) => $record->status->warna_status)
+                    ->color(fn (PermohonanSurat $record) => $record->status->warna_status)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('tanggal_permohonan')
@@ -434,7 +447,10 @@ class PermohonanSuratResource extends Resource
                     ->label('Estimasi Selesai')
                     ->date('d M Y')
                     ->color(function (PermohonanSurat $record) {
-                        if (!$record->tanggal_estimasi_selesai) return 'gray';
+                        if (! $record->tanggal_estimasi_selesai) {
+                            return 'gray';
+                        }
+
                         return $record->tanggal_estimasi_selesai->isPast() ? 'danger' : 'success';
                     }),
 
@@ -476,31 +492,31 @@ class PermohonanSuratResource extends Resource
                         return $query
                             ->when(
                                 $data['dari_tanggal'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('tanggal_permohonan', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_permohonan', '>=', $date),
                             )
                             ->when(
                                 $data['sampai_tanggal'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('tanggal_permohonan', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('tanggal_permohonan', '<=', $date),
                             );
                     }),
             ])
             ->actions([
-                \Filament\Actions\Action::make('viewPdf')
+                Action::make('viewPdf')
                     ->label('Lihat PDF')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->url(fn(PermohonanSurat $record) => route('surat.permohonan.pdf', $record))
+                    ->url(fn (PermohonanSurat $record) => route('surat.permohonan.pdf', $record))
                     ->openUrlInNewTab(),
 
-                \Filament\Actions\Action::make('downloadPdf')
+                Action::make('downloadPdf')
                     ->label('Unduh')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('success')
-                    ->url(fn(PermohonanSurat $record) => route('surat.permohonan.download', $record))
+                    ->url(fn (PermohonanSurat $record) => route('surat.permohonan.download', $record))
                     ->openUrlInNewTab(),
 
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\Action::make('updateStatus')
+                EditAction::make(),
+                Action::make('updateStatus')
                     ->label('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -521,8 +537,8 @@ class PermohonanSuratResource extends Resource
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('tanggal_permohonan', 'desc');
@@ -549,20 +565,23 @@ class PermohonanSuratResource extends Resource
     {
         return 'warning';
     }
+
     protected static function getPejabatOptions(): array
     {
         static $cache = null;
         if ($cache === null) {
-            $cache = \App\Models\User::query()
+            $cache = User::query()
                 ->where('id', '<>', 1)
                 ->with('jabatan')
                 ->get()
                 ->mapWithKeys(function ($user) {
                     $jabatan = $user->jabatan?->name ?? 'Tanpa Jabatan';
+
                     return [$user->id => "{$user->name} | {$jabatan}"];
                 })
                 ->all();
         }
+
         return $cache;
     }
 
@@ -571,10 +590,14 @@ class PermohonanSuratResource extends Resource
         $formData = $get('form_data') ?: [];
         $jenisSuratId = $get('jenis_surat_id');
 
-        if (!$jenisSuratId) return $template;
+        if (! $jenisSuratId) {
+            return $template;
+        }
 
         $jenisSurat = JenisSurat::find($jenisSuratId);
-        if (!$jenisSurat || !$jenisSurat->template) return $template;
+        if (! $jenisSurat || ! $jenisSurat->template) {
+            return $template;
+        }
 
         $originalTemplate = $jenisSurat->template;
 
@@ -596,17 +619,19 @@ class PermohonanSuratResource extends Resource
             '[NAMA_PEJABAT]' => $get('PejabatTandaTangan_nama') ?: null,
             '[ATAS_NAMA]' => function ($get) {
                 $jab = $get('PejabatTandaTangan_jabatan') ?? '';
+
                 return $jab === 'WaliNagari' ? 'Wali Nagari Sikucur' : 'An. Wali Nagari Sikucur';
             },
             '[ATAS_NAMA_JABATAN]' => function ($get) {
                 $jab = $get('PejabatTandaTangan_jabatan') ?? '';
+
                 return $jab === 'WaliNagari' ? ' ' : 'An. Wali Nagari Sikucur';
             },
             '[SEBUTAN_DESA]' => 'Nagari',
             '[TGL_SURAT]' => now()->format('d F Y'),
             '[NAMA_KECAMATAN]' => 'V Koto',
             '[JUDUL_SURAT]' => $get('pemohon_judul_surat') ? Str::upper($get('pemohon_judul_surat')) : null,
-            '[FORMAT_NOMOR_SURAT]' => \App\Models\PermohonanSurat::getNomorSuratLengkapAttribute(
+            '[FORMAT_NOMOR_SURAT]' => PermohonanSurat::getNomorSuratLengkapAttribute(
                 $get('jenis_surat_id')
             ),
         ];
@@ -621,9 +646,15 @@ class PermohonanSuratResource extends Resource
         $existingFieldCodes = array_column($existingDynamicFields, 'kode');
 
         foreach ($allPlaceholders as $ph) {
-            if (array_key_exists($ph, $pemohonData)) continue;
-            if (isset($formData[$ph])) continue;
-            if (in_array($ph, $existingFieldCodes, true)) continue;
+            if (array_key_exists($ph, $pemohonData)) {
+                continue;
+            }
+            if (isset($formData[$ph])) {
+                continue;
+            }
+            if (in_array($ph, $existingFieldCodes, true)) {
+                continue;
+            }
             $missingPlaceholders[] = $ph;
         }
 
@@ -645,7 +676,6 @@ class PermohonanSuratResource extends Resource
             $set('dynamic_fields_data', array_merge($existingDynamicFields, $newDynamic));
         }
 
-
         foreach ($formData as $kode => $value) {
             if ($value !== null && $value !== '') {
                 $originalTemplate = str_replace($kode, (string) $value, $originalTemplate);
@@ -660,7 +690,7 @@ class PermohonanSuratResource extends Resource
             }
         }
         $set('pemohon_template', $originalTemplate);
+
         return $originalTemplate;
     }
 }
-

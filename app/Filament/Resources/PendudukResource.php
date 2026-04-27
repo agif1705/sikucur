@@ -2,27 +2,28 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Penduduk;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
+use App\Filament\Resources\PendudukResource\Pages;
 use App\Models\MikrotikConfig;
+use App\Models\Penduduk;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
 use Filament\Resources\Resource;
-use Illuminate\Support\Facades\Auth;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use App\Filament\Resources\PendudukResource\Pages;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class PendudukResource extends Resource
 {
     protected static ?string $model = Penduduk::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'gmdi-people-tt';
-    protected static string | \UnitEnum | null $navigationGroup = 'Data ';
+    protected static string|\BackedEnum|null $navigationIcon = 'gmdi-people-tt';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Data ';
 
     public static function form(Schema $form): Schema
     {
@@ -122,10 +123,10 @@ class PendudukResource extends Resource
             ->columns([
                 TextColumn::make('name')->searchable(),
                 IconColumn::make('jk')->label('L/P')
-                    ->icon(fn(string $state): string => match ($state) {
+                    ->icon(fn (string $state): string => match ($state) {
                         '1' => 'gmdi-male',
                         '2' => 'gmdi-female-o',
-                    })->color(fn(string $state): string => match ($state) {
+                    })->color(fn (string $state): string => match ($state) {
                         '1' => 'success',
                         '2' => 'warning',
                     }),
@@ -144,11 +145,11 @@ class PendudukResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -169,4 +170,3 @@ class PendudukResource extends Resource
         ];
     }
 }
-

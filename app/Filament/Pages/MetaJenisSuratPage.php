@@ -2,23 +2,28 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Pages\Page;
 use App\Models\MetaJenisSurat;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Notifications\Notification;
 use Filament\Actions\Action;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class MetaJenisSuratPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
+
     protected static ?string $navigationLabel = 'Meta Template Surat';
+
     protected static ?string $title = 'Meta Template Surat';
+
     protected string $view = 'filament.pages.meta-jenis-surat-page';
 
     public ?array $data = [];
@@ -26,7 +31,7 @@ class MetaJenisSuratPage extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'meta' => MetaJenisSurat::getMetaArray()
+            'meta' => MetaJenisSurat::getMetaArray(),
         ]);
     }
 
@@ -52,9 +57,9 @@ class MetaJenisSuratPage extends Page implements HasForms
                     ->collapsible()
                     ->collapsed()
                     ->schema([
-                        \Filament\Forms\Components\Placeholder::make('example')
+                        Placeholder::make('example')
                             ->label('')
-                            ->content(new \Illuminate\Support\HtmlString('
+                            ->content(new HtmlString('
                                 <div class="space-y-4">
                                     <div class=" p-4 rounded border ">
                                         <h4 class="font-semibold text-sm mb-2">Contoh Template:</h4>
@@ -105,6 +110,7 @@ NIP. [Nip_pejabat]</code></pre>
                     ->body('Tidak ada data meta untuk disimpan.')
                     ->warning()
                     ->send();
+
                 return;
             }
 
@@ -119,7 +125,7 @@ NIP. [Nip_pejabat]</code></pre>
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error')
-                ->body('Gagal menyimpan meta: ' . $e->getMessage())
+                ->body('Gagal menyimpan meta: '.$e->getMessage())
                 ->danger()
                 ->send();
         }
@@ -160,7 +166,7 @@ NIP. [Nip_pejabat]</code></pre>
         MetaJenisSurat::syncMeta($defaultMeta);
 
         $this->form->fill([
-            'meta' => MetaJenisSurat::getMetaArray()
+            'meta' => MetaJenisSurat::getMetaArray(),
         ]);
 
         Notification::make()

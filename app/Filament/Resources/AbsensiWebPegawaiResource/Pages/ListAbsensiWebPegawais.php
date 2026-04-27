@@ -2,12 +2,10 @@
 
 namespace App\Filament\Resources\AbsensiWebPegawaiResource\Pages;
 
-use Filament\Actions;
-use Illuminate\Support\Facades\Auth;
-use Filament\Resources\Components\Tab;
-use Filament\Resources\Pages\ListRecords;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\AbsensiWebPegawaiResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Auth;
 
 class ListAbsensiWebPegawais extends ListRecords
 {
@@ -19,11 +17,13 @@ class ListAbsensiWebPegawais extends ListRecords
             // Actions\CreateAction::make(),
         ];
     }
+
     public function getHeading(): string
     {
         try {
             $nagariName = Auth::user()->nagari->name ?? 'Unknown';
-            return 'Absensi WhatsApp ' . $nagariName;
+
+            return 'Absensi WhatsApp '.$nagariName;
         } catch (\Exception $e) {
             return 'Absensi Pegawai';
         }

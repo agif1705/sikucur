@@ -2,27 +2,30 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\TvGaleri;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
-use Illuminate\Support\Str;
-use Filament\Resources\Resource;
-use Filament\Forms\Components\Section;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\TvGaleriResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\TvGaleriResource\RelationManagers;
+use App\Models\TvGaleri;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TvGaleriResource extends Resource
 {
     protected static ?string $model = TvGaleri::class;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Tv Informasi';
+    protected static string|\UnitEnum|null $navigationGroup = 'Tv Informasi';
+
     protected static ?string $navigationLabel = 'Galeri TV';
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-tv';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-tv';
 
     public static function form(Schema $form): Schema
     {
@@ -40,14 +43,14 @@ class TvGaleriResource extends Resource
                         ->getUploadedFileNameForStorageUsing(function ($file): string {
                             $date = now()->format('Ymd');
                             $uuid = Str::uuid();
-                            $ext  = $file->getClientOriginalExtension(); // ambil extensi asli
+                            $ext = $file->getClientOriginalExtension(); // ambil extensi asli
 
                             return "galeri-{$date}-{$uuid}.{$ext}";
                         })->deleteUploadedFileUsing(function ($file) {
                             Storage::disk('public')->delete($file);
                         }),
 
-                ])
+                ]),
             ]);
     }
 
@@ -72,8 +75,8 @@ class TvGaleriResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make()
+                EditAction::make(),
+                DeleteAction::make()
                     ->before(function ($record) {
                         // hapus file dari storage
                         if ($record->image) {
@@ -89,8 +92,8 @@ class TvGaleriResource extends Resource
                     }),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make()
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->before(function ($records) {
                             foreach ($records as $record) {
                                 // Hapus single image
@@ -126,4 +129,3 @@ class TvGaleriResource extends Resource
         ];
     }
 }
-

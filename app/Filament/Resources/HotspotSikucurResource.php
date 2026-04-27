@@ -3,27 +3,27 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\HotspotSikucurResource\Pages;
-use App\Filament\Resources\HotspotSikucurResource\RelationManagers;
 use App\Models\HotspotSikucur;
 use App\Models\MikrotikConfig;
 use App\Models\Penduduk;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class HotspotSikucurResource extends Resource
 {
     protected static ?string $model = HotspotSikucur::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'gmdi-network-cell';
-    protected static string | \UnitEnum | null $navigationGroup = 'Hotspot Sikucur';
+    protected static string|\BackedEnum|null $navigationIcon = 'gmdi-network-cell';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Hotspot Sikucur';
 
     public static function form(Schema $form): Schema
     {
@@ -33,7 +33,7 @@ class HotspotSikucurResource extends Resource
                     ->description('Edit data hotspot user yang terdaftar di Mikrotik.')
                     ->columns(2)
                     ->schema([
-                        Forms\Components\Select::make('penduduk_id')
+                        Select::make('penduduk_id')
                             ->label('Cari Penduduk')
                             ->options(function ($record) {
                                 $registeredPendudukIds = HotspotSikucur::pluck('penduduk_id')->toArray();
@@ -69,7 +69,7 @@ class HotspotSikucurResource extends Resource
                             }),
 
                         Forms\Components\Hidden::make('nik')
-                            ->default(fn($record) => $record?->penduduk?->nik),
+                            ->default(fn ($record) => $record?->penduduk?->nik),
                         Forms\Components\TextInput::make('phone_mikrotik')
                             ->label('Nomor Telepon')
                             ->tel()
@@ -130,11 +130,11 @@ class HotspotSikucurResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make()->label('Modify'),
+                EditAction::make()->label('Modify'),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -155,4 +155,3 @@ class HotspotSikucurResource extends Resource
         ];
     }
 }
-

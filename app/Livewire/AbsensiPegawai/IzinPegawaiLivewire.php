@@ -2,37 +2,49 @@
 
 namespace App\Livewire\AbsensiPegawai;
 
+use App\Models\AbsensiWebPegawai;
+use App\Models\IzinPegawai;
+use App\Models\RekapAbsensiPegawai;
+use App\Models\User;
+use App\Models\WhatsAppLog;
+use App\Models\WorkDay;
+use App\Services\GowaService;
 use Carbon\Carbon;
 use Filament\Forms;
-use App\Models\User;
-use App\Models\WorkDay;
-use Livewire\Component;
-use App\Models\IzinPegawai;
-use App\Models\WhatsAppLog;
-use Illuminate\Support\Str;
-use App\Services\GowaService;
-use App\Models\AbsensiPegawai;
-use Livewire\Attributes\Layout;
-use App\Models\AbsensiWebPegawai;
-use App\Models\RekapAbsensiPegawai;
-use Illuminate\Support\Facades\Auth;
-use Filament\Schemas\Schema;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class IzinPegawaiLivewire extends Component implements HasForms
 {
     use InteractsWithForms;
 
-    public $link, $users, $nagariId, $IzinPegawai;
-    public $nagari, $form_link;
+    public $link;
+
+    public $users;
+
+    public $nagariId;
+
+    public $IzinPegawai;
+
+    public $nagari;
+
+    public $form_link;
+
     public $expiresAt;
+
     public $remainingSeconds;
+
     public $expired = false;
 
     public $data = [
@@ -56,7 +68,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
             ->where('link', $link)
             ->where('expired_at', '>', now())
             ->firstOrFail();
-        if (!$this->IzinPegawai) {
+        if (! $this->IzinPegawai) {
             abort(403, 'Link sudah expired atau tidak valid.');
         }
         $this->users = $this->IzinPegawai->user;
@@ -88,29 +100,29 @@ class IzinPegawaiLivewire extends Component implements HasForms
                     ->minDate(now()->subDays(3)) // maksimal 7 hari kebelakang
                     ->maxDate(now()->addDays(30)) // maksimal 30 hari kedepan
                     ->hintIcon('heroicon-m-calendar-days', tooltip: 'Pilih tanggal mulai sakit/izin/cuti')
-                    ->visible(fn(Forms\Get $get): bool => in_array($get('status'), ['S', 'C']))
-                    ->required(fn(Forms\Get $get): bool => in_array($get('status'), ['S', 'C']))
+                    ->visible(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
+                    ->required(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
                     ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                    ->afterStateUpdated(function (Set $set, Get $get, $state) {
                         $this->calculateWorkDays($set, $get, $state);
                     }),
 
                 // Field tanggal selesai - hanya muncul jika status Sakit, Izin, atau Cuti
                 Forms\Components\DatePicker::make('tanggal_selesai')
                     ->label('Tanggal Selesai')
-                    ->default(fn(Forms\Get $get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
-                    ->minDate(fn(Forms\Get $get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
+                    ->default(fn (Get $get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
+                    ->minDate(fn (Get $get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
                     ->maxDate(now()->addDays(30))
                     ->hintIcon('heroicon-m-calendar-days', tooltip: 'Pilih tanggal selesai sakit/izin/cuti')
-                    ->visible(fn(Forms\Get $get): bool => in_array($get('status'), ['S', 'C']))
-                    ->required(fn(Forms\Get $get): bool => in_array($get('status'), ['S', 'C']))
+                    ->visible(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
+                    ->required(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
                     ->live()
-                    ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, $state) {
+                    ->afterStateUpdated(function (Set $set, Get $get, $state) {
                         $this->calculateWorkDays($set, $get, $state);
                     }),
 
                 // Field jumlah hari - otomatis calculated, readonly
-                Forms\Components\TextInput::make('jumlah_hari')
+                TextInput::make('jumlah_hari')
                     ->label('Jumlah Hari Kerja')
                     ->numeric()
                     ->readOnly()
@@ -120,19 +132,20 @@ class IzinPegawaiLivewire extends Component implements HasForms
                             ? 'Jumlah hari kerja dihitung otomatis (exclude weekend & libur)'
                             : null;
                     })
-                    ->hintColor(fn($state) => empty($state) ? 'danger' : 'gray')
+                    ->hintColor(fn ($state) => empty($state) ? 'danger' : 'gray')
                     ->suffix('hari kerja')
 
-                    ->visible(fn(Forms\Get $get): bool => in_array($get('status'), ['S', 'C'])),
+                    ->visible(fn (Get $get): bool => in_array($get('status'), ['S', 'C'])),
 
-                Forms\Components\FileUpload::make('file_pendukung')
+                FileUpload::make('file_pendukung')
                     ->label('Foto Pendukung')
                     ->directory('izin')
                     ->getUploadedFileNameForStorageUsing(function ($file): string {
                         $date = now()->format('Ymd');
                         $uuid = Str::uuid();
                         $name = Auth::user()->username ?? 'user';
-                        $ext  = $file->getClientOriginalExtension(); // ambil extensi asli
+                        $ext = $file->getClientOriginalExtension(); // ambil extensi asli
+
                         return "izin-{$name}-{$date}-{$uuid}.{$ext}";
                     })
                     ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'ini adalah file pendukung laporan absensi'),
@@ -166,7 +179,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
         $absensiPegawai = AbsensiWebPegawai::whereUserId($this->users->id)
             ->whereDate('date', now())->first();
 
-        if (!$absensiPegawai) {
+        if (! $absensiPegawai) {
             $absensiPegawai = AbsensiWebPegawai::create([
                 'absensi' => $this->data['status'],
                 'alasan' => $this->data['alasan'],
@@ -197,7 +210,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
             $existingAbsensi = AbsensiWebPegawai::whereUserId($this->users->id)
                 ->whereDate('date', $currentDate)->first();
 
-            if (!$existingAbsensi) {
+            if (! $existingAbsensi) {
                 $absensiPegawai = AbsensiWebPegawai::create([
                     'absensi' => $this->data['status'],
                     'alasan' => $this->data['alasan'],
@@ -218,7 +231,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
         }
 
         // Kirim notifikasi WhatsApp hanya sekali untuk semua range
-        if (!empty($createdAbsensi)) {
+        if (! empty($createdAbsensi)) {
             $this->sendWhatsAppNotification($createdAbsensi[0]); // Gunakan absensi pertama sebagai referensi
         }
     }
@@ -229,7 +242,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
         $baduo = " \n \n \n \n _Sent || via *Cv.Baduo Mitra Solustion*_";
 
         // Format pesan dengan range tanggal jika ada
-        $periodeText = "";
+        $periodeText = '';
         if (in_array($this->data['status'], ['S', 'I', 'C']) && $this->data['tanggal_mulai'] && $this->data['tanggal_selesai']) {
             $tanggalMulai = Carbon::parse($this->data['tanggal_mulai'])->format('d/m/Y');
             $tanggalSelesai = Carbon::parse($this->data['tanggal_selesai'])->format('d/m/Y');
@@ -242,32 +255,32 @@ class IzinPegawaiLivewire extends Component implements HasForms
             }
         }
 
-        $pesan = "📊 Pemberitahuan Link Izin Pegawai Hari ini " . $tanggal . " Sebagai Berikut :"
-            . "\n👤 Nama : " . $this->users->name
-            . "\n📋 Status : " . $this->data['status']
-            . "\n🏢 Jabatan : " . $this->users->jabatan->name
-            . $periodeText
-            . "\n📝 Alasan : *" . $this->data['alasan'] . "*  ";
+        $pesan = '📊 Pemberitahuan Link Izin Pegawai Hari ini '.$tanggal.' Sebagai Berikut :'
+            ."\n👤 Nama : ".$this->users->name
+            ."\n📋 Status : ".$this->data['status']
+            ."\n🏢 Jabatan : ".$this->users->jabatan->name
+            .$periodeText
+            ."\n📝 Alasan : *".$this->data['alasan'].'*  ';
 
-        $wa = new GowaService();
+        $wa = new GowaService;
 
         // Kirim ke Wali
-        $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan . ' ' . $baduo);
+        $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan.' '.$baduo);
         WhatsAppLog::create([
             'user_id' => $this->users->id,
-            'phone'   => $this->users->nagari->wali->no_hp,
-            'message' =>  $pesan . ' ' . $baduo,
-            'status'  => $wali['success'] ?? false ? 'success' : 'failed',
+            'phone' => $this->users->nagari->wali->no_hp,
+            'message' => $pesan.' '.$baduo,
+            'status' => $wali['success'] ?? false ? 'success' : 'failed',
             'response' => $wali,
         ]);
 
         // Kirim ke Sekretaris
-        $seketaris = $wa->sendText($this->users->nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+        $seketaris = $wa->sendText($this->users->nagari->seketaris->no_hp, $pesan.' '.$baduo);
         WhatsAppLog::create([
             'user_id' => $this->users->id,
-            'phone'   => $this->users->nagari->seketaris->no_hp,
-            'message' =>  $pesan . ' ' . $baduo,
-            'status'  => $seketaris['success'] ?? false ? 'success' : 'failed',
+            'phone' => $this->users->nagari->seketaris->no_hp,
+            'message' => $pesan.' '.$baduo,
+            'status' => $seketaris['success'] ?? false ? 'success' : 'failed',
             'response' => $seketaris,
         ]);
 
@@ -283,7 +296,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
             'sn_mesin' => $this->link,
             'status_absensi' => $this->data['status'],
             'resource' => 'web',
-            'id_resource' => 'web-' . $absensiPegawai->id,
+            'id_resource' => 'web-'.$absensiPegawai->id,
             'time_in' => now()->format('H:i'),
             'time_out' => now()->addHours(8)->format('H:i'),
             'date' => $absensiPegawai->date,
@@ -297,14 +310,16 @@ class IzinPegawaiLivewire extends Component implements HasForms
         ]);
         $this->form_link = false;
     }
+
     #[Layout('components.layouts.public')]
     protected function calculateWorkDays($set, $get, $state)
     {
         $tanggalMulai = $get('tanggal_mulai');
         $tanggalSelesai = $get('tanggal_selesai');
 
-        if (!$tanggalMulai || !$tanggalSelesai) {
+        if (! $tanggalMulai || ! $tanggalSelesai) {
             $set('jumlah_hari', 0);
+
             return;
         }
 
@@ -314,6 +329,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
 
             if ($endDate->lt($startDate)) {
                 $set('jumlah_hari', 0);
+
                 return;
             }
 

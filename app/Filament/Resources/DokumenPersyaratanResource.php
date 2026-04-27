@@ -4,21 +4,29 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DokumenPersyaratanResource\Pages;
 use App\Models\DokumenPersyaratan;
-use App\Models\JenisSurat;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Grid;
 
 class DokumenPersyaratanResource extends Resource
 {
     protected static ?string $model = DokumenPersyaratan::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-check';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-check';
+
     protected static ?string $navigationLabel = 'Dokumen Persyaratan';
-    protected static string | \UnitEnum | null $navigationGroup = 'Master Data Surat';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Master Data Surat';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Schema $form): Schema
@@ -136,14 +144,14 @@ class DokumenPersyaratanResource extends Resource
             ])
             ->actions([
 
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
 
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('jenis_surat_id')
@@ -160,4 +168,3 @@ class DokumenPersyaratanResource extends Resource
         ];
     }
 }
-

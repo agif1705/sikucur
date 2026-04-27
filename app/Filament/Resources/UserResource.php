@@ -2,27 +2,29 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use App\Models\User;
-use Filament\Tables;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
-use Filament\Resources\Resource;
-use Illuminate\Support\Facades\Auth;
-use Filament\Forms\Components\Section;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\UserResource\Pages;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use App\Filament\Resources\UserResource\RelationManagers;
+use App\Models\User;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
+
     protected static ?string $navigationLabel = 'Data Pegawai';
-    protected static string | \UnitEnum | null $navigationGroup = 'Pengaturan Pegawai';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Pengaturan Pegawai';
 
     public static function form(Schema $form): Schema
     {
@@ -39,7 +41,7 @@ class UserResource extends Resource
                             ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'ini adalah username untuk login')
                             ->maxLength(50),
                         Forms\Components\Select::make('jabatan_id')
-                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin'))
+                            ->disabled(fn (): bool => ! Auth::user()->hasRole('super_admin'))
                             ->label('Jabatan')
                             ->relationship('jabatan', 'name')
                             ->searchable()
@@ -93,16 +95,16 @@ class UserResource extends Resource
                             ->label('Role')
                             ->relationship('roles', 'name')
                             ->searchable()
-                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin'))
+                            ->disabled(fn (): bool => ! Auth::user()->hasRole('super_admin'))
                             ->required(),
                         Forms\Components\TextInput::make('emp_id')
                             ->label('Finggerprint ID')
                             ->maxLength(255)
-                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin')),
+                            ->disabled(fn (): bool => ! Auth::user()->hasRole('super_admin')),
                         Forms\Components\Select::make('nagari_id')
                             ->label('Nama Nagari')
                             ->relationship('nagari', 'name')
-                            ->disabled(fn(): bool => !Auth::user()->hasRole('super_admin'))
+                            ->disabled(fn (): bool => ! Auth::user()->hasRole('super_admin'))
                             ->required(),
 
                     ])->columns(2)
@@ -116,9 +118,10 @@ class UserResource extends Resource
         return $table
             ->modifyQueryUsing(function (Builder $query) {
                 $is_super_admin = Auth::user()->hasRole('super_admin');
-                if (!$is_super_admin) {
+                if (! $is_super_admin) {
                     $query->where('id', Auth::user()->id);
                 }
+
                 return $query;
             })
             ->columns([
@@ -167,11 +170,11 @@ class UserResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -192,4 +195,3 @@ class UserResource extends Resource
         ];
     }
 }
-

@@ -2,27 +2,27 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
-use App\Models\TvInformasi;
-use Filament\Resources\Resource;
-use Filament\Forms\Components\Split;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Repeater;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\TvInformasiResource\Pages;
-use App\Filament\Resources\TvInformasiResource\RelationManagers;
+use App\Models\TvInformasi;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
 
 class TvInformasiResource extends Resource
 {
     protected static ?string $model = TvInformasi::class;
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Tv Informasi';
+    protected static string|\UnitEnum|null $navigationGroup = 'Tv Informasi';
+
     protected static ?string $navigationLabel = 'Data Tv Informasi';
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-c-tv';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-c-tv';
 
     public static function form(Schema $form): Schema
     {
@@ -80,7 +80,7 @@ class TvInformasiResource extends Resource
                         Forms\Components\RichEditor::make('running_text')
                             ->label('running_text')
                             ->required()->columns(1),
-                    ])->columns(2)
+                    ])->columns(2),
             ]);
     }
 
@@ -107,11 +107,11 @@ class TvInformasiResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -132,4 +132,3 @@ class TvInformasiResource extends Resource
         ];
     }
 }
-

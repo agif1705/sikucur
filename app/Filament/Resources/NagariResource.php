@@ -3,30 +3,31 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\NagariResource\Pages;
-use App\Filament\Resources\NagariResource\RelationManagers;
 use App\Models\Nagari;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
-use Filament\Forms\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class NagariResource extends Resource
 {
     protected static ?string $model = Nagari::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static string | \UnitEnum | null $navigationGroup = 'Pengaturan Pegawai';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static string|\UnitEnum|null $navigationGroup = 'Pengaturan Pegawai';
 
     public static function form(Schema $form): Schema
     {
         return $form
             ->schema([
-                section::make('Data Nagari ')->schema([
+                Section::make('Data Nagari ')->schema([
 
                     Forms\Components\TextInput::make('name')
                         ->required()
@@ -73,7 +74,7 @@ class NagariResource extends Resource
                         ->required()
                         ->columns(3),
 
-                    Forms\Components\Grid::make([
+                    Grid::make([
                         'default' => 4,
                     ])->schema([
                         Forms\Components\TextInput::make('longitude')
@@ -103,7 +104,7 @@ class NagariResource extends Resource
                                 'underline',
                                 'undo',
                             ]),
-                    ])
+                    ]),
             ]);
     }
 
@@ -142,11 +143,11 @@ class NagariResource extends Resource
                 //
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -167,4 +168,3 @@ class NagariResource extends Resource
         ];
     }
 }
-
