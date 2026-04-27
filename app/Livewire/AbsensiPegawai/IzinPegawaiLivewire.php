@@ -17,8 +17,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -100,24 +98,24 @@ class IzinPegawaiLivewire extends Component implements HasForms
                     ->minDate(now()->subDays(3)) // maksimal 7 hari kebelakang
                     ->maxDate(now()->addDays(30)) // maksimal 30 hari kedepan
                     ->hintIcon('heroicon-m-calendar-days', tooltip: 'Pilih tanggal mulai sakit/izin/cuti')
-                    ->visible(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
-                    ->required(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
+                    ->visible(fn ($get): bool => in_array($get('status'), ['S', 'C']))
+                    ->required(fn ($get): bool => in_array($get('status'), ['S', 'C']))
                     ->live()
-                    ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                    ->afterStateUpdated(function ($set, $get, $state) {
                         $this->calculateWorkDays($set, $get, $state);
                     }),
 
                 // Field tanggal selesai - hanya muncul jika status Sakit, Izin, atau Cuti
                 Forms\Components\DatePicker::make('tanggal_selesai')
                     ->label('Tanggal Selesai')
-                    ->default(fn (Get $get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
-                    ->minDate(fn (Get $get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
+                    ->default(fn ($get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
+                    ->minDate(fn ($get): ?Carbon => $get('tanggal_mulai') ? Carbon::parse($get('tanggal_mulai')) : now())
                     ->maxDate(now()->addDays(30))
                     ->hintIcon('heroicon-m-calendar-days', tooltip: 'Pilih tanggal selesai sakit/izin/cuti')
-                    ->visible(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
-                    ->required(fn (Get $get): bool => in_array($get('status'), ['S', 'C']))
+                    ->visible(fn ($get): bool => in_array($get('status'), ['S', 'C']))
+                    ->required(fn ($get): bool => in_array($get('status'), ['S', 'C']))
                     ->live()
-                    ->afterStateUpdated(function (Set $set, Get $get, $state) {
+                    ->afterStateUpdated(function ($set, $get, $state) {
                         $this->calculateWorkDays($set, $get, $state);
                     }),
 
@@ -135,7 +133,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
                     ->hintColor(fn ($state) => empty($state) ? 'danger' : 'gray')
                     ->suffix('hari kerja')
 
-                    ->visible(fn (Get $get): bool => in_array($get('status'), ['S', 'C'])),
+                    ->visible(fn ($get): bool => in_array($get('status'), ['S', 'C'])),
 
                 FileUpload::make('file_pendukung')
                     ->label('Foto Pendukung')
