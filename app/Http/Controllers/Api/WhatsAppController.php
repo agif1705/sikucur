@@ -33,29 +33,39 @@ class WhatsAppController extends Controller
         // Cari user + command
         $user = User::with([
             'nagari:id,name,slug',
-            'nagari.whatsAppCommand' => fn ($q) => $q->where('command', $chat),
+            'nagari.whatsAppCommand' => fn($q) => $q->where('command', $chat),
         ])
             ->where('no_hp', $waId)
             ->select('id', 'name', 'no_hp', 'nagari_id', 'jabatan_id')
             ->first();
 
-        if (! $user) {
-            if ($chat === 'surat') {
-                $penduduk = $this->findPendudukByWhatsAppNumber($waId);
+        // Rule khusus command surat:
+        // - Prioritas pertama: jika no_hp ditemukan di penduduk, selalu ke alur warga (auto prefill).
+        // - Jika tidak ditemukan di penduduk dan pengirim pegawai pelayanan, gunakan alur pegawai.
+        // - Jika tidak ditemukan di penduduk dan bukan pegawai pelayanan, tolak.
+        if ($chat === 'surat') {
+            $penduduk = $this->findPendudukByWhatsAppNumber($waId);
+            if ($penduduk) {
+                $result = app(SuratPengantarHandler::class)->handleWarga($penduduk, $chat, $data);
 
-                if ($penduduk) {
-                    $result = app(SuratPengantarHandler::class)->handleWarga($penduduk, $chat, $data);
-
-                    return $this->apiResponse($result['success'], $result['message'], $result['data']);
-                }
-
-                return $this->apiResponse(false, 'Nomor WhatsApp ini belum terdaftar sebagai warga. Silakan hubungi pegawai pelayanan agar nomor HP Anda dilengkapi di data penduduk.', [
-                    'pegawai' => false,
-                    'warga' => false,
-                    'data' => $data,
-                ]);
+                return $this->apiResponse($result['success'], $result['message'], $result['data']);
             }
 
+            if ($user && $this->isPegawaiPelayanan($user)) {
+                $handler = app(SuratPengantarHandler::class);
+                $result = $handler->handle($user, $chat, $data);
+
+                return $this->apiResponse($result['success'], $result['message'], $result['data']);
+            }
+
+            return $this->apiResponse(true, 'Data penduduk tidak ada di nagari harap untuk daftar kependudukan anda', [
+                'pegawai' => false,
+                'warga' => false,
+                'data' => $data,
+            ]);
+        }
+
+        if (! $user) {
             return $this->apiResponse(false, 'Nomor ini tidak terdaftar sebagai pegawai.', [
                 'pegawai' => false,
                 'data' => $data,
@@ -84,7 +94,7 @@ class WhatsAppController extends Controller
 
         return Penduduk::query()
             ->whereNotNull('no_hp')
-            ->whereRaw("regexp_replace(coalesce(no_hp, ''), '[^0-9]', '', 'g') in (".implode(',', array_fill(0, count($variants), '?')).')', $variants)
+            ->whereRaw("regexp_replace(coalesce(no_hp, ''), '[^0-9]', '', 'g') in (" . implode(',', array_fill(0, count($variants), '?')) . ')', $variants)
             ->orderBy('id')
             ->first();
     }
@@ -96,14 +106,31 @@ class WhatsAppController extends Controller
         $variants = [$digits];
 
         if (str_starts_with($digits, '62')) {
-            $variants[] = '0'.substr($digits, 2);
+            $tail = substr($digits, 2);
+            $variants[] = '0' . $tail;
+            $variants[] = $tail;
         }
 
         if (str_starts_with($digits, '0')) {
-            $variants[] = '62'.substr($digits, 1);
+            $tail = substr($digits, 1);
+            $variants[] = '62' . $tail;
+            $variants[] = $tail;
+        }
+
+        if (str_starts_with($digits, '8')) {
+            $variants[] = '0' . $digits;
+            $variants[] = '62' . $digits;
         }
 
         return array_values(array_unique(array_filter($variants)));
+    }
+
+    private function isPegawaiPelayanan(User $user): bool
+    {
+        $user->loadMissing(['jabatan', 'roles']);
+
+        return $user->hasAnyRole(['super_admin', 'Kasi Pelayanan', 'Staf Pelayanan'])
+            || in_array($user->jabatan?->name, ['Kasi Pelayanan', 'Staf Pelayanan'], true);
     }
 
     public function generateUniqueLink(int $length = 30): string
@@ -153,24 +180,24 @@ class WhatsAppController extends Controller
                     $statusIcon = '❌ TIDAK HADIR';
                 }
 
-                $pesan .= ($i + 1).". {$item['slug']} ({$item['jabatan']})"
-                    ." - Jam: {$jam} {$statusIcon}\n";
+                $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']})"
+                    . " - Jam: {$jam} {$statusIcon}\n";
             }
             $state = self::getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
             $wa = new GowaService;
             if (! $state->original['state'] == null) {
                 // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
-                $wali = $wa->sendText($nagari->wali->no_hp, $pesan.' '.$baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan.' '.$baduo);
-                $result = $wa->sendText('6281282779593', $pesan.' '.$baduo);
+                $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+                $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
 
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
                     $result,
                 ]]);
             } else {
-                $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n".$baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n".$baduo);
+                $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
 
                 return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['state' => [
                     $wali,
@@ -190,7 +217,7 @@ class WhatsAppController extends Controller
         $token = $authResponse->json('token');
         // ambil data terminal
         $terminalResponse = Http::withHeaders([
-            'Authorization' => 'JWT '.$token,
+            'Authorization' => 'JWT ' . $token,
         ])->timeout(10)
             ->get('https://fingerprint.baduo.cloud/iclock/api/terminals/2/');
 

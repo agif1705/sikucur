@@ -46,6 +46,12 @@ Route::post('/surat/pengantar/{token}', [SuratPengantarController::class, 'submi
 Route::get('/surat/pengantar/{token}/download', [SuratPengantarController::class, 'download'])
     ->name('surat.pengantar.download')
     ->middleware('signed');
+Route::get('/surat/pengantar/{token}/approve', [SuratPengantarController::class, 'approve'])
+    ->name('surat.pengantar.approve')
+    ->middleware('signed');
+Route::get('/surat/pengantar/{token}/reject', [SuratPengantarController::class, 'reject'])
+    ->name('surat.pengantar.reject')
+    ->middleware('signed');
 
 Route::middleware('auth')->group(function () {
     Route::get('/surat/permohonan/{permohonan}/pdf', [SuratPdfController::class, 'preview'])->name('surat.permohonan.pdf');

@@ -76,6 +76,7 @@
         $alamatDomisili = $pengantar?->pemohon_alamat_domisili ?: ($pengantar?->pemohon_alamat ?? '................................');
         $telepon = $pengantar?->pemohon_telepon ?? '................................';
         $korong = $pengantar?->korong ?? '................................';
+        $jenisSurat = $pengantar?->jenisSurat?->nama_jenis ?? '................................';
         $keperluan = $pengantar?->keperluan ?? '................................';
         $tanggal = $pengantar?->tanggal_pengantar?->format('d-m-Y') ?? '..............';
         $wali = $pengantar?->waliKorong?->name ?? '................................';
@@ -88,7 +89,7 @@
     <table>
         <tr>
             <td class="label">Nama</td>
-            <td class="value">: {{ $nama }}</td>
+            <td class="value">: {{ Str::title($nama) }}</td>
         </tr>
         <tr>
             <td class="label">NIK</td>
@@ -96,11 +97,11 @@
         </tr>
         <tr>
             <td class="label">Alamat KTP</td>
-            <td class="value">: {{ $alamat }}</td>
+            <td class="value">: {{ Str::title($alamat) }}</td>
         </tr>
         <tr>
             <td class="label">Alamat Domisili</td>
-            <td class="value">: {{ $alamatDomisili }}</td>
+            <td class="value">: {{ Str::title($alamatDomisili) }}</td>
         </tr>
         <tr>
             <td class="label">Telepon</td>
@@ -108,11 +109,15 @@
         </tr>
         <tr>
             <td class="label">Korong/Wilayah</td>
-            <td class="value">: {{ $korong }}</td>
+            <td class="value">: {{ Str::title($korong) }}</td>
         </tr>
         <tr>
             <td class="label">Dalam hal Pengurusan </td>
-            <td class="value">: {{ $keperluan }}</td>
+            <td class="value">: {{ Str::title($keperluan) }}</td>
+        </tr>
+        <tr>
+            <td class="label">Jenis Surat</td>
+            <td class="value">: {{ Str::title($jenisSurat) }}</td>
         </tr>
     </table>
 
@@ -120,8 +125,8 @@
 
     <div class="signature">
         <div class="right">
-            <div>{{ $korong }}, {{ $tanggal }}</div>
-            <div>Wali Korong {{ $korong }}</div>
+            <div>{{ Str::title($korong) }}, {{ $tanggal }}</div>
+            <div>Wali Korong {{ Str::title($korong) }}</div>
             <br><br><br>
             <div><strong>{{ $wali }}</strong></div>
         </div>

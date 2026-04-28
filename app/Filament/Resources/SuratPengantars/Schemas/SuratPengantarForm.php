@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SuratPengantars\Schemas;
 
+use App\Models\JenisSurat;
 use App\Models\Penduduk;
 use App\Models\SuratPengantar;
 use App\Models\WaliKorong;
@@ -106,11 +107,24 @@ class SuratPengantarForm
                                     ->options(SuratPengantar::wilayahOptions())
                                     ->required()
                                     ->live()
-                                    ->afterStateUpdated(function ($state, callable $set) {
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $set('wali_korong_id', WaliKorong::query()
                                             ->where('nagari_id', Auth::user()?->nagari_id)
                                             ->where('wilayah', $state)
                                             ->value('id'));
+
+                                        $pendudukId = $get('penduduk_id');
+                                        if (! $pendudukId || ! filled($state)) {
+                                            return;
+                                        }
+
+                                        Penduduk::query()
+                                            ->whereKey($pendudukId)
+                                            ->where(function ($query) use ($state) {
+                                                $query->whereNull('korong')
+                                                    ->orWhere('korong', '<>', $state);
+                                            })
+                                            ->update(['korong' => $state]);
                                     }),
                                 Forms\Components\DatePicker::make('tanggal_pengantar')
                                     ->label('Tanggal Surat')
@@ -120,6 +134,12 @@ class SuratPengantarForm
                             ->label('Keperluan')
                             ->required()
                             ->rows(3),
+                        Forms\Components\Select::make('jenis_surat_id')
+                            ->label('Jenis Surat Yang Akan Dibuat')
+                            ->options(fn () => JenisSurat::query()->orderBy('nama_jenis')->pluck('nama_jenis', 'id')->all())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
                         Forms\Components\Select::make('wali_korong_id')
                             ->label('Wali Korong')
                             ->options(fn () => WaliKorong::query()
@@ -134,11 +154,8 @@ class SuratPengantarForm
                             ->helperText('Otomatis mengikuti pilihan korong/wilayah.'),
                         Forms\Components\Select::make('status')
                             ->label('Status')
-                            ->options([
-                                SuratPengantar::STATUS_DRAFT => 'Draft',
-                                SuratPengantar::STATUS_SUBMITTED => 'Sudah Diisi',
-                            ])
-                            ->default(SuratPengantar::STATUS_SUBMITTED),
+                            ->options(SuratPengantar::statusOptions())
+                            ->default(SuratPengantar::STATUS_WAITING_APPROVAL),
                     ]),
             ]);
     }

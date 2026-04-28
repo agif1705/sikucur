@@ -20,10 +20,16 @@
     <div class="container">
         <h1>Form Surat Pengantar Wali Korong</h1>
         <p class="note">Mohon isi data dengan benar sesuai KTP.</p>
+        @php
+            $isWargaTerdaftar = !empty($pengantar->penduduk_id) && empty($pengantar->petugas_id);
+        @endphp
 
         @if (!empty($success))
             <div class="success">
                 Surat pengantar berhasil disimpan.
+                @if(($pengantar->status ?? null) === \App\Models\SuratPengantar::STATUS_WAITING_APPROVAL)
+                    <div style="margin-top: 8px;">Menunggu persetujuan Wali Korong (setuju / tolak).</div>
+                @endif
                 @if (!empty($downloadUrl))
                     <div style="margin-top: 8px;">
                         <a href="{{ $downloadUrl }}">Unduh PDF Surat Pengantar</a>
@@ -36,28 +42,28 @@
             @csrf
 
             <label for="pemohon_nik">NIK</label>
-            <input id="pemohon_nik" name="pemohon_nik" value="{{ old('pemohon_nik', $pengantar->pemohon_nik) }}" />
+            <input id="pemohon_nik" name="pemohon_nik" value="{{ old('pemohon_nik', $pengantar->pemohon_nik) }}" {{ $isWargaTerdaftar ? 'readonly' : '' }} />
             @error('pemohon_nik')<div class="error">{{ $message }}</div>@enderror
 
             <label for="pemohon_nama">Nama Lengkap</label>
-            <input id="pemohon_nama" name="pemohon_nama" value="{{ old('pemohon_nama', $pengantar->pemohon_nama) }}" />
+            <input id="pemohon_nama" name="pemohon_nama" value="{{ old('pemohon_nama', $pengantar->pemohon_nama) }}" {{ $isWargaTerdaftar ? 'readonly' : '' }} />
             @error('pemohon_nama')<div class="error">{{ $message }}</div>@enderror
 
             <label for="pemohon_alamat">Alamat</label>
-            <textarea id="pemohon_alamat" name="pemohon_alamat" rows="3">{{ old('pemohon_alamat', $pengantar->pemohon_alamat) }}</textarea>
+            <textarea id="pemohon_alamat" name="pemohon_alamat" rows="3" {{ $isWargaTerdaftar ? 'readonly' : '' }}>{{ old('pemohon_alamat', $pengantar->pemohon_alamat) }}</textarea>
             @error('pemohon_alamat')<div class="error">{{ $message }}</div>@enderror
 
             <label for="pemohon_alamat_domisili">Alamat Lengkap Domisili</label>
-            <textarea id="pemohon_alamat_domisili" name="pemohon_alamat_domisili" rows="3">{{ old('pemohon_alamat_domisili', $pengantar->pemohon_alamat_domisili) }}</textarea>
+            <textarea id="pemohon_alamat_domisili" name="pemohon_alamat_domisili" rows="3" {{ $isWargaTerdaftar ? 'readonly' : '' }}>{{ old('pemohon_alamat_domisili', $pengantar->pemohon_alamat_domisili) }}</textarea>
             <p class="note">Isi jika alamat domisili berbeda dari alamat KTP.</p>
             @error('pemohon_alamat_domisili')<div class="error">{{ $message }}</div>@enderror
 
             <label for="pemohon_telepon">Telepon</label>
-            <input id="pemohon_telepon" name="pemohon_telepon" value="{{ old('pemohon_telepon', $pengantar->pemohon_telepon) }}" />
+            <input id="pemohon_telepon" name="pemohon_telepon" value="{{ old('pemohon_telepon', $pengantar->pemohon_telepon) }}" {{ $isWargaTerdaftar ? 'readonly' : '' }} />
             @error('pemohon_telepon')<div class="error">{{ $message }}</div>@enderror
 
             <label for="korong">Korong/Wilayah</label>
-            <select id="korong" name="korong">
+            <select id="korong" name="korong" {{ $isWargaTerdaftar ? 'disabled' : '' }}>
                 <option value="">-- Pilih Korong --</option>
                 @foreach ($wilayahs as $wilayah)
                     <option value="{{ $wilayah }}" {{ old('korong', $pengantar->korong) === $wilayah ? 'selected' : '' }}>
@@ -65,15 +71,31 @@
                     </option>
                 @endforeach
             </select>
+            @if($isWargaTerdaftar)
+                <input type="hidden" name="korong" value="{{ old('korong', $pengantar->korong) }}">
+            @endif
             @error('korong')<div class="error">{{ $message }}</div>@enderror
+
+            <label for="jenis_surat_id">Jenis Surat Yang Akan Dibuat</label>
+            <select id="jenis_surat_id" name="jenis_surat_id" required>
+                <option value="">-- Pilih Jenis Surat --</option>
+                @foreach (($jenisSurats ?? []) as $jenisSuratId => $jenisSuratNama)
+                    <option value="{{ $jenisSuratId }}" {{ (string) old('jenis_surat_id', $pengantar->jenis_surat_id) === (string) $jenisSuratId ? 'selected' : '' }}>
+                        {{ $jenisSuratNama }}
+                    </option>
+                @endforeach
+            </select>
+            @error('jenis_surat_id')<div class="error">{{ $message }}</div>@enderror
 
             <label for="keperluan">Keperluan</label>
             <textarea id="keperluan" name="keperluan" rows="3">{{ old('keperluan', $pengantar->keperluan) }}</textarea>
             @error('keperluan')<div class="error">{{ $message }}</div>@enderror
 
-            <label for="tanggal_pengantar">Tanggal Surat</label>
-            <input id="tanggal_pengantar" name="tanggal_pengantar" type="date" value="{{ old('tanggal_pengantar', optional($pengantar->tanggal_pengantar)->format('Y-m-d')) }}" />
-            @error('tanggal_pengantar')<div class="error">{{ $message }}</div>@enderror
+            @if(!$isWargaTerdaftar)
+                <label for="tanggal_pengantar">Tanggal Surat</label>
+                <input id="tanggal_pengantar" name="tanggal_pengantar" type="date" value="{{ old('tanggal_pengantar', optional($pengantar->tanggal_pengantar)->format('Y-m-d')) }}" />
+                @error('tanggal_pengantar')<div class="error">{{ $message }}</div>@enderror
+            @endif
 
             <button type="submit">Simpan Surat Pengantar</button>
         </form>

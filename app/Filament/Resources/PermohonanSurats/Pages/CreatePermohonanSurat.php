@@ -60,6 +60,15 @@ class CreatePermohonanSurat extends CreateRecord
             }
         }
 
+        if (empty($pengantar->jenis_surat_id)) {
+            throw ValidationException::withMessages([
+                'surat_pengantar_id' => 'Jenis surat pada surat pengantar belum diisi.',
+            ]);
+        }
+
+        // Kunci jenis surat selalu mengikuti surat pengantar
+        $data['jenis_surat_id'] = $pengantar->jenis_surat_id;
+
         if (! empty($data['jenis_surat_id'])) {
             $jenisSurat = JenisSurat::find($data['jenis_surat_id']);
             if ($jenisSurat) {
@@ -140,13 +149,13 @@ class CreatePermohonanSurat extends CreateRecord
             if ($pengantar) {
                 $autoFillData['surat_pengantar_id'] = $pengantar->id;
                 $autoFillData['penduduk_id'] = $pengantar->penduduk_id;
-                $autoFillData['selected_penduduk'] = $pengantar->penduduk_id;
                 $autoFillData['pemohon_nik'] = $pengantar->pemohon_nik;
                 $autoFillData['pemohon_nama'] = $pengantar->pemohon_nama;
                 $autoFillData['pemohon_alamat'] = $pengantar->pemohon_alamat;
                 $autoFillData['pemohon_alamat_domisili'] = $pengantar->pemohon_alamat_domisili;
                 $autoFillData['pemohon_telepon'] = $pengantar->pemohon_telepon;
                 $autoFillData['keperluan'] = $pengantar->keperluan;
+                $autoFillData['jenis_surat_id'] = $pengantar->jenis_surat_id;
             }
         }
 

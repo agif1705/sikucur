@@ -28,6 +28,10 @@ class SuratPengantarsTable
                     ->label('Wali Korong')
                     ->placeholder('-')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('jenisSurat.nama_jenis')
+                    ->label('Jenis Surat')
+                    ->placeholder('-')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('permohonanSurat.nomor_permohonan')
                     ->label('Permohonan')
                     ->placeholder('Belum dibuat')
@@ -37,6 +41,13 @@ class SuratPengantarsTable
                     ->date('d M Y'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
+                    ->formatStateUsing(fn (string $state): string => SuratPengantar::statusOptions()[$state] ?? $state)
+                    ->color(fn (string $state): string => match ($state) {
+                        SuratPengantar::STATUS_SUBMITTED => 'success',
+                        SuratPengantar::STATUS_WAITING_APPROVAL => 'warning',
+                        SuratPengantar::STATUS_REJECTED => 'danger',
+                        default => 'gray',
+                    })
                     ->badge(),
             ])
             ->actions([

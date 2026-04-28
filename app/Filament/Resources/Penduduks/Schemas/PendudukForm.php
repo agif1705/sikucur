@@ -38,7 +38,6 @@ class PendudukForm
                 Forms\Components\TextInput::make('nik')
                     ->label('NIK Lengkap Sesuai KTP')
                     ->required()
-                    ->numeric()
                     ->minLength(16)
                     ->maxLength(16)
                     ->unique(ignoreRecord: true)
@@ -77,7 +76,7 @@ class PendudukForm
 
                 Forms\Components\Select::make('korong')
                     ->label('Korong Sesuai KTP')
-                    ->options(fn () => static::korongOptions())
+                    ->options(fn() => static::korongOptions())
                     ->searchable()
                     ->preload()
                     ->required()
@@ -97,7 +96,10 @@ class PendudukForm
                     ->label('Nomor Telepon')
                     ->tel()
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->dehydrateStateUsing(fn (?string $state): ?string => static::normalizePhone($state))
+                    ->formatStateUsing(fn (?string $state): ?string => static::normalizePhone($state))
+                    ->helperText('Format otomatis disimpan ke 62xxxxxxxxxxx'),
             ]);
     }
 
@@ -113,7 +115,7 @@ class PendudukForm
             ->schema([
                 Forms\Components\Select::make('mikrotik_config_id')
                     ->label('Wilayah Hotspot')
-                    ->options(fn () => static::mikrotikConfigOptions())
+                    ->options(fn() => static::mikrotikConfigOptions())
                     ->required()
                     ->afterStateHydrated(function ($component, $record, $state) {
                         if (! $record) {
@@ -159,5 +161,24 @@ class PendudukForm
             ->where('nagari', $nagari)
             ->where('is_active', true)
             ->first();
+    }
+
+    private static function normalizePhone(?string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?: null;
+
+        if (! $digits) {
+            return null;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            return '62'.substr($digits, 1);
+        }
+
+        if (! str_starts_with($digits, '62') && str_starts_with($digits, '8')) {
+            return '62'.$digits;
+        }
+
+        return $digits;
     }
 }

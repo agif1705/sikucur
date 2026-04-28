@@ -13,7 +13,7 @@ class SuratPengantarNotificationService
 
     public function notifyPengantarSubmitted(SuratPengantar $pengantar): void
     {
-        $pengantar->loadMissing(['waliKorong.user']);
+        $pengantar->loadMissing(['waliKorong.user', 'jenisSurat']);
 
         $phone = $pengantar->waliKorong?->user?->no_hp;
         if (! $phone) {
@@ -23,13 +23,22 @@ class SuratPengantarNotificationService
         $downloadUrl = URL::temporarySignedRoute('surat.pengantar.download', now()->addMinutes(30), [
             'token' => $pengantar->token,
         ]);
+        $approveUrl = URL::temporarySignedRoute('surat.pengantar.approve', now()->addHours(12), [
+            'token' => $pengantar->token,
+        ]);
+        $rejectUrl = URL::temporarySignedRoute('surat.pengantar.reject', now()->addHours(12), [
+            'token' => $pengantar->token,
+        ]);
 
-        $message = "Surat pengantar wali korong/RT baru telah diisi.\n"
+        $message = "Surat pengantar wali korong baru telah diisi.\n"
             ."Nama: {$pengantar->pemohon_nama}\n"
             ."NIK: {$pengantar->pemohon_nik}\n"
             ."Korong: {$pengantar->korong}\n"
+            ."Jenis Surat: ".($pengantar->jenisSurat?->nama_jenis ?? '-') ."\n"
             ."Keperluan: {$pengantar->keperluan}\n"
-            ."Unduh PDF: {$downloadUrl}";
+            ."Unduh PDF: {$downloadUrl}\n\n"
+            ."Setujui: {$approveUrl}\n"
+            ."Tolak: {$rejectUrl}";
 
         $this->send($phone, $message, 'pengantar_submitted', $pengantar->id);
     }

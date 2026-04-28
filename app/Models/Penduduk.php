@@ -22,6 +22,25 @@ class Penduduk extends Model
         'no_hp',
     ];
 
+    protected function setNoHpAttribute($value): void
+    {
+        $digits = preg_replace('/\D+/', '', (string) $value) ?: null;
+
+        if (! $digits) {
+            $this->attributes['no_hp'] = null;
+
+            return;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        } elseif (! str_starts_with($digits, '62') && str_starts_with($digits, '8')) {
+            $digits = '62'.$digits;
+        }
+
+        $this->attributes['no_hp'] = $digits;
+    }
+
     public function getJenisKelaminLabelAttribute()
     {
         return $this->jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan';

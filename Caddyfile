@@ -21,7 +21,7 @@ sikucur.com {
     }
 }
 dev.sikucur.com {
-    root * /var/www/sikucur/public
+    root * /var/www/laravel-frankenphp/current/public
     php_server
     encode gzip
     file_server
