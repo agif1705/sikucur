@@ -137,14 +137,18 @@ class IzinPegawaiLivewire extends Component implements HasForms
 
                 FileUpload::make('file_pendukung')
                     ->label('Foto Pendukung')
-                    ->directory('izin')
+                    ->disk('public')
+                    ->directory('IzinByWa')
+                    ->visibility('public')
+                    ->image()
+                    ->maxFiles(1)
                     ->getUploadedFileNameForStorageUsing(function ($file): string {
                         $date = now()->format('Ymd');
                         $uuid = Str::uuid();
                         $name = Auth::user()->username ?? 'user';
                         $ext = $file->getClientOriginalExtension(); // ambil extensi asli
 
-                        return "izin-{$name}-{$date}-{$uuid}.{$ext}";
+                        return "izinbywa-{$name}-{$date}-{$uuid}.{$ext}";
                     })
                     ->hintIcon('heroicon-m-question-mark-circle', tooltip: 'ini adalah file pendukung laporan absensi'),
 

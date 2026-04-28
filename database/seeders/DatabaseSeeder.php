@@ -4,11 +4,6 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
-use App\Models\Coments;
-use App\Models\FooterWhatsApp;
-use App\Models\ListYoutube;
-use App\Models\Penduduk;
-use App\Models\WhatsAppCommand;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -23,13 +18,14 @@ class DatabaseSeeder extends Seeder
         $this->call([
             NagariSeeder::class,
             JabatanSeeder::class,
+            RoleSeeder::class,
             UserSeeder::class,
+            WaliKorongSeeder::class,
             // PegawaiSeeder::class,
             // KantorSeeder::class,
             ShiftSeeder::class,
             JadwalUserSeeder::class,
             ShieldSeeder::class,
-            RoleSeeder::class,
             ModelHasRoleSeeder::class,
             // ComentsSeeder::class,
             PresensiSeeder::class,

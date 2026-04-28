@@ -96,6 +96,25 @@
   <div class="hr"></div>
   <div class="hr2"></div>
 
+  @if($permohonan->suratPengantar)
+  <div class="info-strip">
+    <table>
+      <tr>
+        <td class="label">Surat Pengantar</td>
+        <td>: Wali Korong {{ $permohonan->suratPengantar->korong ?? '-' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Diketahui Wali</td>
+        <td>: {{ $permohonan->suratPengantar->waliKorong?->name ?? '-' }}</td>
+      </tr>
+      <tr>
+        <td class="label">Keperluan</td>
+        <td>: {{ $permohonan->suratPengantar->keperluan ?? '-' }}</td>
+      </tr>
+    </table>
+  </div>
+  @endif
+
     {{-- ISI SURAT (dari template yang sudah di-replace placeholder) --}}
     @if($permohonan->pemohon_template)
         <div class="isi-surat">
@@ -118,7 +137,8 @@
                 <tr><td class="label">NIK</td><td>: {{ $permohonan->pemohon_nik }}</td></tr>
                 <tr><td class="label">Tempat / Tgl Lahir</td><td>: {{ $permohonan->pemohon_tempat_lahir }}, {{ $permohonan->pemohon_tanggal_lahir ? \Carbon\Carbon::parse($permohonan->pemohon_tanggal_lahir)->format('d F Y') : '-' }}</td></tr>
                 <tr><td class="label">Jenis Kelamin</td><td>: {{ $permohonan->pemohon_jk ? 'Laki-laki' : 'Perempuan' }}</td></tr>
-                <tr><td class="label">Alamat</td><td>: {{ $permohonan->pemohon_alamat }}</td></tr>
+                <tr><td class="label">Alamat KTP</td><td>: {{ $permohonan->pemohon_alamat }}</td></tr>
+                <tr><td class="label">Alamat Domisili</td><td>: {{ $permohonan->pemohon_alamat_domisili ?: $permohonan->pemohon_alamat }}</td></tr>
                 <tr><td class="label">Agama</td><td>: {{ $permohonan->pemohon_agama }}</td></tr>
             </table>
 

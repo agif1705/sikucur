@@ -221,5 +221,6 @@ class UserSeeder extends Seeder
             'aktif' => false
 
         ]);
+
     }
 }

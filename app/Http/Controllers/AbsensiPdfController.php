@@ -53,7 +53,7 @@ class AbsensiPdfController extends Controller
             $filename = "Laporan_Absensi_{$nagari_name}_{$bulan}_{$tahun}.pdf";
 
             // Cek apakah PDF sudah ada di storage (1 file per bulan-tahun-nagari)
-            $storagePath = "public/absensi/{$filename}";
+            $storagePath = "absensi/{$filename}";
             // Generate laporan baru
             $report = $service->generate($tahun, $bulan, $nagari_id);
 
@@ -63,11 +63,11 @@ class AbsensiPdfController extends Controller
 
             // Simpan ke storage
             try {
-                $directory = 'public/absensi';
-                if (!Storage::exists($directory)) {
-                    Storage::makeDirectory($directory);
+                $directory = 'absensi';
+                if (!Storage::disk('public')->exists($directory)) {
+                    Storage::disk('public')->makeDirectory($directory);
                 }
-                Storage::put($storagePath, $report['pdf']->output());
+                Storage::disk('public')->put($storagePath, $report['pdf']->output());
                 Log::info('PDF saved to storage successfully');
             } catch (\Exception $storageError) {
                 Log::error('Failed to save PDF to storage: ' . $storageError->getMessage());

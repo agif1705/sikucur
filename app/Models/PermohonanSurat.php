@@ -1,4 +1,5 @@
 <?php
+
 // filepath: app/Models/PermohonanSurat.php
 
 namespace App\Models;
@@ -21,12 +22,14 @@ class PermohonanSurat extends Model
         'status_id',
         'petugas_id',
         'penduduk_id',
+        'surat_pengantar_id',
         'tanggal_permohonan',
         'tanggal_surat',
         'tanggal_estimasi_selesai',
         'pemohon_nik',
         'pemohon_nama',
         'pemohon_alamat',
+        'pemohon_alamat_domisili',
         'pemohon_telepon',
         'pemohon_email',
         'pemohon_jk',
@@ -56,6 +59,11 @@ class PermohonanSurat extends Model
     public function penduduk()
     {
         return $this->belongsTo(Penduduk::class);
+    }
+
+    public function suratPengantar()
+    {
+        return $this->belongsTo(SuratPengantar::class, 'surat_pengantar_id');
     }
 
     public function nagari()
@@ -126,10 +134,14 @@ class PermohonanSurat extends Model
      */
     public static function getNomorSuratLengkapAttribute($jenisSuratId)
     {
-        if (!$jenisSuratId) return '-';
+        if (! $jenisSuratId) {
+            return '-';
+        }
 
         $surat = JenisSurat::find($jenisSuratId);
-        if (!$surat) return '-';
+        if (! $surat) {
+            return '-';
+        }
 
         $nomorUrut = str_pad(static::generateNomorUrut($jenisSuratId, now()), 3, '0', STR_PAD_LEFT);
         $prefix = 'NS';
@@ -160,9 +172,11 @@ class PermohonanSurat extends Model
             9 => 'IX',
             10 => 'X',
             11 => 'XI',
-            12 => 'XII'
+            12 => 'XII',
         ];
+
         return $romawi[$bulan] ?? 'I';
     }
+
     protected $appends = ['nomor_surat_lengkap'];
 }

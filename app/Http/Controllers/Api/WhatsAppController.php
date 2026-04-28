@@ -2,33 +2,28 @@
 
 namespace App\Http\Controllers\Api;
 
-use Carbon\Carbon;
-use App\Models\User;
-use App\Models\Nagari;
-use App\Models\Jabatan;
-use App\Models\WdmsModel;
-use App\Models\IzinPegawai;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use App\Models\AbsensiPegawai;
-use App\Helpers\WhatsAppHelper;
-use App\Models\WhatsAppCommand;
-use Illuminate\Support\Facades\URL;
+use App\Handlers\SuratPengantarHandler;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Http;
-use App\Handlers\SendingWhatsappHandlers;
+use App\Models\IzinPegawai;
+use App\Models\Nagari;
+use App\Models\Penduduk;
+use App\Models\User;
+use App\Models\WdmsModel;
 use App\Services\GowaService;
 use App\Services\SinkronFingerprintService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class WhatsAppController extends Controller
 {
-
     public function handleCommand(Request $request)
     {
         $data = $request->validate([
-            'sender'       => 'required|string|max:255',
-            'chat'         => 'required|string|max:255',
-            'msgId'        => 'required|string|max:255',
+            'sender' => 'required|string|max:255',
+            'chat' => 'required|string|max:255',
+            'msgId' => 'required|string|max:255',
 
         ]);
         $chat2 = Str::lower($data['chat']);
@@ -38,25 +33,41 @@ class WhatsAppController extends Controller
         // Cari user + command
         $user = User::with([
             'nagari:id,name,slug',
-            'nagari.whatsAppCommand' => fn($q) => $q->where('command', $chat)
+            'nagari.whatsAppCommand' => fn ($q) => $q->where('command', $chat),
         ])
             ->where('no_hp', $waId)
-            ->select('id', 'name', 'no_hp', 'nagari_id')
+            ->select('id', 'name', 'no_hp', 'nagari_id', 'jabatan_id')
             ->first();
 
-        if (!$user) {
-            return $this->apiResponse(false, "Nomor ini tidak terdaftar sebagai pegawai.", [
+        if (! $user) {
+            if ($chat === 'surat') {
+                $penduduk = $this->findPendudukByWhatsAppNumber($waId);
+
+                if ($penduduk) {
+                    $result = app(SuratPengantarHandler::class)->handleWarga($penduduk, $chat, $data);
+
+                    return $this->apiResponse($result['success'], $result['message'], $result['data']);
+                }
+
+                return $this->apiResponse(false, 'Nomor WhatsApp ini belum terdaftar sebagai warga. Silakan hubungi pegawai pelayanan agar nomor HP Anda dilengkapi di data penduduk.', [
+                    'pegawai' => false,
+                    'warga' => false,
+                    'data' => $data,
+                ]);
+            }
+
+            return $this->apiResponse(false, 'Nomor ini tidak terdaftar sebagai pegawai.', [
                 'pegawai' => false,
                 'data' => $data,
             ]);
         }
 
         $command = $user->nagari->whatsAppCommand->first();
-        if (!$command || !class_exists($command->handler_class)) {
+        if (! $command || ! class_exists($command->handler_class)) {
             return $this->apiResponse(true, "Perintah *{$chat}* belum ada mungkin akan kita buat. terimakasih.", [
                 'pegawai' => false,
                 'data' => $data,
-                'bot' => true
+                'bot' => true,
             ]);
         }
 
@@ -67,7 +78,35 @@ class WhatsAppController extends Controller
         return $this->apiResponse($result['success'], $result['message'], $result['data']);
     }
 
-    function generateUniqueLink(int $length = 30): string
+    private function findPendudukByWhatsAppNumber(string $waId): ?Penduduk
+    {
+        $variants = $this->phoneVariants($waId);
+
+        return Penduduk::query()
+            ->whereNotNull('no_hp')
+            ->whereRaw("regexp_replace(coalesce(no_hp, ''), '[^0-9]', '', 'g') in (".implode(',', array_fill(0, count($variants), '?')).')', $variants)
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function phoneVariants(string $phone): array
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?: '';
+
+        $variants = [$digits];
+
+        if (str_starts_with($digits, '62')) {
+            $variants[] = '0'.substr($digits, 2);
+        }
+
+        if (str_starts_with($digits, '0')) {
+            $variants[] = '62'.substr($digits, 1);
+        }
+
+        return array_values(array_unique(array_filter($variants)));
+    }
+
+    public function generateUniqueLink(int $length = 30): string
     {
         do {
             // Generate random string, misal pake Str::random
@@ -78,12 +117,13 @@ class WhatsAppController extends Controller
 
         return $code;
     }
-    function scheduleHarian(Request $request)
+
+    public function scheduleHarian(Request $request)
     {
         $tanggalHariIni = Carbon::today();
         $data = $request->validate([
-            'timestamp'       => 'required',
-            'token'        => 'required',
+            'timestamp' => 'required',
+            'token' => 'required',
         ]);
 
         if ($request->input('token') == 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q') {
@@ -94,14 +134,14 @@ class WhatsAppController extends Controller
             $pesan = "📊 Laporan Absensi Hari Ini Pak wali & Pak Seketaris (Semangat Hari Ini: {$tanggal})\n\n";
             foreach ($absensi as $i => $item) {
                 $status = $item['status'];
-                if ($status === "Hadir") {
+                if ($status === 'Hadir') {
                     $jam = $item['time_only'] ?? '-';
                     $statusIcon = $item['is_late'] ? '⚠️ Terlambat' : '✅ HADIR';
-                } elseif ($status === "S" || $status === "I" || $status === "C" || $status === "HDLD" || $status === "HDDD") {
+                } elseif ($status === 'S' || $status === 'I' || $status === 'C' || $status === 'HDLD' || $status === 'HDDD') {
                     $map = [
-                        'S'    => '🤒 SAKIT',
-                        'I'    => '📝 IZIN',
-                        'C'    => '🏖️ CUTI',
+                        'S' => '🤒 SAKIT',
+                        'I' => '📝 IZIN',
+                        'C' => '🏖️ CUTI',
                         'HDLD' => '🧳 DINAS LUAR',
                         'HDDD' => '🏢 DINAS DALAM',
                     ];
@@ -113,30 +153,33 @@ class WhatsAppController extends Controller
                     $statusIcon = '❌ TIDAK HADIR';
                 }
 
-                $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']})"
-                    . " - Jam: {$jam} {$statusIcon}\n";
+                $pesan .= ($i + 1).". {$item['slug']} ({$item['jabatan']})"
+                    ." - Jam: {$jam} {$statusIcon}\n";
             }
             $state = self::getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
-            $wa = new GowaService();
-            if (!$state->original['state'] == null) {
+            $wa = new GowaService;
+            if (! $state->original['state'] == null) {
                 // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
-                $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
-                $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
+                $wali = $wa->sendText($nagari->wali->no_hp, $pesan.' '.$baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan.' '.$baduo);
+                $result = $wa->sendText('6281282779593', $pesan.' '.$baduo);
+
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
                     $result,
                 ]]);
             } else {
-                $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n".$baduo);
+                $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n".$baduo);
+
                 return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['state' => [
                     $wali,
-                    $seketaris
+                    $seketaris,
                 ]]);
             }
         }
     }
+
     public function getTerminalState()
     {
         // ambil token dulu
@@ -147,17 +190,19 @@ class WhatsAppController extends Controller
         $token = $authResponse->json('token');
         // ambil data terminal
         $terminalResponse = Http::withHeaders([
-            'Authorization' => 'JWT ' . $token,
+            'Authorization' => 'JWT '.$token,
         ])->timeout(10)
             ->get('https://fingerprint.baduo.cloud/iclock/api/terminals/2/');
 
         $data = $terminalResponse->json();
         // ambil value "state"
         $state = $data['state'] ?? null;
+
         return response()->json([
             'state' => $state,
         ]);
     }
+
     public function kehadiran(Request $request)
     {
         $now = Carbon::now()->format('Y-m-d');
@@ -177,16 +222,18 @@ class WhatsAppController extends Controller
                 ->get()
                 ->unique('emp_code')
                 ->map(function ($item) {
-                    $item->time_only = \Carbon\Carbon::parse($item->punch_time)->format('H:i');
-                    $item->date_only = \Carbon\Carbon::parse($item->punch_time)->format('Y-m-d');
+                    $item->time_only = Carbon::parse($item->punch_time)->format('H:i');
+                    $item->date_only = Carbon::parse($item->punch_time)->format('Y-m-d');
                     $item->user_name = $item->user->name;
                     if ($item->time_only > '08:00') {
                         $item->is_late = true;
                     } else {
                         $item->is_late = false;
                     }
+
                     return $item;
                 })->toJson();
+
             return $users;
         }
     }

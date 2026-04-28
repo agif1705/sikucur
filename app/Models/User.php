@@ -3,29 +3,29 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\WdmsModel;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
     protected $connection = 'pgsql'; // atau sesuai koneksi yg ada di config/database.php
+
     protected $table = 'users';
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasRoles, HasFactory, Notifiable;
+
+    /** @use HasFactory<UserFactory> */
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
-
     protected $fillable = [
         'name',
         'slug',
@@ -41,8 +41,10 @@ class User extends Authenticatable
         'alamat',
         'aktif',
         'email_verified_at',
+        'password',
         'password_recovery',
     ];
+
     protected $casts = [
         'no_hp' => 'string',
     ];
@@ -69,6 +71,7 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
     public function absensiGabunganPerTanggal($tanggal)
     {
         $isWorkingDay = true;
@@ -89,7 +92,7 @@ class User extends Authenticatable
             ->first();
 
         if ($absensi) {
-            return (object)[
+            return (object) [
                 'tanggal' => $absensi->date,
                 'sn_mesin' => $absensi->sn_mesin,
                 'sumber' => $absensi->resource,
@@ -104,7 +107,7 @@ class User extends Authenticatable
             ->first();
 
         if ($wdms) {
-            return (object)[
+            return (object) [
                 'tanggal' => $wdms->punch_time,
                 'sn_mesin' => $wdms->sn,
                 'sumber' => 'wdms',
@@ -114,7 +117,7 @@ class User extends Authenticatable
         }
 
         // Jika kosong
-        return (object)[
+        return (object) [
             'tanggal' => $tanggal,
             'sn_mesin' => null,
             'sumber' => null,
@@ -122,30 +125,37 @@ class User extends Authenticatable
             'is_working_day' => $isWorkingDay,
         ];
     }
+
     public function jabatan()
     {
         return $this->belongsTo(Jabatan::class);
     }
+
     public function nagari()
     {
         return $this->belongsTo(Nagari::class);
     }
+
     public function wali()
     {
         return $this->belongsTo(Nagari::class, 'wali_id');
     }
+
     public function absensiPegawai(): HasMany
     {
         return $this->hasMany(RekapAbsensiPegawai::class);
     }
+
     public function wdms()
     {
         return $this->hasMany(WdmsModel::class, 'emp_id', 'emp_id');
     }
+
     public function izin()
     {
         return $this->hasMany(IzinPegawai::class);
     }
+
     public function RekapAbsensiPegawai(): HasMany
     {
         return $this->hasMany(RekapAbsensiPegawai::class);

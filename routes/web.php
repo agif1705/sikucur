@@ -14,6 +14,7 @@ use App\Livewire\Surat\TemplateSuratPeringatan;
 use App\Livewire\AbsensiPegawai\IzinPegawaiLivewire;
 use App\Http\Controllers\Surat\SuratPdfController;
 use App\Http\Controllers\Surat\PdfSuratPeringatanController;
+use App\Http\Controllers\Surat\SuratPengantarController;
 
 
 Route::get('/info', function () {
@@ -34,9 +35,23 @@ Route::get('/tv-android/{slug}', function (string $slug) {
 Route::get('/pdf/absensi/{bulan}/{tahun}', [AbsensiPdfController::class, 'index'])->name('absensipdf');
 Route::get('/surat/peringatan/pegawai', [PdfSuratPeringatanController::class, 'index'])->name('Surat.peringatan.pdf');
 
+Route::get('/surat/pengantar/template', [SuratPengantarController::class, 'template'])
+    ->name('surat.pengantar.template');
+Route::get('/surat/pengantar/{token}', [SuratPengantarController::class, 'form'])
+    ->name('surat.pengantar.form')
+    ->middleware('signed');
+Route::post('/surat/pengantar/{token}', [SuratPengantarController::class, 'submit'])
+    ->name('surat.pengantar.submit')
+    ->middleware('signed');
+Route::get('/surat/pengantar/{token}/download', [SuratPengantarController::class, 'download'])
+    ->name('surat.pengantar.download')
+    ->middleware('signed');
+
 Route::middleware('auth')->group(function () {
     Route::get('/surat/permohonan/{permohonan}/pdf', [SuratPdfController::class, 'preview'])->name('surat.permohonan.pdf');
     Route::get('/surat/permohonan/{permohonan}/download', [SuratPdfController::class, 'download'])->name('surat.permohonan.download');
+    Route::get('/surat/pengantar/{pengantar}/pdf', [SuratPengantarController::class, 'preview'])
+        ->name('surat.pengantar.pdf');
 });
 Route::get('/izin-pegawai/{link}/{nagari}', IzinPegawaiLivewire::class)
     ->name('izin-pegawai.form')

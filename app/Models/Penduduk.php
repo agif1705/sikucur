@@ -12,6 +12,7 @@ class Penduduk extends Model
         'name',
         'nik',
         'alamat',
+        'alamat_domisili',
         'jk',
         'tempat_lahir',
         'tanggal_lahir',
@@ -20,14 +21,17 @@ class Penduduk extends Model
         'kepala_keluarga',
         'no_hp',
     ];
+
     public function getJenisKelaminLabelAttribute()
     {
         return $this->jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan';
     }
+
     public function nagari()
     {
         return $this->belongsTo(Nagari::class);
     }
+
     public function hotspotSikucur(): HasOne
     {
         return $this->hasOne(HotspotSikucur::class, 'penduduk_id');

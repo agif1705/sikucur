@@ -224,12 +224,10 @@ class AbsensiReportBulananService
         ])->setPaper('a4', 'landscape');
         $nagari_name = Nagari::find($nagariId)->name;
         $filename = "Laporan_Absensi_{$nagari_name}_{$bulan}_{$tahun}.pdf";
-        $path = "public/absensi/{$filename}";
-
-        Storage::put($path, $pdf->output());
-        $lokasi = "app/private/public/absensi/{$filename}";
+        $path = "absensi/{$filename}";
+        Storage::disk('public')->put($path, $pdf->output());
         return [
-            'path' => $lokasi,
+            'path' => $path,
             'filename' => $filename,
             'pdf' => $pdf,
         ];

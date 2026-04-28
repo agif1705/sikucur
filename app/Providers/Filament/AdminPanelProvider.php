@@ -62,7 +62,7 @@ class AdminPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
                 AttendanceUser::class,
             ])->sidebarCollapsibleOnDesktop()
-            ->maxContentWidth('full')
+            ->maxContentWidth('7xl')
             ->widgets([
                 RekapAbsensiPegawaiWidget::class,
                 \App\Filament\Widgets\BroadcastStatsWidget::class,
