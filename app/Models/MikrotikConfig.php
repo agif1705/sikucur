@@ -2,46 +2,48 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class MikrotikConfig extends Model
 {
- use HasFactory;
+    use HasFactory;
 
- protected $fillable = [
-  'nagari',
-  'location',
-  'host',
-  'user',
-  'pass',
-  'port',
-  'ssl',
-  'is_active',
- ];
+    protected $fillable = [
+        'name',
+        'nagari',
+        'location',
+        'host',
+        'rest_url',
+        'user',
+        'pass',
+        'port',
+        'ssl',
+        'is_active',
+    ];
 
- protected $casts = [
-  'port' => 'integer',
-  'ssl' => 'boolean',
-  'is_active' => 'boolean',
- ];
+    protected $casts = [
+        'port' => 'integer',
+        'ssl' => 'boolean',
+        'is_active' => 'boolean',
+    ];
 
- /**
-  * Scope untuk config yang aktif
-  */
- public function scopeActive($query)
- {
-  return $query->where('is_active', true);
- }
+    /**
+     * Scope untuk config yang aktif
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
- /**
-  * Get config berdasarkan nagari dan location
-  */
- public static function getConfig(string $nagari, string $location): ?self
- {
-  return self::active()
-   ->where('nagari', $nagari)
-   ->where('location', $location)
-   ->first();
- }
+    /**
+     * Get config berdasarkan nagari dan location
+     */
+    public static function getConfig(string $nagari, string $location): ?self
+    {
+        return self::active()
+            ->where('nagari', $nagari)
+            ->where('location', $location)
+            ->first();
+    }
 }

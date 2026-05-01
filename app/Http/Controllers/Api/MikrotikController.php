@@ -2,26 +2,29 @@
 
 namespace App\Http\Controllers\Api;
 
-use Exception;
-use App\Models\Penduduk;
-use Illuminate\Http\Request;
-use App\Models\HotspotSikucur;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Models\HotspotSikucur;
 use App\Models\MikrotikConfig;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
+use App\Models\Penduduk;
 use App\Services\MikrotikService;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class MikrotikController extends Controller
 {
     private const SUCCESS_MESSAGE = 'Selamat menikmati layanan internet gratis dari Pemerintahan Nagari Sikucur. Agar lebih bijak dalam penggunaan Internet (internet positif). Semua pemakaian akses internet terpantau dalam server kami. Kami akan memblokir jika terjadi pemakaian internet yang tidak sesuai dengan etika penggunaan internet. Jika terjadi pemblokiran silahkan datang ke Kantor Nagari Sikucur untuk melakukan pemulihan.';
-    private const CITIZEN_NOT_FOUND_MESSAGE = 'Anda bukan warga Nagari Sikucur. Jika ingin mengakses layanan internet silahkan daftar ke Kantor Nagari Sikucur.';
-    private const MIKROTIK_ERROR_MESSAGE = 'Gagal menambahkan user ke sistem. Silahkan coba lagi.';
-    private const BLOCKED_USER_MESSAGE = 'Akun internet Anda telah diblokir karena melanggar ketentuan penggunaan internet. Silahkan datang ke Kantor Nagari Sikucur untuk melakukan pemulihan akses.';
-    private const EXPIRED_USER_MESSAGE = 'Akses internet Anda telah berakhir. Silahkan daftar ulang di Kantor Nagari Sikucur untuk mendapatkan akses internet.';
 
+    private const CITIZEN_NOT_FOUND_MESSAGE = 'Anda bukan warga Nagari Sikucur. Jika ingin mengakses layanan internet silahkan daftar ke Kantor Nagari Sikucur.';
+
+    private const MIKROTIK_ERROR_MESSAGE = 'Gagal menambahkan user ke sistem. Silahkan coba lagi.';
+
+    private const BLOCKED_USER_MESSAGE = 'Akun internet Anda telah diblokir karena melanggar ketentuan penggunaan internet. Silahkan datang ke Kantor Nagari Sikucur untuk melakukan pemulihan akses.';
+
+    private const EXPIRED_USER_MESSAGE = 'Akses internet Anda telah berakhir. Silahkan daftar ulang di Kantor Nagari Sikucur untuk mendapatkan akses internet.';
 
     private MikrotikService $mikrotikService;
 
@@ -39,21 +42,21 @@ class MikrotikController extends Controller
             // Get MikroTik config based on nagari and location
             $mikrotikConfig = MikrotikConfig::getConfig($nagari, $location);
 
-            if (!$mikrotikConfig) {
+            if (! $mikrotikConfig) {
                 Log::warning('MikroTik config not found, trying to get default config', [
                     'nagari' => $nagari,
-                    'location' => $location
+                    'location' => $location,
                 ]);
 
                 // Try to get default sikucur-main config as fallback
                 $mikrotikConfig = MikrotikConfig::getConfig('sikucur', 'main');
 
-                if (!$mikrotikConfig) {
+                if (! $mikrotikConfig) {
                     // Try sikucur-kantor as second fallback
                     $mikrotikConfig = MikrotikConfig::getConfig('sikucur', 'kantor');
                 }
 
-                if (!$mikrotikConfig) {
+                if (! $mikrotikConfig) {
                     throw new Exception('No MikroTik configuration found. Please contact administrator.');
                 }
             }
@@ -63,7 +66,7 @@ class MikrotikController extends Controller
 
             // Find citizen by NIK
             $penduduk = $this->findCitizen($validatedData['nik']);
-            if (!$penduduk) {
+            if (! $penduduk) {
                 return $this->buildErrorResponse(
                     self::CITIZEN_NOT_FOUND_MESSAGE,
                     $validatedData,
@@ -71,12 +74,11 @@ class MikrotikController extends Controller
                 );
             }
 
-
             // Check existing hotspot access
             $existingHotspot = $this->getExistingHotspot($penduduk->id);
 
             // Check if user is blocked (status = false)
-            if ($existingHotspot && !$existingHotspot->status) {
+            if ($existingHotspot && ! $existingHotspot->status) {
                 return $this->buildErrorResponse(
                     self::BLOCKED_USER_MESSAGE,
                     $validatedData,
@@ -87,6 +89,7 @@ class MikrotikController extends Controller
             // Check if user has valid access (status = true AND not expired)
             if ($this->hasValidAccess($existingHotspot)) {
                 $penduduk->update(['no_hp' => $this->noHp($validatedData['phone'])]);
+
                 return $this->buildSuccessResponse(
                     self::SUCCESS_MESSAGE,
                     $validatedData
@@ -110,11 +113,11 @@ class MikrotikController extends Controller
                 'errors' => $e->errors(),
             ]);
         } catch (Exception $e) {
-            Log::error('MikrotikController error: ' . $e->getMessage(), [
+            Log::error('MikrotikController error: '.$e->getMessage(), [
                 'nagari' => $nagari ?? 'unknown',
                 'location' => $location ?? 'unknown',
                 'request_data' => $request->all(),
-                'stack_trace' => $e->getTraceAsString()
+                'stack_trace' => $e->getTraceAsString(),
             ]);
 
             return $this->apiResponse(false, self::MIKROTIK_ERROR_MESSAGE, [
@@ -133,10 +136,12 @@ class MikrotikController extends Controller
             'phone' => 'required|string|min:10|max:15',
         ]);
     }
+
     private function noHp($phone)
     {
         return preg_replace('/^0/', '62', $phone);
     }
+
     /**
      * Find citizen by NIK
      */
@@ -175,11 +180,14 @@ class MikrotikController extends Controller
                 $mikrotikResponse = $this->mikrotikService->addHotspotUser(
                     $mikrotikConfig,
                     $penduduk->nik,
-                    $validatedData['phone']
+                    $validatedData['phone'],
+                    [
+                        'comment' => $penduduk->name,
+                    ]
                 );
 
                 // Validate MikroTik response
-                if (empty($mikrotikResponse) || !isset($mikrotikResponse['after']['ret'])) {
+                if (empty($mikrotikResponse) || ! isset($mikrotikResponse['after']['ret'])) {
                     throw new Exception('Failed to create user in MikroTik: Invalid response');
                 }
 
@@ -190,8 +198,8 @@ class MikrotikController extends Controller
 
                 Log::info('Hotspot user created successfully', [
                     'nik' => $penduduk->nik,
-                    'mikrotik_config' => $mikrotikConfig->nagari . '-' . $mikrotikConfig->location,
-                    'mikrotik_user_id' => $mikrotikUserId
+                    'mikrotik_config' => $mikrotikConfig->nagari.'-'.$mikrotikConfig->location,
+                    'mikrotik_user_id' => $mikrotikUserId,
                 ]);
 
                 return $this->buildSuccessResponse(
@@ -200,10 +208,10 @@ class MikrotikController extends Controller
                     $mikrotikResponse
                 );
             } catch (Exception $e) {
-                Log::error('Failed to create hotspot user: ' . $e->getMessage(), [
+                Log::error('Failed to create hotspot user: '.$e->getMessage(), [
                     'nik' => $penduduk->nik,
                     'mikrotik_config_id' => $mikrotikConfig->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
                 throw $e;
             }

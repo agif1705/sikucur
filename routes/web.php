@@ -1,21 +1,18 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Livewire\Tv\InformasiTvLivewire;
-use App\Http\Controllers\FonnteController;
-use App\Livewire\Homepage\HomePageLivewire;
-use App\Livewire\Homepage\AgendaPageLivewire;
-use App\Livewire\Homepage\KritikPageLivewire;
 use App\Http\Controllers\AbsensiPdfController;
-use App\Livewire\TvInformasi\TvNagariLivewire;
-use App\Http\Controllers\FingerPrintController;
-use App\Livewire\Homepage\KegiatanPageLivewire;
-use App\Livewire\Surat\TemplateSuratPeringatan;
-use App\Livewire\AbsensiPegawai\IzinPegawaiLivewire;
-use App\Http\Controllers\Surat\SuratPdfController;
+use App\Http\Controllers\MikrotikRemoteOntController;
 use App\Http\Controllers\Surat\PdfSuratPeringatanController;
+use App\Http\Controllers\Surat\SuratPdfController;
 use App\Http\Controllers\Surat\SuratPengantarController;
-
+use App\Http\Controllers\Test\TestAbsensiPdfController;
+use App\Livewire\AbsensiPegawai\IzinPegawaiLivewire;
+use App\Livewire\Homepage\AgendaPageLivewire;
+use App\Livewire\Homepage\HomePageLivewire;
+use App\Livewire\Homepage\KegiatanPageLivewire;
+use App\Livewire\Homepage\KritikPageLivewire;
+use App\Livewire\Tv\InformasiTvLivewire;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/info', function () {
     phpinfo();
@@ -58,19 +55,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/surat/permohonan/{permohonan}/download', [SuratPdfController::class, 'download'])->name('surat.permohonan.download');
     Route::get('/surat/pengantar/{pengantar}/pdf', [SuratPengantarController::class, 'preview'])
         ->name('surat.pengantar.pdf');
+    Route::get('/mikrotik/remote-ont/{tracking}', MikrotikRemoteOntController::class)
+        ->name('mikrotik.remote-ont');
 });
 Route::get('/izin-pegawai/{link}/{nagari}', IzinPegawaiLivewire::class)
     ->name('izin-pegawai.form')
     ->middleware('signed');
-Route::get('/test-pdf', [App\Http\Controllers\AbsensiPdfController::class, 'test'])
+Route::get('/test-pdf', [AbsensiPdfController::class, 'test'])
     ->middleware('auth')
     ->name('test.pdf');
 
 // Test routes untuk debugging PDF (hanya development)
 if (app()->environment(['local', 'development'])) {
-    Route::get('/debug-pdf/{bulan}/{tahun}/{nagari?}', [App\Http\Controllers\Test\TestAbsensiPdfController::class, 'testPdf'])
+    Route::get('/debug-pdf/{bulan}/{tahun}/{nagari?}', [TestAbsensiPdfController::class, 'testPdf'])
         ->name('debug.pdf');
 
-    Route::get('/debug-data/{bulan}/{tahun}/{nagari?}', [App\Http\Controllers\Test\TestAbsensiPdfController::class, 'testData'])
+    Route::get('/debug-data/{bulan}/{tahun}/{nagari?}', [TestAbsensiPdfController::class, 'testData'])
         ->name('debug.data');
 }

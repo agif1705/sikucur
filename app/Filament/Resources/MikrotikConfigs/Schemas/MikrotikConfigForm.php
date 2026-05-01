@@ -11,6 +11,10 @@ class MikrotikConfigForm
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('name')
+                    ->label('Nama Profile')
+                    ->required()
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('nagari')
                     ->required()
                     ->maxLength(255),
@@ -19,6 +23,11 @@ class MikrotikConfigForm
                     ->maxLength(255),
                 Forms\Components\TextInput::make('host')
                     ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('rest_url')
+                    ->label('REST URL')
+                    ->placeholder('http://192.168.200.1')
+                    ->url()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('user')
                     ->required()

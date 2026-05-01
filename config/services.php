@@ -18,9 +18,9 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
     'mikrotik' => [
-        'url' => 'http://id-27.hostddns.us:30179',
-        'username' => 'agif',
-        'password' => 'agif1705@gmail.com',
+        'url' => env('MIKROTIK_URL', 'http://id-27.hostddns.us:30179'),
+        'username' => env('MIKROTIK_USERNAME', 'agif'),
+        'password' => env('MIKROTIK_PASSWORD', 'agif1705@gmail.com'),
 
     ],
 
