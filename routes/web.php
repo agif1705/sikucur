@@ -57,6 +57,8 @@ Route::middleware('auth')->group(function () {
         ->name('surat.pengantar.pdf');
     Route::get('/mikrotik/remote-ont/{tracking}', MikrotikRemoteOntController::class)
         ->name('mikrotik.remote-ont');
+    Route::get('/mikrotik/remote-ont-public/{tracking}', [MikrotikRemoteOntController::class, 'public'])
+        ->name('mikrotik.remote-ont-public');
 });
 Route::get('/izin-pegawai/{link}/{nagari}', IzinPegawaiLivewire::class)
     ->name('izin-pegawai.form')

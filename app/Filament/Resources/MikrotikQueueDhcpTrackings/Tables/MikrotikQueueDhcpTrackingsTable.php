@@ -79,6 +79,22 @@ class MikrotikQueueDhcpTrackingsTable
                     ->searchable()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\ToggleColumn::make('blocked')
+                    ->label('Blok Akses')
+                    ->sortable()
+                    ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->dhcp_lease_id))
+                    ->updateStateUsing(fn (MikrotikQueueDhcpTracking $record, bool $state): bool => self::syncBlockAccess($record, $state)),
+                Tables\Columns\TextColumn::make('blocked_label')
+                    ->label('Status Akses')
+                    ->state(fn (MikrotikQueueDhcpTracking $record): string => blank($record->dhcp_lease_id)
+                        ? '-'
+                        : ($record->blocked ? 'Diblokir' : 'Terbuka'))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Diblokir' => 'danger',
+                        'Terbuka' => 'success',
+                        default => 'gray',
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('mikrotik_config_id')
@@ -109,6 +125,13 @@ class MikrotikQueueDhcpTrackingsTable
                     ->icon('gmdi-open-in-new')
                     ->color('info')
                     ->url(fn (MikrotikQueueDhcpTracking $record): string => route('mikrotik.remote-ont', $record))
+                    ->openUrlInNewTab()
+                    ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->queue_ip ?: $record->lease_ip)),
+                Action::make('remoteOntPublic')
+                    ->label('Remote Public')
+                    ->icon('gmdi-public')
+                    ->color('success')
+                    ->url(fn (MikrotikQueueDhcpTracking $record): string => route('mikrotik.remote-ont-public', $record))
                     ->openUrlInNewTab()
                     ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->queue_ip ?: $record->lease_ip)),
             ])
@@ -194,6 +217,69 @@ class MikrotikQueueDhcpTrackingsTable
         }
     }
 
+    private static function syncBlockAccess(MikrotikQueueDhcpTracking $tracking, bool $blocked): bool
+    {
+        $lease = MikrotikDhcpLease::query()
+            ->with('mikrotikConfig')
+            ->find($tracking->dhcp_lease_id);
+
+        if (! $lease || ! $lease->mikrotikConfig) {
+            Notification::make()
+                ->title('Gagal Mengubah Block Access')
+                ->body('Data DHCP lease atau konfigurasi MikroTik tidak ditemukan.')
+                ->danger()
+                ->send();
+
+            return (bool) $tracking->blocked;
+        }
+
+        try {
+            $response = $lease->ret_id
+                ? Mikrotik::updateDhcpLease($lease->mikrotikConfig, $lease->ret_id, [
+                    'mac_address' => $lease->mac_address,
+                    'address' => $lease->address,
+                    'server' => $lease->server,
+                    'client_id' => $lease->client_id,
+                    'comment' => $lease->comment,
+                    'blocked' => $blocked,
+                ])
+                : (Mikrotik::addDhcpLease($lease->mikrotikConfig, [
+                    'mac_address' => $lease->mac_address,
+                    'address' => $lease->address,
+                    'server' => $lease->server,
+                    'client_id' => $lease->client_id,
+                    'comment' => $lease->comment,
+                    'blocked' => $blocked,
+                ])['lease_data'] ?? []);
+
+            self::updateLeaseFromMikrotikResponse($lease, $response, $blocked);
+
+            Notification::make()
+                ->title('Block Access Diperbarui')
+                ->body($lease->blocked ? 'Akses DHCP client diblokir.' : 'Akses DHCP client dibuka kembali.')
+                ->success()
+                ->send();
+
+            return $lease->blocked;
+        } catch (\Exception $e) {
+            Log::error('Failed to update DHCP lease block access from tracking table toggle', [
+                'tracking_id' => $tracking->id,
+                'dhcp_lease_id' => $lease->id,
+                'ret_id' => $lease->ret_id,
+                'blocked' => $blocked,
+                'error' => $e->getMessage(),
+            ]);
+
+            Notification::make()
+                ->title('Gagal Mengubah Block Access')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            return $lease->blocked;
+        }
+    }
+
     private static function syncQueueName(MikrotikQueueDhcpTracking $tracking, ?string $name): ?string
     {
         $previousName = $tracking->queue_name;
@@ -256,5 +342,32 @@ class MikrotikQueueDhcpTrackingsTable
 
             return $previousName;
         }
+    }
+
+    private static function updateLeaseFromMikrotikResponse(MikrotikDhcpLease $lease, array $response, bool $fallbackBlocked): void
+    {
+        $lease->forceFill([
+            'ret_id' => $response['.id'] ?? $lease->ret_id,
+            'address' => $response['address'] ?? $response['active-address'] ?? $lease->address,
+            'active_address' => $response['active-address'] ?? $lease->active_address,
+            'server' => $response['server'] ?? $lease->server,
+            'host_name' => $response['host-name'] ?? $lease->host_name,
+            'client_id' => $response['client-id'] ?? $lease->client_id,
+            'status' => $response['status'] ?? $lease->status,
+            'last_seen' => $response['last-seen'] ?? $lease->last_seen,
+            'comment' => $response['comment'] ?? $lease->comment,
+            'dynamic' => self::mikrotikBool($response['dynamic'] ?? $lease->dynamic),
+            'disabled' => self::mikrotikBool($response['disabled'] ?? $lease->disabled),
+            'blocked' => self::mikrotikBool($response['blocked'] ?? $response['block-access'] ?? $fallbackBlocked),
+        ])->saveQuietly();
+    }
+
+    private static function mikrotikBool(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return $value === 'true' || $value === 'yes' || $value === '1' || $value === 1;
     }
 }

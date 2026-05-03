@@ -11,10 +11,19 @@ class MikrotikQueueDhcpTracking extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'blocked' => 'boolean',
+    ];
+
     public $timestamps = false;
 
     public function mikrotikConfig(): BelongsTo
     {
         return $this->belongsTo(MikrotikConfig::class);
+    }
+
+    public function dhcpLease(): BelongsTo
+    {
+        return $this->belongsTo(MikrotikDhcpLease::class, 'dhcp_lease_id');
     }
 }

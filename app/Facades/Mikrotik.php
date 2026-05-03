@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getDhcpLeases(\App\Models\MikrotikConfig $config)
  * @method static array getSimpleQueues(\App\Models\MikrotikConfig $config)
  * @method static array updateSimpleQueue(\App\Models\MikrotikConfig $config, string $queueId, array $data)
- * @method static array updateRemoteOntNat(\App\Models\MikrotikConfig $config, string $targetIp, string $comment = 'REMOTE-Client-Ont', string $dstPort = '1709', string $dstAddress = '192.168.200.1')
+ * @method static array updateRemoteOntNat(\App\Models\MikrotikConfig $config, string $targetIp, ?string $comment = 'REMOTE-Client-Ont', string $dstPort = '1709', ?string $dstAddress = '192.168.200.1')
  * @method static array addDhcpLease(\App\Models\MikrotikConfig $config, array $data)
  * @method static array updateDhcpLease(\App\Models\MikrotikConfig $config, string $leaseId, array $data)
  * @method static array removeDhcpLease(\App\Models\MikrotikConfig $config, string $leaseId)

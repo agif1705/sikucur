@@ -694,9 +694,9 @@ class MikrotikService
     public function updateRemoteOntNat(
         MikrotikConfig $config,
         string $targetIp,
-        string $comment = 'REMOTE-Client-Ont',
+        ?string $comment = 'REMOTE-Client-Ont',
         string $dstPort = '1709',
-        string $dstAddress = '192.168.200.1'
+        ?string $dstAddress = '192.168.200.1'
     ): array {
         try {
             return $this->updateRemoteOntNatViaRest($config, $targetIp, $comment, $dstPort, $dstAddress);
@@ -750,7 +750,7 @@ class MikrotikService
         }
     }
 
-    private function updateRemoteOntNatViaRest(MikrotikConfig $config, string $targetIp, string $comment, string $dstPort, string $dstAddress): array
+    private function updateRemoteOntNatViaRest(MikrotikConfig $config, string $targetIp, ?string $comment, string $dstPort, ?string $dstAddress): array
     {
         $rules = $this->restGet($config, 'ip/firewall/nat', [
             '.proplist' => '.id,comment,chain,action,protocol,dst-address,dst-port,to-addresses,disabled',
@@ -767,7 +767,7 @@ class MikrotikService
         ]);
     }
 
-    private function findRemoteOntNatRule(array $rules, string $comment, string $dstPort, string $dstAddress): ?array
+    private function findRemoteOntNatRule(array $rules, ?string $comment, string $dstPort, ?string $dstAddress): ?array
     {
         return collect($rules)
             ->first(function (array $rule) use ($comment, $dstPort, $dstAddress): bool {
@@ -775,10 +775,28 @@ class MikrotikService
                 $ruleDstAddress = (string) ($rule['dst-address'] ?? '');
                 $ruleDstPort = (string) ($rule['dst-port'] ?? '');
 
-                return str_contains($ruleComment, $comment)
-                    && $ruleDstAddress === $dstAddress
-                    && $ruleDstPort === $dstPort;
+                return (blank($comment) || str_contains($ruleComment, $comment))
+                    && self::remoteOntNatAddressMatches($ruleComment, $ruleDstAddress, $dstAddress)
+                    && self::remoteOntNatPortMatches($ruleComment, $ruleDstPort, $dstPort);
             });
+    }
+
+    private static function remoteOntNatAddressMatches(string $comment, string $ruleDstAddress, ?string $dstAddress): bool
+    {
+        if (blank($dstAddress)) {
+            return true;
+        }
+
+        if ($ruleDstAddress === $dstAddress) {
+            return true;
+        }
+
+        return blank($ruleDstAddress) && str_contains($comment, $dstAddress);
+    }
+
+    private static function remoteOntNatPortMatches(string $comment, string $ruleDstPort, string $dstPort): bool
+    {
+        return $ruleDstPort === $dstPort;
     }
 
     private function getDhcpLeasesViaRest(MikrotikConfig $config): array
