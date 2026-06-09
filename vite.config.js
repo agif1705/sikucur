@@ -10,6 +10,7 @@ export default defineConfig({
         'resources/js/app.js',
         'resources/css/filament/admin/theme.css',
         'resources/js/supabase.js',
+        'resources/js/filament/admin/attendance-notifications.js',
       ],
       refresh: ['app/Livewire/**'],
     }),

@@ -96,6 +96,22 @@ class MikrotikQueueDhcpTrackingsTable
                         default => 'gray',
                     }),
             ])
+            ->actions([
+                Action::make('remoteOnt')
+                    ->label('Remote ONT')
+                    ->icon('gmdi-open-in-new')
+                    ->color('info')
+                    ->url(fn (MikrotikQueueDhcpTracking $record): string => route('mikrotik.remote-ont', $record))
+                    ->openUrlInNewTab()
+                    ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->queue_ip ?: $record->lease_ip)),
+                Action::make('remoteOntPublic')
+                    ->label('Remote Public')
+                    ->icon('gmdi-public')
+                    ->color('success')
+                    ->url(fn (MikrotikQueueDhcpTracking $record): string => route('mikrotik.remote-ont-public', $record))
+                    ->openUrlInNewTab()
+                    ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->queue_ip ?: $record->lease_ip)),
+            ])
             ->filters([
                 Tables\Filters\SelectFilter::make('mikrotik_config_id')
                     ->label('MikroTik')
@@ -119,22 +135,7 @@ class MikrotikQueueDhcpTrackingsTable
                         'Lengkap' => 'Lengkap',
                     ]),
             ])
-            ->actions([
-                Action::make('remoteOnt')
-                    ->label('Remote ONT')
-                    ->icon('gmdi-open-in-new')
-                    ->color('info')
-                    ->url(fn (MikrotikQueueDhcpTracking $record): string => route('mikrotik.remote-ont', $record))
-                    ->openUrlInNewTab()
-                    ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->queue_ip ?: $record->lease_ip)),
-                Action::make('remoteOntPublic')
-                    ->label('Remote Public')
-                    ->icon('gmdi-public')
-                    ->color('success')
-                    ->url(fn (MikrotikQueueDhcpTracking $record): string => route('mikrotik.remote-ont-public', $record))
-                    ->openUrlInNewTab()
-                    ->disabled(fn (MikrotikQueueDhcpTracking $record): bool => blank($record->queue_ip ?: $record->lease_ip)),
-            ])
+
             ->bulkActions([
                 //
             ]);

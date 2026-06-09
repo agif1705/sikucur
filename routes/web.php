@@ -59,6 +59,11 @@ Route::middleware('auth')->group(function () {
         ->name('mikrotik.remote-ont');
     Route::get('/mikrotik/remote-ont-public/{tracking}', [MikrotikRemoteOntController::class, 'public'])
         ->name('mikrotik.remote-ont-public');
+    Route::get('/mikrotik/ppp-secret/{config}/remote-ont/{ip}/{port?}', [MikrotikRemoteOntController::class, 'pppSecret'])
+        ->whereNumber('port')
+        ->name('mikrotik.ppp-secret.remote-ont');
+    Route::get('/mikrotik/ppp-secret/{config}/remote-ont-public/{ip}', [MikrotikRemoteOntController::class, 'pppSecretPublic'])
+        ->name('mikrotik.ppp-secret.remote-ont-public');
 });
 Route::get('/izin-pegawai/{link}/{nagari}', IzinPegawaiLivewire::class)
     ->name('izin-pegawai.form')

@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use PDF;
-use App\Models\User;
-use App\Models\Nagari;
-use App\Models\WhatsAppLog;
-use Illuminate\Http\Request;
-use App\Services\GowaService;
-use Illuminate\Support\Carbon;
-use App\Models\RekapAbsensiPegawai;
-use Illuminate\Support\Facades\Log;
+use App\Events\FingerprintAttendanceStamped;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Nagari;
+use App\Models\RekapAbsensiPegawai;
+use App\Models\User;
+use App\Models\WhatsAppLog;
+use App\Services\GowaService;
 use App\Services\Pdf\AbsensiReportBulananService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use PDF;
 
 class RekapPegawaiController extends Controller
 {
@@ -21,10 +22,10 @@ class RekapPegawaiController extends Controller
     {
         // ini ada perubahan di iclock_transaction dan mengirimkan wa ke User
         $data = $request->validate([
-            'id'  => 'required|integer',
-            'sn_mesin'  => 'required|string|max:255',
-            'emp_id'    => 'required',
-            'emp_code'  => 'required',
+            'id' => 'required|integer',
+            'sn_mesin' => 'required|string|max:255',
+            'emp_id' => 'required',
+            'emp_code' => 'required',
             'punch_time' => 'required', // format string
         ]);
 
@@ -34,14 +35,13 @@ class RekapPegawaiController extends Controller
         $isLateInt = $is_late === 'Terlambat' ? 1 : 0;
 
         // Tentukan emp_id yang dipakai
-        $emp_id = !empty($data['emp_id']) ? intval($data['emp_id']) : intval($data['emp_code']);
-
+        $emp_id = ! empty($data['emp_id']) ? intval($data['emp_id']) : intval($data['emp_code']);
 
         // Cari nagari dan user
         $nagari_id = Nagari::where('sn_fingerprint', $data['sn_mesin'])->first()?->id;
         $user = User::whereEmpId($emp_id)->first();
 
-        if (!$user || !$nagari_id) {
+        if (! $user || ! $nagari_id) {
             return response()->json(['message' => 'User atau mesin tidak ditemukan'], 404);
         }
         // Cek absensi hari ini
@@ -50,49 +50,53 @@ class RekapPegawaiController extends Controller
             ->whereDate('date', $date)
             ->first();
 
-        if (!$absensi) {
+        if (! $absensi) {
             $jam = Carbon::parse($data['punch_time'])->format('H:i:s');
             $statusEmoji = $is_late === 'Terlambat' ? '⏳' : '✅';
             $pesan_masuk =
-                "👋 Hai *{$user->name}* (Jabatan: *{$user->jabatan->name}*)\n" .
-                "Kehadiran: {$statusEmoji} *{$is_late}*\n" .
-                "⏰ Jam: *{$jam}*\n" .
-                "📍 Lokasi: *Nagari {$user->nagari->name}*\n\n" .
-                "Pesan ini akan masuk ke WhatsApp Wali Nagari {$user->nagari->name} sebelum jam *10:05* (Siang). Terima kasih.\n" .
-                "ℹ️ Ketik: *info* untuk melihat perintah dan bantuan.\n\n" .
-                "_Sent || via *Cv.Baduo Mitra Solution*_";
+                "👋 Hai *{$user->name}* (Jabatan: *{$user->jabatan->name}*)\n".
+                "Kehadiran: {$statusEmoji} *{$is_late}*\n".
+                "⏰ Jam: *{$jam}*\n".
+                "📍 Lokasi: *Nagari {$user->nagari->name}*\n\n".
+                "Pesan ini akan masuk ke WhatsApp Wali Nagari {$user->nagari->name} sebelum jam *10:05* (Siang). Terima kasih.\n".
+                "ℹ️ Ketik: *info* untuk melihat perintah dan bantuan.\n\n".
+                '_Sent || via *Cv.Baduo Mitra Solution*_';
 
             $absensi = RekapAbsensiPegawai::create([
-                'user_id'        => $user->id,
-                'nagari_id'      => $nagari_id,
-                'is_late'        => $isLateInt,
+                'user_id' => $user->id,
+                'nagari_id' => $nagari_id,
+                'is_late' => $isLateInt,
                 'status_absensi' => 'Hadir',
-                'sn_mesin'       => $data['sn_mesin'],
-                'resource'       => 'Fingerprint',
-                'id_resource'    => 'fp-' . $data['id'],
-                'time_in'        => Carbon::parse($data['punch_time'])->format('H:i'),
-                'date'           => Carbon::parse($data['punch_time'])->format('Y-m-d'),
+                'sn_mesin' => $data['sn_mesin'],
+                'resource' => 'Fingerprint',
+                'id_resource' => 'fp-'.$data['id'],
+                'time_in' => Carbon::parse($data['punch_time'])->format('H:i'),
+                'date' => Carbon::parse($data['punch_time'])->format('Y-m-d'),
             ]);
+
+            $this->broadcastFingerprintAttendance($absensi, 'in');
+
             if ($user->aktif) {
-                $wa = new GowaService();
+                $wa = new GowaService;
                 $result = $wa->sendText($user->no_hp, $pesan_masuk);
                 WhatsAppLog::create([
                     'user_id' => $user->id,
-                    'phone'   => $user->no_hp,
+                    'phone' => $user->no_hp,
                     'message' => $pesan_masuk,
-                    'status'  => $result['code'] ?? false,
+                    'status' => $result['code'] ?? false,
                     'response' => $result,
                 ]);
             }
+
             return response()->json([
-                'message'      => $pesan_masuk,
-                'phone'       => $user->no_hp,
-                'user_id'      => $user->emp_code,
-                'time_in'      => $time_in,
-                'date'         => $date,
+                'message' => $pesan_masuk,
+                'phone' => $user->no_hp,
+                'user_id' => $user->emp_code,
+                'time_in' => $time_in,
+                'date' => $date,
                 'absensi_type' => 'IN',
-                'dataSender'   =>  $absensi,
-                'wa_response'  => $result ?? null
+                'dataSender' => $absensi,
+                'wa_response' => $result ?? null,
             ], 200);
         } else {
             // Absensi kedua (pulang)
@@ -100,6 +104,9 @@ class RekapPegawaiController extends Controller
                 $absensi->update([
                     'time_out' => Carbon::parse($data['punch_time'])->format('H:i'),
                 ]);
+                $absensi->refresh();
+
+                $this->broadcastFingerprintAttendance($absensi, 'out');
 
                 $jamPulang = Carbon::parse($data['punch_time'])->format('H:i');
                 $jamMasukCarbon = $absensi->time_in ? Carbon::parse($absensi->time_in) : null;
@@ -107,43 +114,57 @@ class RekapPegawaiController extends Controller
                 $durasiText = $durasiMenit !== null
                     ? sprintf('%d jam %02d menit', intdiv($durasiMenit, 60), $durasiMenit % 60)
                     : null;
-                $pesan_pulang = "👋 Hai *{$user->name}*,\n\n" .
-                    "✅ Absensi pulang berhasil\n" .
-                    "🕐 Waktu Pulang: *{$jamPulang}*\n" .
-                    "📍 Lokasi: Nagari {$user->nagari->name}\n" .
-                    "📱 Metode: Fingerprint\n\n" .
-                    "Terima kasih atas dedikasi Anda hari ini.\n\n" .
-                    "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n" .
-                    "_Sent via Cv.Baduo Mitra Solution_";
+                $pesan_pulang = "👋 Hai *{$user->name}*,\n\n".
+                    "✅ Absensi pulang berhasil\n".
+                    "🕐 Waktu Pulang: *{$jamPulang}*\n".
+                    "📍 Lokasi: Nagari {$user->nagari->name}\n".
+                    "📱 Metode: Fingerprint\n\n".
+                    "Terima kasih atas dedikasi Anda hari ini.\n\n".
+                    "Ketik: *info* untuk melihat informasi perintah dan bantuan lebih lanjut.\n\n".
+                    '_Sent via Cv.Baduo Mitra Solution_';
                 if ($user->aktif) {
-                    $wa = new GowaService();
+                    $wa = new GowaService;
                     $result = $wa->sendText($user->no_hp, $pesan_pulang);
                     WhatsAppLog::create([
-                        'user_id'  => $user->id,
-                        'phone'    => $user->no_hp,
-                        'message'  => $pesan_pulang,
-                        'status'   => $result['code'] ?? false,
+                        'user_id' => $user->id,
+                        'phone' => $user->no_hp,
+                        'message' => $pesan_pulang,
+                        'status' => $result['code'] ?? false,
                         'response' => $result,
                     ]);
                 }
 
                 return response()->json([
-                    'message'      => $pesan_pulang,
-                    'phone'        => $user->no_hp,
-                    'user_id'      => $user->emp_code,
-                    'time_out'     => $jamPulang,
-                    'date'         => Carbon::parse($data['punch_time'])->format('Y-m-d'),
-                    'wa_response'  => $result ?? null,
+                    'message' => $pesan_pulang,
+                    'phone' => $user->no_hp,
+                    'user_id' => $user->emp_code,
+                    'time_out' => $jamPulang,
+                    'date' => Carbon::parse($data['punch_time'])->format('Y-m-d'),
+                    'wa_response' => $result ?? null,
                     'absensi_type' => 'OUT',
                 ], 200);
             }
         }
     }
-    public function absensiBulanan(Request $request,  AbsensiReportBulananService $service)
+
+    private function broadcastFingerprintAttendance(RekapAbsensiPegawai $absensi, string $type): void
+    {
+        try {
+            FingerprintAttendanceStamped::dispatch($absensi, $type);
+        } catch (\Throwable $exception) {
+            Log::warning('Gagal broadcast realtime absensi fingerprint', [
+                'attendance_id' => $absensi->id,
+                'type' => $type,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    public function absensiBulanan(Request $request, AbsensiReportBulananService $service)
     {
         try {
             $data = $request->validate([
-                'tahun' => 'required|integer|min:2020|max:' . (now()->year + 1),
+                'tahun' => 'required|integer|min:2020|max:'.(now()->year + 1),
                 'bulan' => 'required|integer|min:1|max:12',
             ]);
 
@@ -164,7 +185,7 @@ class RekapPegawaiController extends Controller
 
             if ($nagaris->isEmpty()) {
                 return response()->json([
-                    'error' => 'Tidak ada nagari dengan pegawai aktif yang punya nomor HP'
+                    'error' => 'Tidak ada nagari dengan pegawai aktif yang punya nomor HP',
                 ], 404);
             }
 
@@ -181,7 +202,7 @@ class RekapPegawaiController extends Controller
 
                         // Pastikan direktori ada
                         $directory = dirname($fullPath);
-                        if (!is_dir($directory)) {
+                        if (! is_dir($directory)) {
                             mkdir($directory, 0755, true);
                         }
 
@@ -193,13 +214,13 @@ class RekapPegawaiController extends Controller
                             'nagari' => $nagari,
                             'filename' => $filename,
                             'storage_path' => $storagePath,
-                            'full_path' => $fullPath
+                            'full_path' => $fullPath,
                         ];
 
                         Log::info('PDF generated successfully', [
                             'nagari' => $nagari->name,
                             'filename' => $filename,
-                            'file_size' => strlen($pdfContent)
+                            'file_size' => strlen($pdfContent),
                         ]);
                     }
                 } catch (\Exception $e) {
@@ -207,14 +228,14 @@ class RekapPegawaiController extends Controller
                         'nagari_id' => $nagari->id,
                         'nagari_name' => $nagari->name,
                         'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
             }
 
             if (empty($pdfFiles)) {
                 return response()->json([
-                    'error' => 'Gagal membuat laporan PDF untuk semua nagari'
+                    'error' => 'Gagal membuat laporan PDF untuk semua nagari',
                 ], 500);
             }
 
@@ -230,22 +251,22 @@ class RekapPegawaiController extends Controller
 
                 foreach ($nagari->users as $user) {
                     $jabatan = $user->jabatan->name ?? 'Tidak ada jabatan';
-                    $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\n\n" .
-                        "Pegawai Nagari {$nagari->name}\n\n" .
-                        "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\n\n" .
-                        "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\n" .
-                        "Laporan PDF dapat disimpan untuk dokumentasi.\n" .
-                        "_Note: Dikirim ke seluruh pegawai dan pimpinan_\n\n" .
-                        "Ketik: *info* untuk bantuan lebih lanjut.\n\n" .
-                        "_Sent via Cv.Baduo Mitra Solution_";
+                    $pesan = "Hai *{$user->name}* (Jabatan: {$jabatan}),\n\n".
+                        "Pegawai Nagari {$nagari->name}\n\n".
+                        "📊 Laporan Absensi Bulan *{$bulan}* Tahun *{$tahun}*\n\n".
+                        "Laporan ini dikirim setiap awal bulan untuk ditinjau kembali.\n".
+                        "Laporan PDF dapat disimpan untuk dokumentasi.\n".
+                        "_Note: Dikirim ke seluruh pegawai dan pimpinan_\n\n".
+                        "Ketik: *info* untuk bantuan lebih lanjut.\n\n".
+                        '_Sent via Cv.Baduo Mitra Solution_';
 
                     try {
                         // Verifikasi file exists
-                        if (!file_exists($fullPath)) {
+                        if (! file_exists($fullPath)) {
                             throw new \Exception("File PDF tidak ditemukan: {$fullPath}");
                         }
 
-                        $gowa = new GowaService();
+                        $gowa = new GowaService;
                         $result = $gowa->sendFile(
                             phone: $user->no_hp, // Kirim ke user asli
                             // phone: "6281282779593", // Comment untuk production
@@ -260,7 +281,7 @@ class RekapPegawaiController extends Controller
                             'nagari' => $nagari->name,
                             'status' => 'sent',
                             'pdf_file' => $filename,
-                            'response' => $result
+                            'response' => $result,
                         ];
                         $totalSent++;
 
@@ -280,7 +301,7 @@ class RekapPegawaiController extends Controller
                             'nagari' => $nagari->name,
                             'status' => 'failed',
                             'pdf_file' => $filename,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
                         ];
                         $totalFailed++;
 
@@ -305,27 +326,27 @@ class RekapPegawaiController extends Controller
                     return [
                         'nagari' => $file['nagari']->name,
                         'filename' => $file['filename'],
-                        'file_size' => file_exists($file['full_path']) ? filesize($file['full_path']) . ' bytes' : 'File not found',
-                        'url' => Storage::url($file['storage_path'])
+                        'file_size' => file_exists($file['full_path']) ? filesize($file['full_path']).' bytes' : 'File not found',
+                        'url' => Storage::url($file['storage_path']),
                     ];
                 }, $pdfFiles),
                 'summary' => [
                     'total_nagari' => count($pdfFiles),
-                    'total_users' => $nagaris->sum(fn($n) => $n->users->count()),
+                    'total_users' => $nagaris->sum(fn ($n) => $n->users->count()),
                     'total_sent' => $totalSent,
-                    'total_failed' => $totalFailed
+                    'total_failed' => $totalFailed,
                 ],
-                'whatsapp_results' => $response
+                'whatsapp_results' => $response,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in absensiBulanan: ' . $e->getMessage(), [
+            Log::error('Error in absensiBulanan: '.$e->getMessage(), [
                 'request_data' => $request->all(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'error' => 'Terjadi kesalahan saat memproses laporan',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

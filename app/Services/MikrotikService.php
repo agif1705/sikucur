@@ -1106,4 +1106,321 @@ class MikrotikService
             return false;
         }
     }
+
+    /**
+     * Get all PPP secrets from MikroTik
+     */
+    public function getAllPppSecrets(MikrotikConfig $config): array
+    {
+        if (filled($config->rest_url)) {
+            try {
+                return $this->getPppSecretsViaRest($config);
+            } catch (Exception $restException) {
+                Log::warning('Failed to get PPP secrets via REST, falling back to RouterOS API', [
+                    'config' => $config->nagari.'-'.$config->location,
+                    'error' => $restException->getMessage(),
+                ]);
+            }
+        }
+
+        try {
+            $client = $this->getClientWithConfig($config);
+            $query = (new Query('/ppp/secret/print'))
+                ->equal('.proplist', '.id,name,service,password,profile,remote-address,disabled,comment');
+
+            return $client->query($query)->read();
+        } catch (Exception $e) {
+            Log::error('Failed to get PPP secrets from MikroTik', [
+                'config' => $config->nagari.'-'.$config->location,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    private function getPppSecretsViaRest(MikrotikConfig $config): array
+    {
+        return $this->restGet($config, 'ppp/secret', [
+            '.proplist' => '.id,name,service,password,profile,remote-address,disabled,comment',
+        ]);
+    }
+
+    /**
+     * Get all PPP profiles from MikroTik.
+     */
+    public function getPppProfiles(MikrotikConfig $config): array
+    {
+        if (filled($config->rest_url)) {
+            try {
+                return $this->getPppProfilesViaRest($config);
+            } catch (Exception $restException) {
+                Log::warning('Failed to get PPP profiles via REST, falling back to RouterOS API', [
+                    'config' => $config->nagari.'-'.$config->location,
+                    'error' => $restException->getMessage(),
+                ]);
+            }
+        }
+
+        try {
+            $client = $this->getClientWithConfig($config);
+            $query = (new Query('/ppp/profile/print'))
+                ->equal('.proplist', '.id,name,local-address,remote-address,rate-limit,only-one,comment');
+
+            return $client->query($query)->read();
+        } catch (Exception $e) {
+            Log::error('Failed to get PPP profiles from MikroTik', [
+                'config' => $config->nagari.'-'.$config->location,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    private function getPppProfilesViaRest(MikrotikConfig $config): array
+    {
+        return $this->restGet($config, 'ppp/profile', [
+            '.proplist' => '.id,name,local-address,remote-address,rate-limit,only-one,comment',
+        ]);
+    }
+
+    /**
+     * Get a specific PPP secret by name
+     */
+    public function getPppSecret(MikrotikConfig $config, string $name): array
+    {
+        try {
+            $secrets = $this->getAllPppSecrets($config);
+
+            return collect($secrets)
+                ->where('name', $name)
+                ->first() ?? throw new Exception("PPP secret '{$name}' not found");
+        } catch (Exception $e) {
+            Log::error('Failed to get PPP secret', [
+                'config' => $config->nagari.'-'.$config->location,
+                'name' => $name,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Add a new PPP secret to MikroTik
+     */
+    public function addPppSecret(MikrotikConfig $config, array $data): array
+    {
+        try {
+            $name = $data['name'] ?? null;
+            $password = $data['password'] ?? null;
+            $service = $data['service'] ?? 'pppoe';
+
+            if (empty($name) || empty($password)) {
+                throw new Exception('Name and password are required');
+            }
+
+            // Check if secret already exists
+            try {
+                $existing = $this->getPppSecret($config, $name);
+                Log::info('PPP secret already exists', [
+                    'config' => $config->nagari.'-'.$config->location,
+                    'name' => $name,
+                    'existing_secret_id' => $existing['.id'],
+                ]);
+
+                return [
+                    'after' => ['ret' => $existing['.id']],
+                    'existing_secret' => true,
+                    'secret_data' => $existing,
+                ];
+            } catch (Exception) {
+                // Secret doesn't exist, continue with creation
+            }
+
+            return $this->addPppSecretViaRest($config, $data);
+        } catch (Exception $restException) {
+            Log::warning('Failed to add PPP secret via REST, falling back to RouterOS API', [
+                'config' => $config->nagari.'-'.$config->location,
+                'error' => $restException->getMessage(),
+            ]);
+        }
+
+        try {
+            $client = $this->getClientWithConfig($config);
+            $query = (new Query('/ppp/secret/add'))
+                ->equal('name', $data['name'])
+                ->equal('password', $data['password'])
+                ->equal('service', $data['service'] ?? 'pppoe');
+
+            foreach ($this->pppSecretWritableParams($data) as $key => $value) {
+                $query->equal($key, $value);
+            }
+
+            $response = $client->query($query)->read();
+
+            Log::info('PPP secret added successfully', [
+                'config' => $config->nagari.'-'.$config->location,
+                'name' => $data['name'],
+                'service' => $data['service'] ?? 'pppoe',
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('Failed to add PPP secret', [
+                'config' => $config->nagari.'-'.$config->location,
+                'name' => $data['name'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    private function addPppSecretViaRest(MikrotikConfig $config, array $data): array
+    {
+        $payload = [
+            'name' => $data['name'],
+            'password' => $data['password'],
+            'service' => $data['service'] ?? 'pppoe',
+        ];
+
+        $payload = array_merge($payload, $this->pppSecretWritableParams($data));
+
+        $secret = $this->restPut($config, 'ppp/secret', $payload);
+
+        return [
+            'after' => ['ret' => $secret['.id'] ?? null],
+            'secret_data' => $secret,
+        ];
+    }
+
+    /**
+     * Update a PPP secret in MikroTik
+     */
+    public function updatePppSecret(MikrotikConfig $config, string $secretId, array $data): array
+    {
+        try {
+            return $this->updatePppSecretViaRest($config, $secretId, $data);
+        } catch (Exception $restException) {
+            Log::warning('Failed to update PPP secret via REST, falling back to RouterOS API', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+                'error' => $restException->getMessage(),
+            ]);
+        }
+
+        try {
+            $client = $this->getClientWithConfig($config);
+            $query = (new Query('/ppp/secret/set'))
+                ->equal('.id', $secretId);
+
+            foreach ($this->pppSecretWritableParams($data) as $key => $value) {
+                $query->equal($key, $value);
+            }
+
+            $response = $client->query($query)->read();
+
+            Log::info('PPP secret updated successfully', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('Failed to update PPP secret', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    private function updatePppSecretViaRest(MikrotikConfig $config, string $secretId, array $data): array
+    {
+        $payload = $this->pppSecretWritableParams($data);
+
+        return $this->restPatch($config, 'ppp/secret/'.$secretId, $payload);
+    }
+
+    /**
+     * Remove a PPP secret from MikroTik
+     */
+    public function removePppSecret(MikrotikConfig $config, string $secretId): array
+    {
+        try {
+            $this->restDelete($config, 'ppp/secret/'.$secretId);
+
+            Log::info('PPP secret removed successfully via REST', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+            ]);
+
+            return ['success' => true];
+        } catch (Exception $restException) {
+            Log::warning('Failed to remove PPP secret via REST, falling back to RouterOS API', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+                'error' => $restException->getMessage(),
+            ]);
+        }
+
+        try {
+            $client = $this->getClientWithConfig($config);
+            $query = (new Query('/ppp/secret/remove'))
+                ->equal('.id', $secretId);
+
+            $response = $client->query($query)->read();
+
+            Log::info('PPP secret removed successfully', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+            ]);
+
+            return $response;
+        } catch (Exception $e) {
+            Log::error('Failed to remove PPP secret', [
+                'config' => $config->nagari.'-'.$config->location,
+                'secret_id' => $secretId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get writable parameters for PPP secrets
+     */
+    private function pppSecretWritableParams(array $data): array
+    {
+        $writableParams = [];
+
+        if (isset($data['password'])) {
+            $writableParams['password'] = $data['password'];
+        }
+
+        if (isset($data['service'])) {
+            $writableParams['service'] = $data['service'];
+        }
+
+        if (isset($data['name'])) {
+            $writableParams['name'] = $data['name'];
+        }
+
+        if (isset($data['comment'])) {
+            $writableParams['comment'] = $data['comment'];
+        }
+
+        if (isset($data['disabled'])) {
+            $writableParams['disabled'] = $data['disabled'] === true || $data['disabled'] === 'true' ? 'true' : 'false';
+        }
+
+        if (isset($data['profile'])) {
+            $writableParams['profile'] = $data['profile'];
+        }
+
+        if (isset($data['routes'])) {
+            $writableParams['routes'] = $data['routes'];
+        }
+
+        return array_filter($writableParams, fn ($value): bool => $value !== null);
+    }
 }

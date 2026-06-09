@@ -2,31 +2,30 @@
 
 namespace App\Providers\Filament;
 
-use Filament\Pages;
-use Filament\Panel;
-use Filament\Widgets;
-use Filament\Pages\Page;
-use Filament\PanelProvider;
 use App\Filament\Auth\CustomLogin;
-use Filament\Support\Colors\Color;
-use App\Forms\Components\MapAbsensi;
-use App\Filament\Pages\AttendaceUser;
 use App\Filament\Pages\AttendanceUser;
-use Filament\Http\Middleware\Authenticate;
-use Filament\View\LegacyComponents\Widget;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Cookie\Middleware\EncryptCookies;
-use Filament\Http\Middleware\AuthenticateSession;
+use App\Filament\Resources\PppSecrets\Pages\ListPppSecrets;
+use App\Filament\Widgets\BroadcastStatsWidget;
+use App\Filament\Widgets\RekapAbsensiPegawaiWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Filament\Pages;
+use Filament\Panel;
+use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
+use Filament\Tables\View\TablesRenderHook;
+use Filament\View\PanelsRenderHook;
+use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use App\Filament\Resources\AbsensiPegawaiResource\Widgets\AbsensiHariLibur;
-use App\Filament\Widgets\RekapAbsensiPegawai;
-use App\Filament\Widgets\RekapAbsensiPegawaiWidget;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -38,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(CustomLogin::class)
             ->spa()
-            ->spaUrlExceptions(fn(): array => [
+            ->spaUrlExceptions(fn (): array => [
                 url('/admin/absensi-dinas-luar-daerah'),
                 url('/admin/jenis-surats/create'),
                 url('/admin/jenis-surats/*/edit'),
@@ -56,6 +55,15 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->darkMode()
             ->viteTheme('resources/css/filament/admin/theme.css')
+            ->renderHook(
+                PanelsRenderHook::SCRIPTS_AFTER,
+                fn (): string => Blade::render("@vite('resources/js/filament/admin/attendance-notifications.js')")
+            )
+            ->renderHook(
+                TablesRenderHook::TOOLBAR_SEARCH_AFTER,
+                fn (): string => view('filament.resources.ppp-secrets.remote-ont-port')->render(),
+                scopes: ListPppSecrets::class,
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -65,7 +73,7 @@ class AdminPanelProvider extends PanelProvider
             ->maxContentWidth('7xl')
             ->widgets([
                 RekapAbsensiPegawaiWidget::class,
-                \App\Filament\Widgets\BroadcastStatsWidget::class,
+                BroadcastStatsWidget::class,
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
             ])
