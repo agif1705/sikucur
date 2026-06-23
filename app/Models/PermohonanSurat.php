@@ -177,6 +177,4 @@ class PermohonanSurat extends Model
 
         return $romawi[$bulan] ?? 'I';
     }
-
-    protected $appends = ['nomor_surat_lengkap'];
 }
