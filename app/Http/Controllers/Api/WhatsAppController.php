@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\WdmsModel;
 use App\Services\GowaService;
 use App\Services\SinkronFingerprintService;
+use App\Services\WuzapiService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -185,11 +186,11 @@ class WhatsAppController extends Controller
             }
             $state = self::getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
-            $wa = new GowaService;
+            $wa = new WuzapiService();
             if (! $state->original['state'] == null) {
                 // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
-                $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
+                // $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
+                // $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                 $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
 
                 return $this->apiResponse(true, 'Berhasil', ['state' => [
@@ -210,7 +211,7 @@ class WhatsAppController extends Controller
     public function getTerminalState()
     {
         // ambil token dulu
-        $authResponse = Http::timeout(10)->post('https://fingerprint.baduo.cloud/jwt-api-token-auth/', [
+        $authResponse = Http::timeout(10)->post('https://wdms.agif.online/jwt-api-token-auth/', [
             'username' => 'agif',
             'password' => '@Lvaro02',
         ]);
@@ -219,7 +220,7 @@ class WhatsAppController extends Controller
         $terminalResponse = Http::withHeaders([
             'Authorization' => 'JWT ' . $token,
         ])->timeout(10)
-            ->get('https://fingerprint.baduo.cloud/iclock/api/terminals/2/');
+            ->get('https://wdms.agif.online/iclock/api/terminals/2/');
 
         $data = $terminalResponse->json();
         // ambil value "state"
