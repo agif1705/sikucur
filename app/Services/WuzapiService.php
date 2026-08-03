@@ -11,7 +11,7 @@ class WuzapiService
 
  public function __construct()
  {
-  $this->baseUrl = rtrim(config('services.wuzapi.base_url', 'https://wuzapi.sikucur.com/api'), '/');
+  $this->baseUrl = rtrim(config('services.wuzapi.base_url', 'https://wuzapi.sikucur.com'));
   $this->token = (string) (config('services.wuzapi.token'));
  }
 
@@ -50,9 +50,8 @@ class WuzapiService
   $response = Http::withHeaders($this->baseHeaders())
    ->post($this->baseUrl . '/chat/send/text', [
     'Phone' => $this->normalizePhone($phone),
-    'Message' => $message,
+    'Body' => $message,
    ]);
-
   return $response->json();
  }
 

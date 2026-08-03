@@ -35,7 +35,7 @@ return [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
             'host' => env('DB_SECOND_HOST', '127.0.0.1'),
-            'port' => env('DB_SECOND_PORT', '5480'),
+            'port' => env('DB_SECOND_PORT', '5432'),
             'database' => env('DB_SECOND_DATABASE', 'postgres'),
             'username' => env('DB_SECOND_USERNAME', 'postgres'),
             'password' => env('DB_SECOND_PASSWORD', 'Agif1705-Gmail.com'),

@@ -12,6 +12,7 @@ use App\Models\WdmsModel;
 use App\Services\GowaService;
 use App\Services\SinkronFingerprintService;
 use App\Services\WuzapiService;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -184,26 +185,48 @@ class WhatsAppController extends Controller
                 $pesan .= ($i + 1) . ". {$item['slug']} ({$item['jabatan']})"
                     . " - Jam: {$jam} {$statusIcon}\n";
             }
-            $state = self::getTerminalState();
+            $state = $this->getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
             $wa = new WuzapiService();
-            if (! $state->original['state'] == null) {
+            if ($state !== null) {
                 // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
                 // $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
                 // $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
-                $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
+                try {
+                    $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
+                    dd($result);
+                    return $this->apiResponse(true, 'Berhasil', [
+                        'state' => $state,
+                        'result' => $result,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('Wuzapi sendText failed', ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
 
-                return $this->apiResponse(true, 'Berhasil', ['state' => [
-                    $result,
-                ]]);
+                    return $this->apiResponse(false, 'Gagal mengirim pesan via Wuzapi', [
+                        'state' => $state,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             } else {
-                $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
-                $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                try {
+                    $wali = $wa->sendText($nagari->wali->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
+                    $seketaris = $wa->sendText($nagari->seketaris->no_hp, "📊 Laporan Absensi Hari Ini Fingerprint Tidak Online / Mati\n\n" . $baduo);
 
-                return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', ['state' => [
-                    $wali,
-                    $seketaris,
-                ]]);
+                    return $this->apiResponse(false, 'Terminal Fingerprint tidak terhubung', [
+                        'state' => $state,
+                        'results' => [
+                            'wali' => $wali,
+                            'seketaris' => $seketaris,
+                        ],
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('Wuzapi sendText failed (offline branch)', ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
+                    return $this->apiResponse(false, 'Gagal mengirim notifikasi offline via Wuzapi', [
+                        'state' => $state,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
         }
     }
@@ -226,9 +249,7 @@ class WhatsAppController extends Controller
         // ambil value "state"
         $state = $data['state'] ?? null;
 
-        return response()->json([
-            'state' => $state,
-        ]);
+        return $state;
     }
 
     public function kehadiran(Request $request)

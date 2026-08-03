@@ -47,7 +47,7 @@ return [
     ],
 
     'wuzapi' => [
-        'base_url' => env('WUZAPI_BASE_URL', 'https://wuzapi.sikucur.com/api'),
+        'base_url' => env('WUZAPI_BASE_URL', 'https://wuzapi.sikucur.com'),
         'token' => env('WUZAPI_TOKEN', 'bp6448fe'),
         'admin_token' => env('WUZAPI_ADMIN_TOKEN'),
     ],
