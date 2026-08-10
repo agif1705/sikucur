@@ -7,6 +7,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Jobs\TranscodeVideo;
+use Illuminate\Support\Facades\Bus;
 
 class VideoTvForm
 {
@@ -16,6 +18,34 @@ class VideoTvForm
             ->schema([
                 Section::make('Video TV')
                     ->schema([
+                        Forms\Components\Placeholder::make('transcode_status')
+                            ->label('Status Transcode')
+                            ->content(function ($get) {
+                                $file = $get('file_path');
+                                if (! $file) {
+                                    return 'Tidak ada file terupload.';
+                                }
+
+                                $statusKey = 'transcode-status/' . str_replace(["/", "\\"], '__', $file) . '.json';
+                                if (! Storage::disk('local')->exists($statusKey)) {
+                                    return 'Menunggu antrean transcoding (belum diproses).';
+                                }
+
+                                try {
+                                    $data = json_decode(Storage::disk('local')->get($statusKey), true);
+                                } catch (\Throwable $e) {
+                                    return 'Gagal membaca status.';
+                                }
+
+                                return match ($data['status'] ?? 'unknown') {
+                                    'processing' => 'Sedang diproses',
+                                    'done' => 'Selesai — ukuran: ' . (isset($data['size']) ? number_format($data['size'] / 1024 / 1024, 2) . ' MB' : 'N/A'),
+                                    'failed' => 'Gagal: ' . ($data['error'] ?? 'Tidak diketahui'),
+                                    default => 'Status: ' . ($data['status'] ?? 'unknown'),
+                                };
+                            })
+                            ->columnSpan(2),
+
                         Forms\Components\TextInput::make('title')
                             ->label('Judul Video')
                             ->required()
@@ -46,6 +76,18 @@ class VideoTvForm
                             })
                             ->deleteUploadedFileUsing(function ($file): void {
                                 Storage::disk('public')->delete($file);
+                            })
+                            ->afterStateUpdated(function (?string $state) {
+                                if (! $state) {
+                                    return;
+                                }
+
+                                // Dispatch transcoding job. Ensure ffmpeg is installed on the server.
+                                try {
+                                    TranscodeVideo::dispatch($state, 'public');
+                                } catch (\Throwable $e) {
+                                    \Illuminate\Support\Facades\Log::error('Failed to dispatch TranscodeVideo', ['error' => $e->getMessage()]);
+                                }
                             })
                             ->helperText('Format disarankan MP4. Maksimal 500 MB.'),
 
