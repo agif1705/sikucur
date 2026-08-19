@@ -1,18 +1,22 @@
 # Dokploy deploy
 
 ## Pakai
+
 - `Dockerfile`
 - `dokploy.compose.yml`
 
 ## Service
+
 - `app` web
 - `queue` worker
 - `scheduler` cron tiap 1 menit
 
 ## Port
+
 - `8000`
 
 ## Env wajib
+
 - `APP_ENV=production`
 - `APP_DEBUG=false`
 - `APP_URL=https://domain-anda`
@@ -33,6 +37,7 @@
 - `FILESYSTEM_DISK=public`
 
 ## Catatan
+
 - `storage` dan `bootstrap/cache` sudah dipersist volume.
 - `queue` dan `scheduler` wajib hidup kalau fitur WA, broadcast, atau job dipakai.
 - Kalau Dokploy pakai domain proxy, expose publik cukup lewat ingress, bukan port manual.
