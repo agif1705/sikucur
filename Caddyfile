@@ -1,50 +1,6 @@
-{
-    frankenphp
-    order php_server before file_server
-}
+:80 {
+    root * /app/public
+    encode zstd br gzip
 
-sikucur.com {
-    root * public
     php_server
-    encode gzip
-    file_server
-
-
-    reverse_proxy /reverb* 127.0.0.1:8080 {
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-        header_up X-Forwarded-For {remote}
-        header_up X-Forwarded-Proto {scheme}
-        transport http {
-            versions h1
-        }
-    }
-}
-dev.sikucur.com {
-    root * /var/www/laravel-frankenphp/current/public
-    php_server
-    encode gzip
-    file_server
-}
-
-wea.sikucur.com {
-    reverse_proxy waha:3000
-}
-auto.sikucur.com {
-    reverse_proxy n8n:5678
-}
-realtime.sikucur.com {
-    reverse_proxy supabase-kong:8000
-}
-tv.sikucur.com {
-    reverse_proxy vue_prod:80
-}
-gowas.sikucur.com {
-    reverse_proxy gowa:3000
-}
-mikrotik-api.sikucur.com {
-    root * public
-    php_server
-    encode gzip
-    file_server
 }
