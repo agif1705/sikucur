@@ -97,7 +97,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'laravel',
-            'sslmode' => 'require',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
         'pgsql2' => [
             'driver' => 'pgsql',
