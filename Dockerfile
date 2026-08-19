@@ -28,12 +28,20 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy Laravel
+# Source Laravel
 COPY . /app
 
-# Copy Caddy custom
+# Install dependency Laravel
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --optimize-autoloader
+
+# Custom Caddy
 COPY Caddyfile /etc/frankenphp/Caddyfile
 
 EXPOSE 80
