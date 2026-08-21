@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(CustomLogin::class)
             ->spa()
-            ->spaUrlExceptions(fn (): array => [
+            ->spaUrlExceptions(fn(): array => [
                 url('/admin/absensi-dinas-luar-daerah'),
                 url('/admin/jenis-surats/create'),
                 url('/admin/jenis-surats/*/edit'),
@@ -55,13 +55,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->darkMode()
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->renderHook(
-                PanelsRenderHook::SCRIPTS_AFTER,
-                fn (): string => Blade::render("@vite('resources/js/filament/admin/attendance-notifications.js')")
-            )
+
             ->renderHook(
                 TablesRenderHook::TOOLBAR_SEARCH_AFTER,
-                fn (): string => view('filament.resources.ppp-secrets.remote-ont-port')->render(),
+                fn(): string => view('filament.resources.ppp-secrets.remote-ont-port')->render(),
                 scopes: ListPppSecrets::class,
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
