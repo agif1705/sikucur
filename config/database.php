@@ -94,9 +94,9 @@ return [
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
-            'prefix' => '',
+            'prefix' => 'laravel_',
+            'search_path' => 'public',
             'prefix_indexes' => true,
-            'search_path' => 'laravel',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
         'pgsql2' => [
