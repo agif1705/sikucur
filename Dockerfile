@@ -1,20 +1,3 @@
-# =========================
-# Stage 1: Build Frontend
-# =========================
-FROM node:22-bookworm AS frontend
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build
-
-
-# =========================
-# Stage 2: Laravel FrankenPHP
-# =========================
 FROM dunglas/frankenphp:php8.4
 
 WORKDIR /app
@@ -32,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     make \
     inotify-tools \
     postgresql-client \
+    ca-certificates \
     && docker-php-ext-install \
         pdo_pgsql \
         pgsql \
@@ -45,21 +29,28 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Node.js 22 + npm
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && node -v \
+    && npm -v
+
 # Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Source Laravel
 COPY . /app
 
-# PHP dependencies
+# Laravel dependencies
 RUN composer install \
     --no-dev \
     --prefer-dist \
     --no-interaction \
     --optimize-autoloader
 
-# Copy hasil Vite
-COPY --from=frontend /app/public/build /app/public/build
+# Frontend dependencies + Vite build
+RUN npm install
+RUN npm run build
 
 # Custom Caddy
 COPY Caddyfile /etc/frankenphp/Caddyfile
