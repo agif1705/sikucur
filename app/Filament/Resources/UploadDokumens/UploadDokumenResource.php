@@ -43,7 +43,7 @@ class UploadDokumenResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('is_verified', false)->count();
+        return static::getModel()::whereRaw('is_verified = false')->count();
     }
 
     public static function getNavigationBadgeColor(): ?string

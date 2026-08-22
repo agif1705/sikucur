@@ -46,12 +46,12 @@ class UploadDokumen extends Model
 
     public function scopeVerified($query)
     {
-        return $query->where('is_verified', true);
+        return $query->whereRaw('is_verified = true');
     }
 
     public function scopeUnverified($query)
     {
-        return $query->where('is_verified', false);
+        return $query->whereRaw('is_verified = false');
     }
 
     public function getFileUrlAttribute(): string
