@@ -88,7 +88,7 @@ class FingerPrintController extends Controller
         $nagari = Nagari::all();
         foreach ($nagari as $item) {
             $item->user = User::where('nagari_id', $item->id)
-                ->where('aktif', true)
+                ->whereRaw('aktif = true')
                 ->get()
                 ->map(function ($user) use ($date) {
                     $user->absensi = RekapAbsensiPegawai::where('user_id', $user->id)

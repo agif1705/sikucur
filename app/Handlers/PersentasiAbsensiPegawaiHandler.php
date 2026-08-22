@@ -29,7 +29,7 @@ class PersentasiAbsensiPegawaiHandler implements WhatsAppCommandHandler
             },
             // jumlah terlambat
             'RekapAbsensiPegawai as late_count' => function ($query) use ($bulan, $tahun) {
-                $query->where('is_late', true)
+                $query->whereRaw('is_late = true')
                     ->whereMonth('date', $bulan)
                     ->whereYear('date', $tahun);
             },

@@ -238,12 +238,12 @@ class RekapPegawaiController extends Controller
 
             // Ambil semua nagari beserta user + jabatan yang aktif dan punya no_hp
             $nagaris = Nagari::with(['users' => function ($query) {
-                $query->where('aktif', true)
+                $query->whereRaw('aktif = true')
                     ->whereNotNull('no_hp')
                     ->whereRaw("CAST(no_hp AS TEXT) != ''")
                     ->with('jabatan');
             }])->whereHas('users', function ($query) {
-                $query->where('aktif', true)
+                $query->whereRaw('aktif = true')
                     ->whereNotNull('no_hp')
                     ->whereRaw("CAST(no_hp AS TEXT) != ''");
             })->get();

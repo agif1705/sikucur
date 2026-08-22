@@ -32,7 +32,7 @@ class VoucherController extends Controller
         // Cek apakah voucher ada dan aktif
         $voucher = \App\Models\Voucher::where('code', $pin)
             ->where('name', $name)
-            ->where('active', true)
+            ->whereRaw('active = true')
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());

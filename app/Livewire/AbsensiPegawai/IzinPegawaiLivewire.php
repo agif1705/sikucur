@@ -344,7 +344,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
 
             // Get working days configuration for this nagari
             $workingDaysConfig = WorkDay::where('nagari_id', $nagariId)
-                ->where('is_working_day', true)
+                ->whereRaw('is_working_day = true')
                 ->pluck('day')
                 ->toArray();
 

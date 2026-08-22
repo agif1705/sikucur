@@ -26,12 +26,12 @@ class ListRekapAbsensiPegawais extends ListRecords
 
             'terlambat' => Tab::make()
                 ->modifyQueryUsing(
-                    fn (Builder $query) => $query->where('is_late', true) // hanya data dengan active = true
+                    fn (Builder $query) => $query->whereRaw('is_late = true') // hanya data dengan active = true
                 ),
 
             'Ontime' => Tab::make()
                 ->modifyQueryUsing(
-                    fn (Builder $query) => $query->where('is_late', false) // hanya data dengan active = false
+                    fn (Builder $query) => $query->whereRaw('is_late = false') // hanya data dengan active = false
                 ),
         ];
     }

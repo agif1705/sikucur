@@ -295,7 +295,7 @@ class InformasiTvLivewire extends Component
     {
         $this->uploadedVideos = VideoTv::query()
             ->where('nagari_id', $nagariId)
-            ->where('is_active', true)
+            ->whereRaw('is_active = true')
             ->orderBy('sort_order')
             ->orderByDesc('created_at')
             ->get()

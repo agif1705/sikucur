@@ -26,8 +26,8 @@ class RekapAbsensiPegawaiWidget extends BaseWidget
         $query = RekapAbsensiPegawai::forUserThisMonth(Auth::id());
 
         $kehadiran   = $query->clone()->whereIn('status_absensi', ['Hadir', 'I', 'S', 'HDLD', 'HDDD'])->count();
-        $terlambat   = $query->clone()->where('is_late', true)->count();
-        $tepat_waktu = $query->clone()->where('is_late', false)->count();
+        $terlambat   = $query->clone()->whereRaw('is_late = true')->count();
+        $tepat_waktu = $query->clone()->whereRaw('is_late = false')->count();
         $persen_hadir = $total_hari_kerja > 0 ? round(($kehadiran / $total_hari_kerja) * 100, 2) : 0;
         $persen_tepat = $kehadiran > 0 ? round(($tepat_waktu / $kehadiran) * 100, 2) : 0;
         $pk_color = $persen_hadir < 80 ? 'danger' : 'info';

@@ -27,7 +27,7 @@ class SuratPengantarHandler implements WhatsAppCommandHandler
         }
 
         $existing = SuratPengantar::where('petugas_id', $user->id)
-            ->where('used', false)
+            ->whereRaw('used = false')
             ->where('expired_at', '>', now())
             ->latest()
             ->first();
@@ -75,7 +75,7 @@ class SuratPengantarHandler implements WhatsAppCommandHandler
     {
         $existing = SuratPengantar::where('penduduk_id', $penduduk->id)
             ->whereNull('petugas_id')
-            ->where('used', false)
+            ->whereRaw('used = false')
             ->where('expired_at', '>', now())
             ->latest()
             ->first();
@@ -145,7 +145,7 @@ class SuratPengantarHandler implements WhatsAppCommandHandler
         $existing = SuratPengantar::where('nagari_id', $nagariId)
             ->whereNull('penduduk_id')
             ->whereNull('petugas_id')
-            ->where('used', false)
+            ->whereRaw('used = false')
             ->where('expired_at', '>', now())
             ->latest()
             ->first();

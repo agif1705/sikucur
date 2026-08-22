@@ -147,7 +147,7 @@ class PendudukForm
     {
         return MikrotikConfig::query()
             ->where('nagari', 'sikucur')
-            ->where('is_active', true)
+            ->whereRaw('is_active = true')
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
@@ -159,7 +159,7 @@ class PendudukForm
 
         return MikrotikConfig::query()
             ->where('nagari', $nagari)
-            ->where('is_active', true)
+            ->whereRaw('is_active = true')
             ->first();
     }
 

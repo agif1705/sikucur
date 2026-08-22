@@ -25,7 +25,7 @@ class JenisSuratForm
                                 ->valueLabel('Deskripsi')
                                 ->formatStateUsing(function ($state) {
                                     return $state ?: MetaJenisSurat::query()
-                                        ->where('is_active', true)
+                                        ->whereRaw('is_active = true')
                                         ->orderBy('category')
                                         ->orderBy('name')
                                         ->pluck('description', 'name')

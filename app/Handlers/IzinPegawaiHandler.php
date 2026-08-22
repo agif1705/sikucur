@@ -13,7 +13,7 @@ class IzinPegawaiHandler implements WhatsAppCommandHandler
         $checkizin = IzinPegawai::where('user_id', $user->id)
             ->where('nagari', $user->nagari->name)
             ->where('expired_at', '>', now())
-            ->where('used', false)
+            ->whereRaw('used = false')
             ->first();
 
         if ($checkizin) {

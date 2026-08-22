@@ -35,7 +35,7 @@ class DokumenPersyaratan extends Model
 
     public function scopeWajib($query)
     {
-        return $query->where('is_wajib', true);
+        return $query->whereRaw('is_wajib = true');
     }
 
     public function scopeOrdered($query)

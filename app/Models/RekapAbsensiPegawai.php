@@ -37,7 +37,7 @@ class RekapAbsensiPegawai extends Model
     }
     public function scopeIsLate($query)
     {
-        return $query->where('is_late', true);
+        return $query->whereRaw('is_late = true');
     }
     public static function getWorkingDaysThisMonth($month, $year)
     {

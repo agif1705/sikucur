@@ -43,7 +43,7 @@ class NagariForm
                         ->afterStateHydrated(function ($component, $state, $record) {
                             if ($record) {
                                 $selectedDays = $record->workDays()
-                                    ->where('is_working_day', true)
+                                    ->whereRaw('is_working_day = true')
                                     ->pluck('day')
                                     ->toArray();
                                 $component->state($selectedDays);
