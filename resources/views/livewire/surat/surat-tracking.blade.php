@@ -50,7 +50,7 @@
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h3>Detail Permohonan Surat</h3>
-          <button wire:click="reset" class="btn btn-outline-secondary">
+          <button wire:click="resetPencarian" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left"></i> Cari Lagi
           </button>
         </div>

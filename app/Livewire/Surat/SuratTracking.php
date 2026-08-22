@@ -39,7 +39,7 @@ class SuratTracking extends Component
         }
     }
 
-    public function reset()
+    public function resetPencarian()
     {
         $this->nomorPermohonan = '';
         $this->permohonan = null;
