@@ -27,9 +27,7 @@ frankenphp
 frankenphp-worker.php
 
 # Laravel Sail
-docker-compose.yml
 docker-compose.override.yml
-.dockerignore
 MIKROTIK_SERVICE_DOCS.md
 
 **/caddy

@@ -1,0 +1,68 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - laravel_storage:/app/storage
+    working_dir: /app
+    ports:
+      - '8001:8001'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - default
+      - supabase_default
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      APP_NAME: SikuCur
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      APP_URL: ${APP_URL}
+      APP_KEY: ${APP_KEY}
+      DB_CONNECTION: pgsql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      BROADCAST_CONNECTION: log
+    command: >
+      sh -c "
+      mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache &&
+      chown -R www-data:www-data storage bootstrap/cache &&
+      chmod -R 775 storage bootstrap/cache &&
+      php artisan storage:link --force 2>/dev/null || true &&
+      php artisan config:cache &&
+      php artisan route:cache &&
+      php artisan view:cache &&
+      php artisan migrate --force &&
+      php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8001
+      "
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}', '--appendonly', 'yes']
+    volumes:
+      - redis_data:/data
+    networks:
+      - default
+
+volumes:
+  laravel_storage:
+  redis_data:
+
+networks:
+  default:
+    driver: bridge
+  supabase_default:
+    external: true
