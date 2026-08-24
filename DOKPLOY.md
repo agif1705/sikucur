@@ -40,4 +40,4 @@
 
 - `storage` dan `bootstrap/cache` sudah dipersist volume.
 - `queue` dan `scheduler` wajib hidup kalau fitur WA, broadcast, atau job dipakai.
-- Kalau Dokploy pakai domain proxy, expose publik cukup lewat ingress, bukan port manual.
+- Kalau Dokploy pakai domain proxy, expose publik cukup lewat ingress, bukan port manual.baru
