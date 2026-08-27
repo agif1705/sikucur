@@ -34,6 +34,7 @@ services:
       mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache &&
       chown -R www-data:www-data storage bootstrap/cache &&
       chmod -R 775 storage bootstrap/cache &&
+      rm -rf public/storage &&
       php artisan storage:link --force 2>/dev/null || true &&
       php artisan config:cache &&
       php artisan route:cache &&
