@@ -46,6 +46,12 @@ return [
         'password' => 'nagari-sikucur',
     ],
 
+    'evolution' => [
+        'base_url' => env('EVOLUTION_BASE_URL', 'http://localhost:8080'),
+        'api_key'  => env('EVOLUTION_API_KEY'),
+        'instance' => env('EVOLUTION_INSTANCE'),
+    ],
+
     'wuzapi' => [
         'base_url' => env('WUZAPI_BASE_URL', 'https://wuzapi.sikucur.com'),
         'token' => env('WUZAPI_TOKEN', 'bp6448fe'),
@@ -53,8 +59,8 @@ return [
     ],
 
     'supabase' => [
-        'url' => env('SUPABASE_URL', 'https://realtime.sikucur.com'),
-        'anon_key' => env('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzU1NjIyODAwLCJleHAiOjE5MTMzODkyMDB9.mDUDIN37Evdb7-Rf-0DzN_JT2smCnnxR9EAyRyJZiF8'),
+        'url' => env('SUPABASE_URL', 'https://supabase.sikucur.com'),
+        'anon_key' => env('SUPABASE_ANON_KEY', env('SUPABASE_PROD_KEY')),
         'channel' => env('SUPABASE_REALTIME_CHANNEL', 'realtime_absensi_tv'),
     ],
 

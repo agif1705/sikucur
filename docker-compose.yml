@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: sikucur-app
     container_name: sikucur_app
     restart: unless-stopped
     volumes:
@@ -16,21 +17,13 @@ services:
     depends_on:
       redis:
         condition: service_started
+    env_file:
+      - .env
     environment:
-      APP_NAME: SikuCur
-      APP_ENV: local
-      APP_DEBUG: 'false'
-      APP_URL: ${APP_URL}
-      APP_KEY: ${APP_KEY}
-      DB_CONNECTION: pgsql
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_CLIENT: phpredis
+      # override nilai .env yg beda di dalam container (service name, bukan localhost)
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_CLIENT: phpredis
       CACHE_STORE: redis
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
@@ -47,6 +40,33 @@ services:
       php artisan migrate --force &&
       php artisan octane:start --server=frankenphp --host=0.0.0.0 --port=8001
       "
+
+  worker:
+    image: sikucur-app
+    container_name: sikucur_worker
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - laravel_storage:/app/storage
+    networks:
+      - sikucur_net
+    depends_on:
+      app:
+        condition: service_started
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_CLIENT: phpredis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      BROADCAST_CONNECTION: log
+    # --timeout >= job timeout (TranscodeVideo setTimeout 3600) supaya video besar tak keburu dibunuh
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=3700
 
   redis:
     image: redis:7-alpine

@@ -10,7 +10,7 @@ use App\Models\WdmsModel;
 use App\Models\VideoTv;
 use App\Models\WhatsAppLog;
 use Livewire\Attributes\On;
-use App\Services\GowaService;
+use App\Services\EvolutionService;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Log;
 use App\Models\RekapAbsensiPegawai;
@@ -193,7 +193,7 @@ class InformasiTvLivewire extends Component
     private function sendWhatsAppNotification($user, $message)
     {
         try {
-            $wa = new GowaService();
+            $wa = new EvolutionService();
             $result = $wa->sendText($user->no_hp, $message);
 
             // Log hasil pengiriman WhatsApp

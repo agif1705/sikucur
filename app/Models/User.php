@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -12,11 +14,19 @@ use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     protected $connection = 'pgsql'; // atau sesuai koneksi yg ada di config/database.php
 
     protected $table = 'users';
+
+    // Gate akses panel admin. Otorisasi granular tetap ditangani FilamentShield/Spatie.
+    // ponytail: izinkan semua user terautentikasi (samakan perilaku lokal lama).
+    //   Kalau mau batasi, ganti jadi: return $this->roles()->exists();
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+    }
 
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasRoles, Notifiable;

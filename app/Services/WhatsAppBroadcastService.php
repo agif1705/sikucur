@@ -13,7 +13,7 @@ class WhatsAppBroadcastService
 {
  protected $gowaService;
 
- public function __construct(GowaService $gowaService)
+ public function __construct(EvolutionService $gowaService)
  {
   $this->gowaService = $gowaService;
  }

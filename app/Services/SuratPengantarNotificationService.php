@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\URL;
 
 class SuratPengantarNotificationService
 {
-    public function __construct(private readonly GowaService $gowaService) {}
+    public function __construct(private readonly EvolutionService $gowaService) {}
 
     public function notifyPengantarSubmitted(SuratPengantar $pengantar): void
     {

@@ -3,8 +3,8 @@ document.addEventListener('livewire:init', () => {
   console.log('📡 Supabase realtime script dimulai')
 
   const supabase = createClient(
-    'https://realtime.sikucur.com',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzU1NjIyODAwLCJleHAiOjE5MTMzODkyMDB9.mDUDIN37Evdb7-Rf-0DzN_JT2smCnnxR9EAyRyJZiF8'
+    'https://supabase.sikucur.com',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg3NjMyNDIwLCJleHAiOjE5NDUzMTI0MjB9.qK04ZnpMgRGgaszqWeWqGBKssU6qPOotoXFQZMr-oLk'
   )
 
   const channel = supabase.channel('realtime_iclock_transaction')

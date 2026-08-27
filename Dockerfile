@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     make \
     inotify-tools \
     postgresql-client \
+    ffmpeg \
     ca-certificates \
     && docker-php-ext-install \
         pdo_pgsql \

@@ -8,7 +8,7 @@ use App\Models\Nagari;
 use App\Models\RekapAbsensiPegawai;
 use App\Models\User;
 use App\Models\WhatsAppLog;
-use App\Services\GowaService;
+use App\Services\EvolutionService;
 use App\Services\Pdf\AbsensiReportBulananService;
 use App\Services\WuzapiService;
 use Illuminate\Http\Request;
@@ -331,7 +331,7 @@ class RekapPegawaiController extends Controller
                             throw new \Exception("File PDF tidak ditemukan: {$fullPath}");
                         }
 
-                        $gowa = new GowaService;
+                        $gowa = new EvolutionService;
                         $result = $gowa->sendFile(
                             phone: $user->no_hp, // Kirim ke user asli
                             // phone: "6281282779593", // Comment untuk production

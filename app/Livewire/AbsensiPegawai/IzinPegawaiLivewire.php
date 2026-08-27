@@ -8,7 +8,7 @@ use App\Models\RekapAbsensiPegawai;
 use App\Models\User;
 use App\Models\WhatsAppLog;
 use App\Models\WorkDay;
-use App\Services\GowaService;
+use App\Services\EvolutionService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
@@ -264,7 +264,7 @@ class IzinPegawaiLivewire extends Component implements HasForms
             .$periodeText
             ."\n📝 Alasan : *".$this->data['alasan'].'*  ';
 
-        $wa = new GowaService;
+        $wa = new EvolutionService;
 
         // Kirim ke Wali
         $wali = $wa->sendText($this->users->nagari->wali->no_hp, $pesan.' '.$baduo);

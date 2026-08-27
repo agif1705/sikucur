@@ -9,7 +9,7 @@ use App\Models\Nagari;
 use App\Models\Penduduk;
 use App\Models\User;
 use App\Models\WdmsModel;
-use App\Services\GowaService;
+use App\Services\EvolutionService;
 use App\Services\SinkronFingerprintService;
 use App\Services\WuzapiService;
 use Illuminate\Support\Facades\Log;
