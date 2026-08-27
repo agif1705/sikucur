@@ -70,6 +70,11 @@ class TranscodeVideo implements ShouldQueue
     @unlink($tmpOutput);
    }
 
+   // worker jalan sbg root -> samakan owner ke www-data biar web server bisa baca (hindari 403)
+   @chown($inputPath, 'www-data');
+   @chgrp($inputPath, 'www-data');
+   @chmod($inputPath, 0644);
+
    Log::info('TranscodeVideo: success', ['path' => $this->path]);
    try {
     $size = filesize($inputPath) ?: null;
