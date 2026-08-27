@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    container_name: sikucur_app
     restart: unless-stopped
     volumes:
       - laravel_storage:/app/storage
@@ -10,14 +11,14 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     networks:
-      - default
-      - supabase_default
+      - sikucur_net
+      - proxy
     depends_on:
       redis:
         condition: service_started
     environment:
       APP_NAME: SikuCur
-      APP_ENV: production
+      APP_ENV: local
       APP_DEBUG: 'false'
       APP_URL: ${APP_URL}
       APP_KEY: ${APP_KEY}
@@ -30,7 +31,6 @@ services:
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       CACHE_STORE: redis
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
@@ -50,19 +50,20 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: sikucur_redis
     restart: unless-stopped
-    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD}', '--appendonly', 'yes']
+    command: ['redis-server', '--appendonly', 'yes']
     volumes:
       - redis_data:/data
     networks:
-      - default
+      - sikucur_net
 
 volumes:
   laravel_storage:
   redis_data:
 
 networks:
-  default:
+  sikucur_net:
     driver: bridge
-  supabase_default:
+  proxy:
     external: true

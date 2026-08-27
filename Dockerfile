@@ -52,7 +52,4 @@ RUN composer install \
 RUN npm install
 RUN npm run build
 
-# Custom Caddy
-COPY Caddyfile /etc/frankenphp/Caddyfile
-
-EXPOSE 80
+EXPOSE 8001
