@@ -7,8 +7,8 @@ services:
     volumes:
       - laravel_storage:/app/storage
     working_dir: /app
-    ports:
-      - '8001:8001'
+    expose:
+      - '8001'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     networks:

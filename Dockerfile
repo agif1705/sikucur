@@ -30,6 +30,14 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Limit upload PHP — default 2M/8M bikin upload video gagal. Samakan dgn maxSize form (500M).
+RUN { \
+      echo 'upload_max_filesize=512M'; \
+      echo 'post_max_size=512M'; \
+      echo 'memory_limit=512M'; \
+      echo 'max_execution_time=600'; \
+    } > /usr/local/etc/php/conf.d/zz-uploads.ini
+
 # Node.js 22 + npm
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \

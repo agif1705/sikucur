@@ -46,7 +46,7 @@ class TranscodeVideo implements ShouldQueue
 
   $cmd = 'ffmpeg -y -i ' . escapeshellarg($inputPath)
    . ' -c:v libx264 -preset veryfast -crf 28 -maxrate 1M -bufsize 2M'
-   . ' -vf "scale=if(gt(iw,1280),1280,iw):-2" -c:a aac -b:a 128k '
+   . ' -vf "scale=min(1280\,iw):-2" -c:a aac -b:a 128k '
    . escapeshellarg($tmpOutput);
 
   try {
