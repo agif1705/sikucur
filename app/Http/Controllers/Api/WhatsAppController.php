@@ -11,7 +11,6 @@ use App\Models\User;
 use App\Models\WdmsModel;
 use App\Services\EvolutionService;
 use App\Services\SinkronFingerprintService;
-use App\Services\WuzapiService;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -187,14 +186,13 @@ class WhatsAppController extends Controller
             }
             $state = $this->getTerminalState();
             $singkron = SinkronFingerprintService::sinkronFingerPrint($nagari);
-            $wa = new WuzapiService();
+            $wa = new EvolutionService();
             if ($state !== null) {
                 try {
                     // Fingerprint online: kirim ke nomor testing atau aktifkan baris di bawah untuk wali & seketaris
                     $wali = $wa->sendText($nagari->wali->no_hp, $pesan . ' ' . $baduo);
                     $seketaris = $wa->sendText($nagari->seketaris->no_hp, $pesan . ' ' . $baduo);
                     $result = $wa->sendText('6281282779593', $pesan . ' ' . $baduo);
-                    dd($result);
                     return $this->apiResponse(true, 'Berhasil', [
                         'state' => $state,
                         'result' => $result,

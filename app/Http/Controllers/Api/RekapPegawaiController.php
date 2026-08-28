@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Models\WhatsAppLog;
 use App\Services\EvolutionService;
 use App\Services\Pdf\AbsensiReportBulananService;
-use App\Services\WuzapiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -81,7 +80,7 @@ class RekapPegawaiController extends Controller
 
             if ($user->aktif) {
                 try {
-                    $wa = new WuzapiService;
+                    $wa = new EvolutionService;
                     $result = $wa->sendText($user->no_hp, $pesan_masuk);
 
                     Log::info('WhatsApp absensi masuk terkirim', [
@@ -154,7 +153,7 @@ class RekapPegawaiController extends Controller
                     '_Sent via Cv.Baduo Mitra Solution_';
                 if ($user->aktif) {
                     try {
-                        $wa = new WuzapiService;
+                        $wa = new EvolutionService;
                         $result = $wa->sendText($user->no_hp, $pesan_pulang);
 
                         Log::info('WhatsApp absensi pulang terkirim', [
