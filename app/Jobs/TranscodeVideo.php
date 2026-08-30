@@ -42,7 +42,9 @@ class TranscodeVideo implements ShouldQueue
    return;
   }
 
-  $tmpOutput = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'transcoded-' . uniqid() . '.mp4';
+  // tmp harus sedevice dgn $inputPath: kalau beda (overlay fs vs bind mount) rename() gagal
+  // dan fallback file_get_contents() menarik seluruh video ke memori -> OOM di file besar.
+  $tmpOutput = dirname($inputPath) . DIRECTORY_SEPARATOR . 'transcoding-' . uniqid() . '.mp4';
 
   $cmd = 'ffmpeg -y -i ' . escapeshellarg($inputPath)
    . ' -c:v libx264 -preset veryfast -crf 28 -maxrate 1M -bufsize 2M'
@@ -63,10 +65,16 @@ class TranscodeVideo implements ShouldQueue
     return;
    }
 
-   // Replace original file with transcoded file
-   // Try rename first, fallback to copy
+   // Replace original file with transcoded file.
+   // rename() mestinya berhasil krn tmp sedevice; fallback streaming (bukan file_get_contents)
+   // supaya memori tetap terbatas kalau ternyata beda device.
    if (@rename($tmpOutput, $inputPath) === false) {
-    $disk->put($this->path, file_get_contents($tmpOutput));
+    $stream = fopen($tmpOutput, 'rb');
+    if ($stream === false) {
+     throw new \RuntimeException('Tidak bisa membuka hasil transcode: ' . $tmpOutput);
+    }
+    $disk->writeStream($this->path, $stream);
+    fclose($stream);
     @unlink($tmpOutput);
    }
 

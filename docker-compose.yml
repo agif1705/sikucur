@@ -12,6 +12,8 @@ services:
     volumes:
       # media upload di-bind ke host -> persist walau rebuild, kelihatan di ./storage/app/public
       - ./storage/app/public:/app/storage/app/public
+      # disk 'local' -> status transcode ditulis worker, dibaca app. harus filesystem yg sama.
+      - ./storage/app/private:/app/storage/app/private
     networks:
       - sikucur_net
       - proxy
@@ -31,7 +33,7 @@ services:
       BROADCAST_CONNECTION: log
     command: >
       sh -c "
-      mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache &&
+      mkdir -p storage/app/public storage/app/private storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache &&
       chown -R www-data:www-data storage bootstrap/cache &&
       chmod -R 775 storage bootstrap/cache &&
       rm -rf public/storage &&
@@ -50,6 +52,7 @@ services:
     working_dir: /app
     volumes:
       - ./storage/app/public:/app/storage/app/public
+      - ./storage/app/private:/app/storage/app/private
     networks:
       - sikucur_net
     depends_on:
