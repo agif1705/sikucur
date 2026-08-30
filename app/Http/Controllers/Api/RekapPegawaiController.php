@@ -153,7 +153,7 @@ class RekapPegawaiController extends Controller
                     '_Sent via Cv.Baduo Mitra Solution_';
                 if ($user->aktif) {
                     try {
-                        $wa = new EvolutionService;
+                        $wa = new WuzapiService;
                         $result = $wa->sendText($user->no_hp, $pesan_pulang);
 
                         Log::info('WhatsApp absensi pulang terkirim', [
